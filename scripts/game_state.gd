@@ -16,6 +16,7 @@ signal doomsday_changed(active: bool)
 signal game_started
 signal armies_changed
 signal war_changed
+signal battle_report(report: Dictionary)   # a land battle the player fought in has ended
 
 const START_YEAR := 4289
 const MONTH_NAMES := ["January", "February", "March", "April", "May", "June", "July",
@@ -24,6 +25,9 @@ const DAYS_PER_SECOND := [0.0, 2.0, 6.0, 15.0, 40.0, 120.0]  # speed 0 = paused
 const DEV_KINDS := ["tax", "production", "manpower"]
 const TRACKS := ["adm", "dip", "mil"]
 const POWER_CAP := 999
+const EVENT_FREQ_NATION := 0.6      # share of a nation-specific event's written monthly odds
+const EVENT_FREQ_SHARED := 0.4      # ... and of an event shared by many nations ("all", "tribes"...)
+const EVENT_COOLDOWN_DAYS := 365 * 5
 const SAVE_DIR := "user://saves"
 const SAVE_VERSION := 2
 
@@ -88,9 +92,10 @@ var next_id := 0
 var global_flags := {}
 var pending_events: Array = []   # player events waiting for a choice (pause the game)
 var scheduled: Array = []        # [{due, id, tag}]
-var fired_once := {}             # "event_id|tag" -> true
+var fired_once := {}             # "event_id|tag" -> day it last fired (true in old saves)
 var log_lines: Array = []
 var world_lines: Array = []      # news that doesn't touch the player (the log's "World news" view)
+var ledger_history := {}         # tag -> [[year, development, monthly income, regiments, provinces]] each 1 January
 
 var rng := RandomNumberGenerator.new()
 var _accum := 0.0
@@ -290,6 +295,7 @@ func setup_world(seed_value: int = 4289) -> void:
 	fired_once.clear()
 	log_lines.clear()
 	world_lines.clear()
+	ledger_history.clear()
 	_doomsday_damage.clear()
 	player_tag = ""
 	var defs: Dictionary = nation_defs.get("nations", {})
@@ -421,6 +427,7 @@ func new_game(tag: String, seed_value: int = 4289) -> void:
 		nations[t]["ai"] = (t != tag)
 	started = true
 	post("%s, %s. The Arcadian Era begins." % [date_string(), nations[tag]["short"] if nations.has(tag) else "Observer"])
+	record_ledger()
 	game_started.emit()
 	date_changed.emit()
 
@@ -793,6 +800,8 @@ func monthly_tick() -> void:
 				"text": "It is %d. Five hundred years have passed since the Incendium. Whatever comes next, the age of %s is written in the histories." % [year, nation_name(player_tag)],
 				"options": [{"text": "Keep playing.", "effects": []}]}, player_tag)
 	mods.invalidate()
+	if month == 1:
+		record_ledger()
 	month_ticked.emit()
 	for tag in nations:
 		nation_changed.emit(tag)
@@ -1018,12 +1027,24 @@ func event_mtth(e: Dictionary, tag: String) -> float:
 
 
 func event_monthly_chance(e: Dictionary, tag: String) -> float:
+	## The chance a random event fires this month. Scaled down so events stay special: events written
+	## for one nation keep EVENT_FREQ_NATION of their written odds, shared ones ("all", "tribes",
+	## "republics"...) only EVENT_FREQ_SHARED.
 	var trig: Dictionary = e.get("trigger", {})
+	var base := 0.0
 	if trig.has("monthly_chance"):
-		return float(trig["monthly_chance"])
-	if trig.has("mtth_months"):
-		return 1.0 - exp(-1.0 / event_mtth(e, tag))
-	return 0.0
+		base = float(trig["monthly_chance"])
+	elif trig.has("mtth_months"):
+		base = 1.0 - exp(-1.0 / event_mtth(e, tag))
+	var nation_specific: bool = nations.has(String(e.get("for", "all")))
+	return base * (EVENT_FREQ_NATION if nation_specific else EVENT_FREQ_SHARED)
+
+
+func event_on_cooldown(eid: String, tag: String) -> bool:
+	## A repeatable event can't come back for the same nation within EVENT_COOLDOWN_DAYS.
+	## (fired_once keeps the day each event last fired; old saves stored `true` there.)
+	var last: Variant = fired_once.get(eid + "|" + tag, null)
+	return (last is int or last is float) and day_index - int(last) < EVENT_COOLDOWN_DAYS
 
 
 func _check_monthly_events() -> void:
@@ -1038,6 +1059,8 @@ func _check_monthly_events() -> void:
 			if not _event_applies(e, tag):
 				continue
 			if e.get("once", false) and fired_once.has(eid + "|" + tag):
+				continue
+			if event_on_cooldown(eid, tag):
 				continue
 			if not check_conditions(trig.get("conditions", []), tag):
 				continue
@@ -1058,7 +1081,7 @@ func _run_scheduled() -> void:
 func fire_event(eid: String, tag: String) -> void:
 	if not events.has(eid) or not nations.has(tag) or not nations[tag]["alive"]:
 		return
-	fired_once[eid + "|" + tag] = true
+	fired_once[eid + "|" + tag] = day_index   # when it last fired: "once" events and the cooldown use this
 	_fire(events[eid], tag)
 
 
@@ -1511,7 +1534,7 @@ func _state() -> Dictionary:
 		"doomsday_damage": _doomsday_damage, "nations": nations, "provinces": provinces, "armies": armies,
 		"fleets": fleets, "battles": battles, "wars": wars, "recruit_queue": recruit_queue, "next_id": next_id,
 		"global_flags": global_flags, "pending_events": pending_events, "scheduled": scheduled,
-		"fired_once": fired_once, "log_lines": log_lines, "world_lines": world_lines, "rng_state": rng.state, "rng_seed": rng.seed,
+		"fired_once": fired_once, "log_lines": log_lines, "world_lines": world_lines, "ledger_history": ledger_history, "rng_state": rng.state, "rng_seed": rng.seed,
 		"market": eco.market, "history": eco.history, "trade_state": trade.state, "trade_income": trade.income,
 	}
 
@@ -1589,6 +1612,7 @@ func load_game(slot: String) -> String:
 	fired_once = s["fired_once"]
 	log_lines = s["log_lines"]
 	world_lines = s.get("world_lines", [])
+	ledger_history = s.get("ledger_history", {})
 	rng.seed = s["rng_seed"]
 	rng.state = s["rng_state"]
 	eco.market = s["market"]
@@ -1627,6 +1651,19 @@ func post(text: String, tags: Array = [], major: String = "", near: bool = false
 	message_posted.emit(text)
 	if major != "" and started and (tags.is_empty() or player_tag in tags):
 		major_news.emit(major, text)
+
+
+func record_ledger() -> void:
+	## A yearly snapshot of every nation for the Ledger's graphs (EU4's ledger history).
+	for t in nations:
+		if not nations[t]["alive"] or t in ["REB", "ENT"]:
+			continue
+		if not ledger_history.has(t):
+			ledger_history[t] = []
+		var rows: Array = ledger_history[t]
+		if not rows.is_empty() and int(rows.back()[0]) == year:
+			rows.pop_back()
+		rows.append([year, nation_dev(t), snappedf(float(nations[t].get("last_income", 0.0)), 0.01), mil.regiment_count(t), owned(t).size()])
 
 
 func concerns_player(tags: Array, near: bool = false) -> bool:

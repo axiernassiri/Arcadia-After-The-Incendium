@@ -766,7 +766,7 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 	# who leaves the war is settled before any land moves: losing the last province ends a nation
 	var tside = war_side(w, target)
 	var leaving: Array = w[tside].duplicate() if w[tside][0] == target else [target]
-	var ae_dev := _ae_dev(demands, target)   # before any land moves
+	var ae_dev := _ae_dev(demands, target, demander)   # before any land moves
 	var ae_mult := _ae_cb_mult(w, demander)
 	var parts: PackedStringArray = []
 	for d in demands:
@@ -796,6 +796,9 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 	g.post("Peace in %s: %s %s." % [w["name"], g.nation_name(target), "gives " + ", ".join(parts) if parts.size() > 0 else "makes a white peace"], [demander, target], "Peace" if demander != g.player_tag else "")
 	if ae_dev > 0.0:
 		add_aggressive_expansion(demander, target, ae_dev, ae_mult)
+	# a coalition that wins its war has done its job: it disbands and its members forgive
+	if w["cb"].get("id", "") == "coalition" and war_side(w, demander) == "attackers" and target == w["defenders"][0] and parts.size() > 0:
+		disband_coalition(target, w["attackers"])
 	# the target's side leaves the war (whole war ends if the target leads it)
 	if g.wars.has(w["id"]):
 		leaving = leaving.filter(func(t): return war_side(w, t) != "")
@@ -898,7 +901,8 @@ func monthly() -> void:
 # declares war once it is big enough.
 
 const AE_NAME := "Aggressive expansion"
-const AE_PER_DEV := 1.6        # per point of development taken, before the casus belli and distance
+const AE_PER_DEV := 1.0        # per point of development taken, before the casus belli and distance
+const AE_CORE_FACTOR := 0.5    # retaking your own cores causes half the outrage
 const AE_DECAY := 0.5          # a month
 const AE_FAR := 0.35           # nations that border neither side feel this much of it
 const COALITION_JOIN := 50.0   # AE at which a nation joins a coalition
@@ -942,7 +946,7 @@ func ae_amounts(taker: String, victim: String, dev: float, cb_mult: float) -> Di
 
 func ae_preview(w: Dictionary, demander: String, target: String, demands: Array) -> Array:
 	## [worst AE any nation would get, that nation] for a peace deal, for the peace screen.
-	var dev := _ae_dev(demands, target)
+	var dev := _ae_dev(demands, target, demander)
 	var amounts := ae_amounts(demander, target, dev, _ae_cb_mult(w, demander))
 	var worst := 0.0
 	var who := ""
@@ -953,14 +957,23 @@ func ae_preview(w: Dictionary, demander: String, target: String, demands: Array)
 	return [worst, who]
 
 
-func _ae_dev(demands: Array, target: String) -> float:
+func _ae_dev(demands: Array, target: String, demander: String) -> float:
+	## Development that counts toward aggressive expansion. Land that is already the demander's core
+	## counts half (AE_CORE_FACTOR): taking back what was yours angers people less.
 	var dev := 0.0
 	for d in demands:
 		match d.get("type", ""):
-			"province": dev += float(g.total_dev(int(d["pid"])))
-			"annex": dev += float(g.nation_dev(target))
+			"province": dev += _ae_province_dev(int(d["pid"]), demander)
+			"annex":
+				for pid in g.owned(target):
+					dev += _ae_province_dev(pid, demander)
 			"vassalize": dev += float(g.nation_dev(target)) * 0.5
 	return dev
+
+
+func _ae_province_dev(pid: int, demander: String) -> float:
+	var dev := float(g.total_dev(pid))
+	return dev * AE_CORE_FACTOR if g.provinces[pid]["cores"].has(demander) else dev
 
 
 func _ae_cb_mult(w: Dictionary, demander: String) -> float:
@@ -1042,3 +1055,22 @@ func _maybe_coalition_war(x: String, members: Array) -> void:
 		[leader, x], "Coalition War" if x == g.player_tag else "", true)
 	rebuild_pairs()
 	g.war_changed.emit()
+
+
+func disband_coalition(target: String, winners: Array) -> void:
+	## After a coalition beats its target: the coalition breaks up and everyone in it (and anyone who
+	## fought on its side) drops their aggressive expansion toward the target, so it doesn't re-form
+	## the moment the truce ends.
+	if not g.nations.has(target):
+		return
+	var members: Array = coalition_against(target).duplicate()
+	for t in winners:
+		if not members.has(t):
+			members.append(t)
+	for t in members:
+		if g.nations.has(t) and g.nations[t]["relations"].has(target):
+			var r: Dictionary = rel(t, target)
+			r["mods"] = r["mods"].filter(func(m): return m["name"] != AE_NAME)
+	g.nations[target]["coalition"] = []
+	g.nations[target].erase("coalition_since")
+	g.post("The coalition against %s has won its war and disbands." % g.nation_name(target), [target] + members)

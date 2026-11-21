@@ -35,6 +35,10 @@ var selected_army := -1
 var group: Array = []          # every selected army (selected_army is the first)
 var _box_from := Vector2.INF   # screen position where a shift-drag selection box started
 var _box_to := Vector2.ZERO
+# where the selected army would march if you right-clicked the hovered province (EU4's path preview)
+var _preview_pts: Array = []    # map-space points: the army's position, then each province on the way
+var _preview_text := ""
+var _preview_ok := true
 var selected_fleet := -1
 var map_size := Vector2(2000, 1092)
 var camera_zoom := 1.0
@@ -312,6 +316,8 @@ func select_army(id: int) -> void:
 	selected_army = id
 	group = [id] if id >= 0 else []
 	selected_fleet = -1
+	if id < 0:
+		_preview_text = ""
 	_units.queue_redraw()
 
 
@@ -852,6 +858,21 @@ func _draw_units() -> void:
 		var hostile := Game.player_tag != "" and Game.dip.at_war(Game.player_tag, f["owner"])
 		var rect := _counter(_units, pos, "ship", str(f["ships"].size()), Game.nations[f["owner"]]["colour"], -1.0, sel, hostile)
 		_hits.append({"rect": rect.grow(3), "kind": "fleet", "id": int(id)})
+	# the march preview: a faint path and how long it takes
+	if _preview_text != "":
+		var col := Color(1, 0.97, 0.88, 0.8) if _preview_ok else Color(1, 0.4, 0.35, 0.8)
+		var end := Vector2.ZERO
+		if _preview_pts.size() >= 2:
+			var pts := PackedVector2Array()
+			for p in _preview_pts:
+				pts.append(_sp(p))
+			_units.draw_polyline(pts, Color(0, 0, 0, 0.35), 4.0, true)
+			_units.draw_polyline(pts, col, 2.0, true)
+			end = pts[pts.size() - 1]
+		elif _preview_pts.size() == 1:
+			end = _sp(_preview_pts[0])
+		if _preview_pts.size() > 0:
+			_text(_units, Tokens.font("bold"), end + Vector2(0, 24), _preview_text, 14, Tokens.GOLD_HI if _preview_ok else Color(1, 0.55, 0.5), 4, Color(0.02, 0.02, 0.03, 0.95))
 	# the shift-drag selection box
 	if _box_from != Vector2.INF:
 		var br := Rect2(_box_from, Vector2.ZERO).expand(_box_to)
@@ -874,3 +895,13 @@ func set_camera_zoom(z: float) -> void:
 		camera_zoom = z
 		_labels.queue_redraw()
 		_units.queue_redraw()
+
+
+func set_preview(points: Array, text: String, ok: bool) -> void:
+	## Show (or, with no text, hide) the march preview for the selected army.
+	if text == _preview_text and points.size() == _preview_pts.size() and ok == _preview_ok:
+		return
+	_preview_pts = points
+	_preview_text = text
+	_preview_ok = ok
+	_units.queue_redraw()

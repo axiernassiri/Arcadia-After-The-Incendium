@@ -70,7 +70,7 @@ func refresh() -> void:
 		for w in wars:
 			var sc: float = Game.dip.score_for(w, tag)
 			_row(String(w["name"]), "%+d%%" % int(sc), UI.GOOD if sc > 0 else (UI.BAD if sc < 0 else UI.TEXT_DIM),
-				func(): war_clicked.emit(int(w["id"])), "War score %+d%%. Click for the peace screen." % int(sc))
+				func(): war_clicked.emit(int(w["id"])), "War score %+d%%. Click for the war overview." % int(sc))
 
 	var armies: Array = Game.mil.armies_of(tag)
 	_section("Armies (%d)" % armies.size(), "helmet")

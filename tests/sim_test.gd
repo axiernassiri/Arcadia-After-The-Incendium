@@ -564,6 +564,40 @@ func _initialize() -> void:
 		check(ae_cw, "after a year the coalition declares war (strength %d against %d)" % [int(ae_st[0]), int(ae_st[1])])
 	else:
 		check(not ae_cw, "a coalition weaker than its target waits (strength %d against %d)" % [int(ae_st[0]), int(ae_st[1])])
+	# a coalition that wins disbands, and its members forgive
+	for wid in game.wars.keys():
+		var cw: Dictionary = game.wars[wid]
+		if cw["cb"].get("id", "") == "coalition" and "MEN" in cw["defenders"]:
+			var cw_lead: String = cw["attackers"][0]
+			game.dip.enforce_peace(cw, cw_lead, "MEN", [{"type": "gold", "pct": 0.1}])
+			check(game.dip.coalition_against("MEN").is_empty(), "the coalition disbands after winning its war")
+			check(game.dip.aggressive_expansion(cw_lead, "MEN") == 0.0, "and its leader %s drops its aggressive expansion" % cw_lead)
+			break
+	# retaking cores causes half the outrage
+	var ae_core_p: int = game.owned("SNT")[0]
+	var ae_plain: float = game.dip._ae_dev([{"type": "province", "pid": ae_core_p}], "SNT", "MEN")
+	game.provinces[ae_core_p]["cores"]["MEN"] = true
+	var ae_cored: float = game.dip._ae_dev([{"type": "province", "pid": ae_core_p}], "SNT", "MEN")
+	game.provinces[ae_core_p]["cores"].erase("MEN")
+	check(ae_plain > 0.0 and is_equal_approx(ae_cored, ae_plain * 0.5), "retaking a core counts half (%.1f instead of %.1f)" % [ae_cored, ae_plain])
+
+	# ---------------------------------------------------------------- events are rarer and don't repeat at once
+	var ev_any: String = ""
+	for eid in game.events:
+		var tr: Dictionary = game.events[eid].get("trigger", {})
+		if tr.has("monthly_chance") and game.events[eid].get("for", "") == "all" and not game.events[eid].get("once", false):
+			ev_any = eid
+			break
+	if ev_any != "":
+		var ev_written: float = float(game.events[ev_any]["trigger"]["monthly_chance"])
+		check(game.event_monthly_chance(game.events[ev_any], "MEN") < ev_written * 0.5, "shared events fire at well under their written odds (%s)" % ev_any)
+		game.fire_event(ev_any, "MEN")
+		while game.is_blocked():
+			game.resolve_event(game.pending_events[0], 0)
+		check(game.event_on_cooldown(ev_any, "MEN"), "an event that just fired is on cooldown")
+		game.day_index += game.EVENT_COOLDOWN_DAYS + 1
+		check(not game.event_on_cooldown(ev_any, "MEN"), "and can come back after five years")
+		game.day_index -= game.EVENT_COOLDOWN_DAYS + 1
 
 	# ---------------------------------------------------------------- a long AI game
 	game.new_game("SKY")
@@ -588,7 +622,9 @@ func _initialize() -> void:
 	for t in game.nations:
 		missions += game.nations[t]["missions_done"].size()
 		loans += game.nations[t]["loans"].size()
-	check(missions > 3, "the AIs completed %d missions" % missions)
+	# events are rarer now (EVENT_FREQ_*), so there are fewer windfalls to build armies with and the
+	# AI reaches regiment-count missions later: 3-5 in these 12 years, against 5-13 before
+	check(missions >= 3, "the AIs completed %d missions" % missions)
 	check(loans < game.nations.size() * 2, "the AIs are not drowning in debt (%d loans)" % loans)
 	print("Final: %s. Menslosia %d provinces (%d dev), Skyfall %d, tribes alive %d" % [game.date_string(),
 		game.owned("MEN").size(), game.nation_dev("MEN"), game.owned("SKY").size(), alive - 2])

@@ -6,7 +6,7 @@ signal open_panel(name: String)
 const UI = preload("res://scripts/ui/ui_util.gd")
 const ICONS := {"court": "crown", "government": "column", "economy": "coins", "production": "hammer", "trade": "trade",
 	"tech": "gear", "ideas": "book", "military": "swords", "diplomacy": "envelope", "peoples": "manpower",
-	"missions": "flag", "help": "help"}
+	"missions": "flag", "ledger": "scroll", "help": "help"}
 const TABS := [
 	["court", "Court", "Ruler, heir, stability and modifiers (C)"],
 	["government", "Government", "Government reforms (G)"],
@@ -19,6 +19,7 @@ const TABS := [
 	["diplomacy", "Diplomacy", "Nations, wars and peace deals (O)"],
 	["peoples", "Peoples", "Cultures, religions and ethnicities (P)"],
 	["missions", "Missions", "Mission tree (M)"],
+	["ledger", "Ledger", "Every nation compared, and their history (J)"],
 	["help", "Help", "How to play (F1)"],
 ]
 

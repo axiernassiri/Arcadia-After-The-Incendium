@@ -38,8 +38,11 @@ func _ready() -> void:
 	grid.columns = 6
 	grid.add_theme_constant_override("h_separation", 3)
 	grid.add_theme_constant_override("v_separation", 3)
+	var keys := ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="]   # Shift + these, see main.gd MODE_KEYS
+	var ki := 0
 	for m in MODE_LABELS:
-		var b = UI.icon_button(MODE_ICONS[m], "", func(): mode_selected.emit(m), "%s map mode" % MODE_LABELS[m], 18)
+		var b = UI.icon_button(MODE_ICONS[m], "", func(): mode_selected.emit(m), "%s map mode (Shift+%s)" % [MODE_LABELS[m], keys[ki]], 18)
+		ki += 1
 		b.toggle_mode = true
 		b.custom_minimum_size = Vector2(36, 32)
 		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -1088,6 +1088,10 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 			att_won = true
 	var lw: float = float(b["losses"][0] if att_won else b["losses"][1])   # winner losses
 	var ll: float = float(b["losses"][1] if att_won else b["losses"][0])   # loser losses
+	var report := {"pid": pid, "province": g.provinces[pid]["name"], "date": g.date_string(), "days": int(b["day"]),
+		"terrain": g.terrain_data.get(g.provinces[pid]["terrain"], {}).get("name", ""),
+		"winners": win_tags, "losers": lose_tags, "win_men": win_men, "lose_men": lose_men,
+		"win_losses": lw, "lose_losses": ll, "win_generals": _general_names(winners), "lose_generals": _general_names(losers)}
 	for i in winners:
 		if g.armies.has(i):
 			g.armies[i]["in_battle"] = false
@@ -1133,7 +1137,32 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 		", ".join(names_l), int(lw), int(ll), ", wiping them out" if wiped else ""]
 	if g.player_tag in win_tags or g.player_tag in lose_tags:
 		g.post(text)
+	# the war overview lists each war's battles
+	report["wiped"] = wiped
+	if not win_tags.is_empty() and not lose_tags.is_empty():
+		for w in g.wars.values():
+			var ws: String = g.dip.war_side(w, win_tags[0])
+			var ls: String = g.dip.war_side(w, lose_tags[0])
+			if ws != "" and ls != "" and ws != ls:
+				if not w.has("battles"):
+					w["battles"] = []
+				w["battles"].append({"date": report["date"], "province": report["province"], "winner": win_tags[0],
+					"loser": lose_tags[0], "win_losses": int(lw), "lose_losses": int(ll), "wiped": wiped})
+				if w["battles"].size() > 40:
+					w["battles"].pop_front()
+	if g.player_tag in win_tags or g.player_tag in lose_tags:
+		g.battle_report.emit(report)
 	g.armies_changed.emit()
+
+
+func _general_names(ids: Array) -> Array:
+	var out: Array = []
+	for i in ids:
+		if g.armies.has(i):
+			var l: Dictionary = army_leader(g.armies[i])
+			if not l.is_empty():
+				out.append("%s (%d/%d/%d/%d)" % [l["name"], int(l["fire"]), int(l["shock"]), int(l["maneuver"]), int(l["siege"])])
+	return out
 
 
 func _wipe(a: Dictionary) -> void:
