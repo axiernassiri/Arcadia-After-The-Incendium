@@ -13,6 +13,8 @@ var _sanctum: Label
 var _power: Array = []
 var _stability: Label
 var _manpower: Label
+var _legit: Label
+var _regs: Label
 var _we: Label
 var _doom: Label
 var _war: Label
@@ -41,7 +43,9 @@ func _ready() -> void:
 	for i in 3:
 		_power.append(_stat("tech"))
 	_stability = _stat("court")
+	_legit = _stat("court")
 	_manpower = _stat("military")
+	_regs = _stat("production")
 	_we = _stat("diplomacy")
 	var spacer = UI.spacer()
 	_row.add_child(spacer)
@@ -123,6 +127,16 @@ func refresh() -> void:
 	_manpower.text = "Manpower %dk/%dk" % [int(n["manpower"] / 1000), int(int(n["max_manpower"]) / 1000)]
 	_manpower.tooltip_text = "Soldiers available to recruit and reinforce. Refills over ten years.\nRegiments: %d of %d force limit\nClick for the military." % [
 		Game.mil.regiment_count(tag), Game.mil.land_force_limit(tag)]
+	var leg = float(n.get("legitimacy", 50.0))
+	var lname: String = Game.court.legitimacy_name(tag)
+	_legit.text = "%s %d" % ["Legit." if lname == "Legitimacy" else ("Trad." if lname.begins_with("Rep") else ("Devot." if lname == "Devotion" else "Cohes.")), int(leg)]
+	_legit.add_theme_color_override("font_color", UI.BAD if leg < 50.0 else (UI.GOOD if leg >= 80.0 else UI.TEXT))
+	_legit.tooltip_text = "%s %d (%+.1f a year). Low values cost power and stir unrest.\nClick for the court." % [lname, int(leg), Game.court.legitimacy_gain(tag)]
+	var regs: int = Game.mil.regiment_count(tag)
+	var fl: int = Game.mil.land_force_limit(tag)
+	_regs.text = "Army %d/%d" % [regs, fl]
+	_regs.add_theme_color_override("font_color", UI.BAD if regs > fl else UI.TEXT)
+	_regs.tooltip_text = "Regiments / force limit. You can't recruit past the force limit (+50% in wartime).\nClick for production."
 	var we = float(n["war_exhaustion"])
 	_we.text = "War exh. %.1f" % we if we > 0.05 else ""
 	_we.tooltip_text = "War exhaustion: +%.1f unrest in every province. Fades in peacetime." % (we * 0.5)

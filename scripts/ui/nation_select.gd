@@ -8,30 +8,39 @@ signal nation_focused(tag: String)
 
 const UI = preload("res://scripts/ui/ui_util.gd")
 const WIDTH := 430.0
+const LIST_WIDTH := 230.0
 
 var selected = "MEN"
 var _list: VBoxContainer
 var _detail: VBoxContainer
 var _scroll: ScrollContainer
+var _list_scroll: ScrollContainer
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(WIDTH, 0)
 	add_theme_stylebox_override("panel", UI.box(UI.BG_DARK, UI.BORDER, 8, 14))
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var v = VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	add_child(v)
 	v.add_child(UI.label("CHOOSE YOUR NATION", 24, UI.GOLD))
-	v.add_child(UI.label("1 January 4289. The Arcadian Era begins. Click a nation below or on the map.", 13, UI.TEXT_DIM, WIDTH - 30))
+	v.add_child(UI.label("1 January 4289. The Arcadian Era begins. Click a nation below or on the map.", 13, UI.TEXT_DIM, LIST_WIDTH + WIDTH))
+	var cols = HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 12)
+	v.add_child(cols)
+	_list_scroll = ScrollContainer.new()
+	_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_list_scroll.custom_minimum_size = Vector2(LIST_WIDTH, 400)
+	cols.add_child(_list_scroll)
 	_list = VBoxContainer.new()
 	_list.add_theme_constant_override("separation", 4)
-	v.add_child(_list)
-	v.add_child(HSeparator.new())
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list_scroll.add_child(_list)
+	cols.add_child(VSeparator.new())
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_scroll.custom_minimum_size = Vector2(WIDTH - 28, 420)
-	v.add_child(_scroll)
+	_scroll.custom_minimum_size = Vector2(WIDTH - 28, 400)
+	cols.add_child(_scroll)
 	_detail = VBoxContainer.new()
 	_detail.add_theme_constant_override("separation", 6)
 	_detail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -45,6 +54,15 @@ func _ready() -> void:
 	buttons.add_child(start)
 	v.add_child(buttons)
 	visible = false
+
+
+func fit_height(viewport_h: float) -> void:
+	## Keep the whole panel (and the Start button) on screen whatever the window size.
+	var h = clampf(viewport_h - 200.0, 160.0, 640.0)
+	if absf(_scroll.custom_minimum_size.y - h) > 1.0:
+		_scroll.custom_minimum_size.y = h
+		_list_scroll.custom_minimum_size.y = h
+		reset_size()
 
 
 func open() -> void:
@@ -70,7 +88,7 @@ func refresh() -> void:
 		var b = UI.button("", func(): pick(t))
 		b.toggle_mode = true
 		b.button_pressed = t == selected
-		b.custom_minimum_size = Vector2(WIDTH - 30, 34)
+		b.custom_minimum_size = Vector2(LIST_WIDTH - 14, 34)
 		var row = HBoxContainer.new()
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -146,5 +164,12 @@ func _notes(tag: String) -> Array:
 			return ["Every leap year the Black Moon damages your islands, and time reverses the next day.",
 				"Your people can't breathe the mainland air without masks: units there suffer, and you can't settle there until you have them.",
 				"Your fleets are airships and stay among the sky islands. The Holy Waterfall is the only way down."]
-	return ["A small boar tribe. The pigs of Menslosia want your land: find allies among the other tribes.",
-		"Tribes reform toward a kingdom through government reforms."]
+		"BLM":
+			return ["Skyfall wants you gone. A 12-year truce holds at the start: use it.",
+				"Few troops and little sanctum, but your zealots fight harder than anyone.",
+				"When entities seize the Doomsday Portal, your faith grows stronger."]
+	if Game.pop.culture_group(Game.nations[tag]["culture"]) == "Porcine":
+		return ["You broke away from the Holy Empire during the Incendium. Menslosia claims your land and wants it back.",
+			"Find allies, build forts, and call your allies when war comes: they won't join on their own."]
+	return ["A boar nation. The pigs of Menslosia want your land: find allies among the other boars.",
+		"Hordes and tribes can raise Boar Raiders and reform their government over time."]

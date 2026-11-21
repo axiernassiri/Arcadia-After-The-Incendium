@@ -196,6 +196,9 @@ func unrest_breakdown(pid: int) -> Array:
 	var nu = g.mods.nat(tag, "unrest")
 	if nu != 0.0:
 		out.append(["National modifiers (incl. stability)", nu])
+	var au = g.eco.autonomy(pid)
+	if au > 0.0:
+		out.append(["Autonomy %d%%" % int(au), -au / 25.0])
 	var lu = g.mods.loc(pid, "local_unrest")
 	if lu != 0.0:
 		out.append(["Local modifiers", lu])
@@ -258,11 +261,11 @@ func monthly() -> void:
 		p["unrest"] = u
 		var prog = float(p["rebel_progress"])
 		if u > 0.0:
-			prog += u * 1.5
+			prog += u * 0.6
 		else:
-			prog = maxf(0.0, prog - 6.0)
+			prog = prog - 10.0 if prog > 0.0 else minf(0.0, prog + 2.0)
 		if prog >= REBEL_THRESHOLD and p["controller"] == p["owner"] and not g.mil.rebels_near(pid):
-			prog = 0.0
+			prog = -120.0   # a long quiet spell after a rising
 			g.mil.spawn_rebels(pid, rebel_type(pid))
 		p["rebel_progress"] = prog
 		# religious conversion

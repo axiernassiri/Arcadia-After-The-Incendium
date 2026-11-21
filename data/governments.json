@@ -1,19 +1,19 @@
 {
-  "_note": "Government types and their reform tiers, like EU4's government reforms. Reform progress builds up each month; enacting a reform in the next tier costs progress (cost_per_tier x tier number). The chosen reform in each tier gives its modifiers. Modifier keys are listed in README.",
-  "cost_per_tier": 40,
+  "_note": "Government types and their reform tiers, like EU4's government reforms. type: monarchy (heirs inherit), republic (elects a new ruler every term_years), horde, tribe, or theocracy (the order picks a new leader when one dies). Reform progress builds up each month; enacting a reform costs progress (cost_per_tier x tier number). Modifier keys are listed in README.",
+  "cost_per_tier": 60,
   "governments": {
     "holy_pig_monarchy": {
-      "name": "Holy Pig Monarchy", "rank": "Empire", "text": "The Pig Lord rules the Holy Empire from Mentos.",
-      "modifiers": {"monthly_adm": 1},
+      "name": "Holy Pig Monarchy", "type": "monarchy", "rank": "Empire", "text": "The Pig Lord rules the Holy Empire from Mentos.",
+      "modifiers": {"monthly_adm": 1, "diplomatic_reputation": 1},
       "tiers": [
         {"name": "Seat of the Pig Lord", "reforms": [
-          {"id": "divine_swine", "name": "Divine Swine", "modifiers": {"stability_cost_mod": -0.15, "tolerance_own": 1}, "text": "The Pig Lord's word is holy."},
+          {"id": "divine_swine", "name": "Divine Swine", "modifiers": {"stability_cost_mod": -0.15, "legitimacy_gain": 0.5}, "text": "The Pig Lord's word is holy."},
           {"id": "lotus_court", "name": "Lotus Court", "modifiers": {"monthly_dip": 1}, "text": "A court of diplomats and scholars."},
           {"id": "pork_barrel", "name": "Pork Barrel Autocracy", "modifiers": {"tax_mod": 0.10}, "text": "Every snout pays its share."}]},
         {"name": "Administration", "reforms": [
           {"id": "sty_wardens", "name": "Sty Wardens", "modifiers": {"unrest": -1}, "text": "Wardens keep the peace in every sty."},
-          {"id": "grain_bureau", "name": "Grain Bureaucracy", "modifiers": {"production_mod": 0.10}, "text": "Eurome's harvests, counted and stored."},
-          {"id": "centralized_mud", "name": "Centralized Mud", "modifiers": {"dev_cost_mod": -0.10}, "text": "Plans for every province drawn up in Mentos."}]},
+          {"id": "grain_bureau", "name": "Grain Bureaucracy", "modifiers": {"production_mod": 0.10}, "text": "Every harvest counted and stored."},
+          {"id": "centralized_mud", "name": "Centralized Mud", "modifiers": {"autonomy_gain": -0.10, "dev_cost_mod": -0.05}, "text": "Plans for every province drawn up in Mentos."}]},
         {"name": "The Armies of the Empire", "reforms": [
           {"id": "unity_command", "name": "Unity Command", "modifiers": {"land_morale": 0.10}, "text": "Unity trains every officer."},
           {"id": "levee_of_hogs", "name": "Levée of Hogs", "modifiers": {"manpower_mod": 0.20}, "text": "Every farm sends a son."},
@@ -29,11 +29,11 @@
         {"name": "Empire of All Arcadia", "reforms": [
           {"id": "green_empire", "name": "The Green Empire", "modifiers": {"production_mod": 0.10, "build_cost_mod": -0.15}, "text": "Never fossil fuels: green power for every province."},
           {"id": "iron_empire", "name": "The Iron Empire", "modifiers": {"land_morale": 0.10, "siege_ability": 0.15}, "text": "Arcadia will have one master."},
-          {"id": "lotus_empire", "name": "The Lotus Empire", "modifiers": {"tech_cost_mod": -0.10, "idea_cost_mod": -0.10}, "text": "An empire of learning."}]}
+          {"id": "lotus_empire", "name": "The Lotus Empire", "modifiers": {"idea_cost_mod": -0.10, "monthly_adm": 1}, "text": "An empire of learning."}]}
       ]
     },
     "edenic_monarchy": {
-      "name": "Edenic Monarchy", "rank": "Kingdom", "text": "An ageless king holds the islands Eden raised.",
+      "name": "Edenic Monarchy", "type": "monarchy", "rank": "Kingdom", "text": "An ageless king holds the islands Eden raised.",
       "modifiers": {"monthly_mil": 1},
       "tiers": [
         {"name": "The Ageless King", "reforms": [
@@ -53,13 +53,96 @@
           {"id": "waterfall_tolls", "name": "Waterfall Tolls", "modifiers": {"trade_power_mod": 0.15, "trade_efficiency": 0.05}, "text": "Everything that climbs the waterfall pays."},
           {"id": "napoleons_foundries", "name": "Napoleon's Foundries", "modifiers": {"build_cost_mod": -0.15, "siege_ability": 0.10}, "text": "Steel from Eden's German blueprints."}]},
         {"name": "Kingdom of Heaven", "reforms": [
-          {"id": "eternal_kingdom", "name": "The Eternal Kingdom", "modifiers": {"tech_cost_mod": -0.10, "unrest": -1}, "text": "A kingdom that cannot fall."},
+          {"id": "eternal_kingdom", "name": "The Eternal Kingdom", "modifiers": {"legitimacy_gain": 1.0, "unrest": -1}, "text": "A kingdom that cannot fall."},
           {"id": "sword_of_eden", "name": "The Sword of Eden", "modifiers": {"discipline": 0.05, "land_morale": 0.10}, "text": "Eden's soldiers do not break."},
           {"id": "skyward_trade", "name": "Skyward Trade", "modifiers": {"merchants": 1, "trade_power_mod": 0.10}, "text": "Every market under the clouds wants Core Energy."}]}
       ]
     },
+    "pig_kingdom": {
+      "name": "Feudal Kingdom", "type": "monarchy", "rank": "Kingdom", "text": "A crown and its noble houses, broken away from the Holy Empire.",
+      "modifiers": {"manpower_mod": 0.10, "land_force_limit": 2},
+      "tiers": [
+        {"name": "The Crown", "reforms": [
+          {"id": "noble_council", "name": "Noble Council", "modifiers": {"unrest": -1, "legitimacy_gain": 0.5}, "text": "The great houses advise the crown."},
+          {"id": "royal_army", "name": "Royal Army", "modifiers": {"land_morale": 0.10}, "text": "Soldiers sworn to the crown, not the lords."},
+          {"id": "crown_lands", "name": "Crown Lands", "modifiers": {"tax_mod": 0.10}, "text": "The best estates belong to the crown."}]},
+        {"name": "The Realm", "reforms": [
+          {"id": "free_towns", "name": "Free Towns", "modifiers": {"production_mod": 0.10, "trade_power_mod": 0.05}, "text": "Charters for the market towns."},
+          {"id": "castellans", "name": "Castellans", "modifiers": {"fort_defense": 0.20, "autonomy_gain": -0.05}, "text": "A royal officer in every fort."},
+          {"id": "independence", "name": "Never Again the Empire", "modifiers": {"discipline": 0.03, "manpower_mod": 0.10}, "text": "No Pig Lord will rule us again."}]},
+        {"name": "A Kingdom of Arcadia", "reforms": [
+          {"id": "absolute_crown", "name": "Absolute Crown", "modifiers": {"monthly_adm": 1}, "text": "The crown alone rules."},
+          {"id": "parliament", "name": "Parliament", "modifiers": {"unrest": -1, "tax_mod": 0.05}, "text": "Lords and towns meet in parliament."},
+          {"id": "warrior_kings", "name": "Warrior Kings", "modifiers": {"leader_fire": 1, "leader_shock": 1}, "text": "Kings who lead from the saddle."}]}
+      ]
+    },
+    "boar_kingdom": {
+      "name": "Boar Kingdom", "type": "monarchy", "rank": "Kingdom", "text": "A boar tribe that crowned a king.",
+      "modifiers": {"manpower_mod": 0.15, "land_maintenance_mod": -0.10},
+      "tiers": [
+        {"name": "The Tusk Crown", "reforms": [
+          {"id": "chief_of_chiefs", "name": "Chief of Chiefs", "modifiers": {"unrest": -1}, "text": "The old chiefs bow to the king."},
+          {"id": "island_warband", "name": "Island Warband", "modifiers": {"land_morale": 0.10}, "text": "The king's own warriors."},
+          {"id": "reef_trade", "name": "Reef Trade", "modifiers": {"trade_power_mod": 0.15}, "text": "Pearls and spices for the mainland."}]},
+        {"name": "Settled Kingdom", "reforms": [
+          {"id": "planted_fields", "name": "Planted Fields", "modifiers": {"dev_cost_mod": -0.10, "tax_mod": 0.05}, "text": "Farms on every hill."},
+          {"id": "sea_raiders", "name": "Sea Raiders", "modifiers": {"naval_morale": 0.15, "cavalry_power": 0.10}, "text": "Raid the coasts."}]}
+      ]
+    },
+    "merchant_republic": {
+      "name": "Merchant Republic", "type": "republic", "term_years": 4, "rank": "Republic", "text": "Ruled by merchant families. A new leader is elected every four years.",
+      "modifiers": {"trade_efficiency": 0.10, "merchants": 1, "naval_force_limit": 2},
+      "tiers": [
+        {"name": "The Senate", "reforms": [
+          {"id": "guild_seats", "name": "Guild Seats", "modifiers": {"production_mod": 0.10}, "text": "Every guild votes."},
+          {"id": "trade_houses", "name": "Great Trade Houses", "modifiers": {"trade_power_mod": 0.15}, "text": "The richest families run the state."},
+          {"id": "citizen_navy", "name": "Citizen Navy", "modifiers": {"naval_morale": 0.15, "naval_maintenance_mod": -0.10}, "text": "Every citizen serves at sea."}]},
+        {"name": "Republic of Coin", "reforms": [
+          {"id": "bank_of_the_bay", "name": "The Bank", "modifiers": {"interest_mod": -0.02, "tax_mod": 0.05}, "text": "Cheap loans for the state."},
+          {"id": "mercenary_bands", "name": "Hired Companies", "modifiers": {"land_force_limit": 3, "land_maintenance_mod": -0.05}, "text": "Why fight when you can pay?"}]}
+      ]
+    },
+    "farmers_republic": {
+      "name": "Farmers' League", "type": "republic", "term_years": 5, "rank": "Republic", "text": "The farming towns elect a Grand Steward every five years.",
+      "modifiers": {"production_mod": 0.10, "dev_cost_mod": -0.05},
+      "tiers": [
+        {"name": "The League", "reforms": [
+          {"id": "granary_law", "name": "Granary Law", "modifiers": {"manpower_mod": 0.15, "unrest": -1}, "text": "No town goes hungry."},
+          {"id": "market_law", "name": "Market Law", "modifiers": {"trade_power_mod": 0.10, "tax_mod": 0.05}, "text": "Free markets in every town."},
+          {"id": "town_militias", "name": "Town Militias", "modifiers": {"fort_defense": 0.15, "land_maintenance_mod": -0.10}, "text": "Every town defends itself."}]},
+        {"name": "The Breadbasket", "reforms": [
+          {"id": "great_harvests", "name": "Great Harvests", "modifiers": {"production_mod": 0.10}, "text": "Feed all of Arcadia."},
+          {"id": "steward_for_life", "name": "Steward for Life", "modifiers": {"monthly_adm": 1, "legitimacy_gain": 0.5}, "text": "One steward, for as long as they live."}]}
+      ]
+    },
+    "technocracy": {
+      "name": "Technocracy", "type": "republic", "term_years": 6, "rank": "Republic", "text": "Engineers rule. The council picks a new Chief Engineer every six years.",
+      "modifiers": {"monthly_adm": 1, "artillery_power": 0.10},
+      "tiers": [
+        {"name": "The Council of Engineers", "reforms": [
+          {"id": "observatory_council", "name": "Observatory Council", "modifiers": {"idea_cost_mod": -0.10}, "text": "The astronomers have the final word."},
+          {"id": "foundry_council", "name": "Foundry Council", "modifiers": {"build_cost_mod": -0.15}, "text": "The builders have the final word."},
+          {"id": "gun_council", "name": "Gun Council", "modifiers": {"artillery_power": 0.15, "siege_ability": 0.10}, "text": "The gunsmiths have the final word."}]},
+        {"name": "Rule of Reason", "reforms": [
+          {"id": "merit_exams", "name": "Merit Examinations", "modifiers": {"monthly_dip": 1}, "text": "Only the best minds serve."},
+          {"id": "automata", "name": "Automata", "modifiers": {"manpower_mod": 0.25, "production_mod": 0.05}, "text": "Machines that work and fight."}]}
+      ]
+    },
+    "boar_horde": {
+      "name": "Boar Horde", "type": "horde", "rank": "Horde", "text": "Riders who live off raiding. Hordes fight hard but build little.",
+      "modifiers": {"cavalry_power": 0.20, "land_morale": 0.10, "manpower_mod": 0.25, "dev_cost_mod": 0.25, "build_cost_mod": 0.25},
+      "tiers": [
+        {"name": "The Khan", "reforms": [
+          {"id": "great_khan", "name": "Great Khan", "modifiers": {"legitimacy_gain": 1.0, "leader_shock": 1}, "text": "One khan to lead them all."},
+          {"id": "raid_economy", "name": "Raid Economy", "modifiers": {"land_maintenance_mod": -0.20}, "text": "The army pays for itself."},
+          {"id": "clan_kurultai", "name": "Clan Kurultai", "modifiers": {"unrest": -1, "monthly_dip": 1}, "text": "The clans meet to decide."}]},
+        {"name": "From Horde to Realm", "reforms": [
+          {"id": "settle_down", "name": "Settle Down", "modifiers": {"dev_cost_mod": -0.20, "tax_mod": 0.10}, "text": "Trade the saddle for the plough."},
+          {"id": "endless_ride", "name": "The Endless Ride", "modifiers": {"cavalry_power": 0.15, "land_force_limit": 3}, "text": "Never stop riding."}]}
+      ]
+    },
     "boar_tribe": {
-      "name": "Boar Tribe", "rank": "Tribe", "text": "Clans of wild boars led by a chief.",
+      "name": "Boar Tribe", "type": "tribe", "rank": "Tribe", "text": "Clans of wild boars led by a chief.",
       "modifiers": {"manpower_mod": 0.25, "land_maintenance_mod": -0.25, "dev_cost_mod": 0.15},
       "tiers": [
         {"name": "The Chief", "reforms": [
@@ -71,8 +154,21 @@
           {"id": "raiders", "name": "Raiders", "modifiers": {"cavalry_power": 0.15, "manpower_mod": 0.10}, "text": "Take what the pigs won't give."},
           {"id": "mud_shamans", "name": "Mud Shamans", "modifiers": {"tolerance_own": 2, "stability_cost_mod": -0.10}, "text": "The spirits of the mud guide us."}]},
         {"name": "Becoming a Nation", "reforms": [
-          {"id": "boar_kingdom", "name": "Boar Kingdom", "modifiers": {"monthly_dip": 1, "tech_cost_mod": -0.10}, "text": "A crown for the chief."},
+          {"id": "boar_kingdom_r", "name": "Boar Kingdom", "modifiers": {"monthly_dip": 1, "idea_cost_mod": -0.10}, "text": "A crown for the chief."},
           {"id": "tusk_confederacy", "name": "Tusk Confederacy", "modifiers": {"diplomatic_reputation": 2, "land_morale": 0.05}, "text": "All boars, one council."}]}
+      ]
+    },
+    "black_moon_cult": {
+      "name": "Cult of the Black Moon", "type": "theocracy", "rank": "Order", "text": "Priests of the Doomsday Portal. When the prophet dies, the order chooses another.",
+      "modifiers": {"land_morale": 0.20, "doomsday_resistance": 1.0, "manpower_mod": -0.20, "tax_mod": -0.15},
+      "tiers": [
+        {"name": "The Prophet", "reforms": [
+          {"id": "moon_prophecy", "name": "Moon Prophecy", "modifiers": {"legitimacy_gain": 1.0, "unrest": -2}, "text": "The prophet foretells every Black Moon."},
+          {"id": "portal_wardens", "name": "Portal Wardens", "modifiers": {"discipline": 0.05}, "text": "Guardians who walk into the anomalies."},
+          {"id": "whisper_network", "name": "Whisper Network", "modifiers": {"monthly_dip": 1}, "text": "Spies in every court."}]},
+        {"name": "The Coming Night", "reforms": [
+          {"id": "zealot_hosts", "name": "Zealot Hosts", "modifiers": {"land_morale": 0.15, "manpower_mod": 0.15}, "text": "Every believer takes up arms."},
+          {"id": "eclipse_rites", "name": "Eclipse Rites", "modifiers": {"production_mod": 0.15, "tax_mod": 0.10}, "text": "Offerings at every eclipse."}]}
       ]
     }
   }

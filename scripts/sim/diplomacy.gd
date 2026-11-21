@@ -396,8 +396,10 @@ func casus_belli(a: String, b: String) -> Array:
 	var out: Array = []
 	if g.global_flags.has("great_war") and ((a == "MEN" and b == "SKY") or (a == "SKY" and b == "MEN")):
 		out.append({"id": "great_war", "name": "The Great War for Arcadia", "mult": 0.6})
-	if g.nations[b]["government"] == "boar_tribe" and g.nations[a]["government"] != "boar_tribe" and borders(a, b):
+	if g.court.gov_type(b) in ["tribe", "horde"] and not (g.court.gov_type(a) in ["tribe", "horde"]) and borders(a, b):
 		out.append({"id": "tribal_conquest", "name": "Tribal Conquest", "mult": 0.6})
+	if a == "SKY" and b == "BLM" or a == "BLM" and b == "SKY":
+		out.append({"id": "holy_war", "name": "War of the Black Moon", "mult": 0.6})
 	for pid in g.owned(b):
 		if g.nations[a]["claims"].has(pid) or g.provinces[pid]["cores"].has(a):
 			out.append({"id": "claim", "name": "Reconquest of Claims", "mult": 0.75})
@@ -457,10 +459,11 @@ func declare_war(a: String, b: String, cb: Dictionary = {}) -> Dictionary:
 		_join(w, s, "defenders")
 	if g.nations[b]["overlord"] != "":
 		_join(w, g.nations[b]["overlord"], "defenders")
-	for ally in allies_of(b):
-		call_to_arms(w, b, ally, "defenders")
-	for ally in allies_of(a):
-		call_to_arms(w, a, ally, "attackers")
+	# allies are not called automatically: the war leader has to ask them, and pay their price
+	if g.nations[b]["ai"]:
+		ai_call_allies(w, b)
+	if b == g.player_tag and allies_of(b).size() > 0:
+		g.post("Call your allies to arms from the Diplomacy panel: they won't join by themselves.")
 	rebuild_pairs()
 	g.war_changed.emit()
 	g.touch(a)
@@ -490,27 +493,110 @@ func _join(w: Dictionary, tag: String, side: String) -> void:
 	rebuild_pairs()
 
 
-func call_to_arms(w: Dictionary, caller: String, ally: String, side: String) -> void:
+func call_quote(w: Dictionary, caller: String, ally: String) -> Dictionary:
+	## What `ally` says if `caller` calls it into the war, and what it wants in return.
+	var out = {"why": "", "accept": false, "score": 0.0, "reasons": [], "price": 0}
+	var side = war_side(w, caller)
+	if side == "":
+		out["why"] = "You aren't in this war."
+		return out
 	if ally in w["attackers"] or ally in w["defenders"]:
-		return
-	var enemy: String = w["defenders"][0] if side == "attackers" else w["attackers"][0]
-	if rel(ally, enemy)["alliance"] or truce(ally, enemy):
-		return
+		out["why"] = "Already in the war."
+		return out
+	if not rel(caller, ally)["alliance"] and g.nations[ally]["overlord"] != caller:
+		out["why"] = "Not your ally."
+		return out
+	var enemy: String = enemy_leader(w, caller)
+	var rs: Array = []
+	rs.append(["Opinion of you", opinion(ally, caller) / 3.0])
+	rs.append(["Base reluctance", -10.0])
+	if g.nations[ally]["overlord"] == caller:
+		rs.append(["You are their overlord", 60.0])
+	if rel(ally, enemy)["alliance"]:
+		rs.append(["Allied to the enemy", -1000.0])
+	if truce(ally, enemy):
+		rs.append(["Truce with the enemy", -1000.0])
+	if rel(ally, enemy)["rival"]:
+		rs.append(["The enemy is their rival", 30.0])
+	var op_enemy = opinion(ally, enemy)
+	if op_enemy < -50.0:
+		rs.append(["They hate the enemy", 15.0])
+	elif op_enemy > 50.0:
+		rs.append(["They like the enemy", -20.0])
+	if at_war_any(ally):
+		rs.append(["Already fighting another war", -50.0])
+	var ratio = g.mil.nation_strength(ally) / maxf(0.5, g.mil.nation_strength(enemy))
+	rs.append(["Their army against the enemy's", clampf((ratio - 1.0) * 15.0, -40.0, 15.0)])
+	var near = borders(ally, enemy)
+	rs.append(["Borders the enemy" if near else "Far from the enemy", 5.0 if near else -10.0])
+	if rel(ally, caller)["marriage"]:
+		rs.append(["Royal marriage", 10.0])
+	if float(g.nations[ally]["war_exhaustion"]) > 0.0:
+		rs.append(["War exhaustion", -float(g.nations[ally]["war_exhaustion"]) * 3.0])
+	if int(g.nations[ally]["stability"]) < 0:
+		rs.append(["Unstable at home", int(g.nations[ally]["stability"]) * 5.0])
+	var total = 0.0
+	for r in rs:
+		total += float(r[1])
+	out["reasons"] = rs
+	out["score"] = total
+	out["accept"] = total > 0.0
+	# what they want: sanctum, more if they barely agree and if their army is big
+	var regs = g.mil.regiment_count(ally)
+	var price = 30.0 + regs * 15.0 + g.nation_dev(ally) * 0.5
+	if total > 40.0:
+		price *= 0.6
+	if g.nations[ally]["overlord"] == caller:
+		price = 0.0
+	out["price"] = int(round(price / 5.0) * 5.0)
+	return out
+
+
+func call_ally(w: Dictionary, caller: String, ally: String) -> String:
+	## The caller asks; if the ally agrees, the caller pays its price and it joins.
+	var q = call_quote(w, caller, ally)
+	if q["why"] != "":
+		return q["why"]
+	if not q["accept"]:
+		add_opinion(caller, ally, -10.0, "Refused our call to arms", 1.0)
+		return "%s refused to join the war." % g.nation_name(ally)
 	if ally == g.player_tag:
 		g.fire_dynamic_event({
 			"id": "call_to_arms", "title": "Call to Arms",
-			"text": "%s has called us to join %s against %s." % [g.nation_name(caller), w["name"], g.nation_name(enemy)],
+			"text": "%s asks us to join %s against %s. In return they offer %d sanctum." % [g.nation_name(caller), w["name"],
+				g.nation_name(enemy_leader(w, caller)), int(q["price"])],
 			"options": [
-				{"text": "Honour the alliance.", "effects": [{"type": "join_war", "war": w["id"], "side": side}]},
-				{"text": "Refuse. (The alliance ends.)", "effects": [{"type": "refuse_call", "caller": caller}]}]}, ally)
-		return
-	if opinion(ally, caller) >= 0.0 and not at_war_any(ally) or ally in g.nations[caller]["subjects"]:
-		_join(w, ally, side)
-		g.post("%s joins the war on the side of %s." % [g.nation_name(ally), g.nation_name(caller)])
-	else:
-		set_both(ally, caller, "alliance", false)
-		add_opinion(caller, ally, -50.0, "Refused our call to arms", 1.0)
-		g.post("%s refused the call to arms from %s." % [g.nation_name(ally), g.nation_name(caller)])
+				{"text": "Join the war and take the payment.", "effects": [{"type": "join_war", "war": w["id"], "side": war_side(w, caller), "payer": caller, "price": int(q["price"])}]},
+				{"text": "Refuse. (Our ally won't like it.)", "effects": [{"type": "refuse_call", "caller": caller}]}]}, ally)
+		return "Asked %s to join." % g.nation_name(ally)
+	if float(g.nations[caller]["treasury"]) < float(q["price"]):
+		return "%s will join for %d sanctum, but you can't pay." % [g.nation_name(ally), int(q["price"])]
+	g.nations[caller]["treasury"] -= float(q["price"])
+	g.nations[ally]["treasury"] += float(q["price"])
+	_join(w, ally, war_side(w, caller))
+	add_opinion(ally, caller, 10.0, "Paid for our help", 0.5)
+	g.post("%s joins %s on the side of %s (paid %d sanctum)." % [g.nation_name(ally), w["name"], g.nation_name(caller), int(q["price"])])
+	g.war_changed.emit()
+	g.touch(caller)
+	return "%s joins the war." % g.nation_name(ally)
+
+
+func ai_call_allies(w: Dictionary, caller: String) -> void:
+	for ally in allies_of(caller):
+		var q = call_quote(w, caller, ally)
+		if q["why"] == "" and q["accept"] and float(g.nations[caller]["treasury"]) >= float(q["price"]):
+			call_ally(w, caller, ally)
+
+
+func uncalled_allies(w: Dictionary, caller: String) -> Array:
+	var out: Array = []
+	for ally in allies_of(caller):
+		if not (ally in w["attackers"] or ally in w["defenders"]):
+			out.append(ally)
+	for s2 in g.nations[caller]["subjects"]:
+		if not (s2 in w["attackers"] or s2 in w["defenders"]) and not out.has(s2):
+			out.append(s2)
+	return out
 
 
 func war_side(w: Dictionary, tag: String) -> String:
@@ -576,7 +662,7 @@ func peace_cost(w: Dictionary, demander: String, target: String, demands: Array)
 					c *= 1.5
 				cost += c
 			"gold":
-				cost += float(d["amount"]) / (10.0 + 0.05 * g.nation_dev(target))
+				cost += float(d.get("pct", 0.25)) * 40.0 * 100.0 / maxf(30.0, float(g.nation_dev(target)) + 20.0) / 2.0
 			"vassalize":
 				cost += float(g.nation_dev(target)) * 0.7
 			"annex":
@@ -592,13 +678,18 @@ func peace_acceptance(w: Dictionary, demander: String, target: String, demands: 
 	var cost = peace_cost(w, demander, target, demands)
 	var reasons: Array = []
 	reasons.append(["War score", ws])
-	reasons.append(["Cost of the demands", -cost])
+	reasons.append(["Cost of the demands", -cost * 1.15])
+	reasons.append(["Refuses to give in", -15.0])
 	var we = float(g.nations[target]["war_exhaustion"])
 	if we > 0.0:
-		reasons.append(["Their war exhaustion", we * 1.5])
+		reasons.append(["Their war exhaustion", we])
 	var months = (g.day_index - int(w["start"])) / 30.0
-	if months > 24.0:
-		reasons.append(["Long war", minf(15.0, (months - 24.0) / 4.0)])
+	if months > 36.0:
+		reasons.append(["Long war", minf(10.0, (months - 36.0) / 6.0)])
+	var their_str = g.mil.nation_strength(target)
+	var my_str = g.mil.nation_strength(demander)
+	if their_str > my_str:
+		reasons.append(["Their army is stronger", -10.0])
 	if demands.is_empty() or (demands.size() == 1 and demands[0].get("type", "") == "white"):
 		reasons.append(["White peace", 5.0])
 	var total = 0.0
@@ -625,6 +716,22 @@ func can_demand(w: Dictionary, demander: String, target: String, d: Dictionary) 
 	return ""
 
 
+func fully_occupied(w: Dictionary, demander: String, target: String) -> bool:
+	## Every province of the target is held by the demander's side: peace can be enforced.
+	var owned: Array = g.owned(target)
+	if owned.is_empty():
+		return false
+	var side = war_side(w, demander)
+	for pid in owned:
+		if war_side(w, g.provinces[pid]["controller"]) != side:
+			return false
+	return true
+
+
+func gold_amount(target: String, pct: float) -> int:
+	return int(pct * maxf(0.0, float(g.nations[target].get("last_income", 0.0))) * 12.0)
+
+
 func offer_peace(w: Dictionary, demander: String, target: String, demands: Array) -> bool:
 	## The demander proposes; an AI target answers at once, the player gets an event.
 	if target == g.player_tag:
@@ -645,7 +752,7 @@ func offer_peace(w: Dictionary, demander: String, target: String, demands: Array
 func describe_demand(d: Dictionary) -> String:
 	match d.get("type", ""):
 		"province": return g.provinces[int(d["pid"])]["name"]
-		"gold": return "%d sanctum" % int(d["amount"])
+		"gold": return "%d%% of a year's income" % int(float(d.get("pct", 0.25)) * 100.0)
 		"vassalize": return "become a vassal"
 		"annex": return "full annexation"
 		"white": return "white peace"
@@ -669,7 +776,8 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 				g.add_province_modifier(pid, "recent_conquest", "Recently conquered", {"local_unrest": 2}, 60)
 				parts.append(p["name"])
 			"gold":
-				var amt = minf(float(d["amount"]), maxf(0.0, float(g.nations[target]["treasury"])))
+				var want = float(d.get("pct", 0.25)) * maxf(0.0, float(g.nations[target].get("last_income", 0.0))) * 12.0
+				var amt = minf(want, maxf(0.0, float(g.nations[target]["treasury"])) + want * 0.5)
 				g.nations[target]["treasury"] -= amt
 				g.nations[demander]["treasury"] += amt
 				parts.append("%d sanctum" % int(amt))

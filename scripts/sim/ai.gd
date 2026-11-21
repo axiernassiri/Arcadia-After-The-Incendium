@@ -3,9 +3,13 @@ extends RefCounted
 ## making peace, and moving armies during wars and rebellions.
 
 const IDEA_PLANS := {
-	"MEN": ["economic", "offensive", "trade", "administrative", "quality", "expansion", "diplomatic"],
-	"SKY": ["quality", "defensive", "religious", "trade", "offensive", "maritime", "economic"],
-	"TRIBE": ["quantity", "administrative", "offensive", "economic", "expansion", "defensive", "trade"],
+	"MEN": ["green_power", "unity_doctrine", "waterfall_commerce", "sty_administration", "pig_iron_masses", "incendium_lessons", "snout_diplomacy"],
+	"SKY": ["barrier_lore", "wings_of_eden", "anomaly_studies", "unity_doctrine", "waterfall_commerce", "green_power", "lotus_devotion"],
+	"BLM": ["wings_of_eden", "anomaly_studies", "tusk_and_saddle", "pig_iron_masses", "sty_administration", "barrier_lore", "green_power"],
+	"BAY": ["waterfall_commerce", "archipelago_seafaring", "snout_diplomacy", "green_power", "unity_doctrine", "sty_administration", "barrier_lore"],
+	"MID": ["incendium_lessons", "green_power", "unity_doctrine", "anomaly_studies", "sty_administration", "waterfall_commerce", "barrier_lore"],
+	"HORDE": ["tusk_and_saddle", "pig_iron_masses", "sty_administration", "barrier_lore", "haze_expeditions", "green_power", "herd_harmony"],
+	"DEFAULT": ["green_power", "barrier_lore", "sty_administration", "pig_iron_masses", "waterfall_commerce", "snout_diplomacy", "unity_doctrine"],
 }
 
 var g: Node
@@ -48,7 +52,8 @@ func _spend_power(tag: String) -> void:
 	var n: Dictionary = g.nations[tag]
 	# technology first, starting with the cheapest track
 	for track in ["mil", "adm", "dip"]:
-		if g.prog.can_research(tag, track) == "" and int(n["power"][g.TRACKS.find(track)]) >= g.prog.tech_cost(tag, track):
+		var ahead = g.prog.years_ahead(tag, track)
+		if ahead <= 4 and g.prog.can_research(tag, track) == "":
 			g.prog.research(tag, track)
 	# a power type is saved for technology when that track has fallen behind the calendar
 	var saving = [false, false, false]
@@ -56,7 +61,7 @@ func _spend_power(tag: String) -> void:
 		var nxt: Dictionary = g.prog.level_info(g.TRACKS[i], int(n["tech"][i]) + 1)
 		saving[i] = not nxt.is_empty() and int(nxt.get("year", 9999)) <= g.year and int(n["power"][i]) < 900
 	# ideas
-	var plan: Array = IDEA_PLANS.get(n["ideas"], IDEA_PLANS["TRIBE"])
+	var plan: Array = IDEA_PLANS.get(n["ideas"], IDEA_PLANS["DEFAULT"])
 	for gid in plan:
 		if g.prog.can_pick_group(tag, gid) == "":
 			g.prog.pick_group(tag, gid)
@@ -64,7 +69,7 @@ func _spend_power(tag: String) -> void:
 	for ig in n["idea_groups"]:
 		var grp: Dictionary = g.idea_data["groups"][ig["id"]]
 		var i: int = g.TRACKS.find(grp["type"])
-		if not saving[i] and g.prog.can_take_idea(tag, ig["id"]) == "" and int(n["power"][i]) >= g.prog.idea_cost(tag) + 80:
+		if not saving[i] and g.prog.can_take_idea(tag, ig["id"]) == "":
 			g.prog.take_idea(tag, ig["id"])
 	# cores
 	for pid in g.owned(tag):
@@ -81,7 +86,7 @@ func _spend_power(tag: String) -> void:
 			g.pop.accept_culture(tag, c)
 	# develop with what is left over, keeping a reserve for tech
 	for k in 3:
-		if int(n["power"][k]) < 350 or saving[k]:
+		if int(n["power"][k]) < 700 or saving[k]:
 			continue
 		var best = -1
 		var best_score = -1.0
@@ -117,8 +122,27 @@ func _reforms(tag: String) -> void:
 
 # ---------------------------------------------------------------- money
 
+func _advisors(tag: String) -> void:
+	var n: Dictionary = g.nations[tag]
+	if float(n.get("last_balance", 0.0)) < 1.0:
+		return
+	for power in g.TRACKS:
+		if not n["advisors"][power].is_empty():
+			continue
+		var best = {}
+		for c in n.get("advisor_pool", []):
+			if c["power"] == power and g.court.can_hire(tag, int(c["id"])) == "" \
+					and g.court.advisor_salary(tag, int(c["skill"])) < float(n["last_balance"]) * 0.5 \
+					and (best.is_empty() or int(c["skill"]) > int(best["skill"])):
+				best = c
+		if not best.is_empty() and float(n["treasury"]) > g.court.advisor_cost(tag, int(best["skill"])) + 40.0:
+			g.court.hire(tag, int(best["id"]))
+			return
+
+
 func _finances(tag: String) -> void:
 	var n: Dictionary = g.nations[tag]
+	_advisors(tag)
 	if not n["loans"].is_empty() and float(n["treasury"]) > float(n["loans"][0]) + 80.0:
 		g.eco.repay_loan(tag)
 	if float(n["treasury"]) < 150.0 or g.dip.at_war_any(tag):
@@ -136,11 +160,12 @@ func _build_one(tag: String) -> bool:
 	var best_val = 0.0
 	for pid in g.owned(tag):
 		var p: Dictionary = g.provinces[pid]
-		for bid in ["temple", "workshop", "market", "trade_depot", "barracks", "courthouse", "dock", "granary"]:
+		for bid in ["mine", "temple", "workshop", "market", "trade_depot", "barracks", "courthouse", "dock", "granary"]:
 			if g.eco.can_build(tag, pid, bid) != "":
 				continue
 			var val = 0.0
 			match bid:
+				"mine": val = g.eco.mine_income(pid) + 1.5 + 0.25 * g.total_dev(pid)
 				"temple": val = float(p["dev"][0]) * 0.4
 				"workshop": val = g.eco.goods_value(pid) * 0.5
 				"market": val = 0.6 + g.eco.goods_value(pid) * 0.1
@@ -165,7 +190,9 @@ func _military(tag: String, war: bool) -> void:
 	var n: Dictionary = g.nations[tag]
 	var fl = g.mil.land_force_limit(tag)
 	var regs = g.mil.regiment_count(tag)
-	var target = int(fl * (1.0 if war else 0.8))
+	var target = int(fl * (1.0 if war else 0.6))
+	if not war and float(n.get("last_balance", 0.0)) < 0.6:
+		target = mini(target, maxi(regs, int(fl * 0.35)))   # can't afford more in peacetime, but never defenceless
 	var cap: int = g.capital_of(tag)
 	var spots: Array = []
 	for pid in g.owned(tag):
@@ -182,7 +209,7 @@ func _military(tag: String, war: bool) -> void:
 			t = "art"
 		elif regs % 5 == 4:
 			t = "cav"
-		if float(n["treasury"]) < 40.0 and not war:
+		if float(n["treasury"]) < 60.0 and not war:
 			break
 		if not g.mil.recruit(tag, spot, t):
 			break
@@ -228,12 +255,13 @@ func _religion(tag: String) -> void:
 
 func _diplomacy(tag: String, war: bool) -> void:
 	var n: Dictionary = g.nations[tag]
-	var tribe: bool = n["government"] == "boar_tribe"
+	var tribe: bool = g.court.gov_type(tag) in ["tribe", "horde"] or g.pop.culture_group(n["culture"]) == "Wild Boar"
 	# tribes band together against the pigs
 	for other in g.nations:
 		if other == tag or not g.nations[other]["alive"]:
 			continue
-		if tribe and g.nations[other]["government"] == "boar_tribe" and g.dip.can_act("alliance", tag, other) == "" \
+		var same_kind: bool = g.pop.culture_group(g.nations[other]["culture"]) == g.pop.culture_group(n["culture"])
+		if same_kind and other != "MEN" and g.dip.can_act("alliance", tag, other) == "" \
 				and g.rng.randf() < 0.08 and g.dip.ai_accepts("alliance", tag, other):
 			g.dip.act("alliance", tag, other)
 		if g.dip.diplomats_used(tag) < g.dip.diplomats(tag) and g.dip.opinion(other, tag) < 50.0 \
@@ -265,7 +293,9 @@ func _diplomacy(tag: String, war: bool) -> void:
 			best_ratio = ratio
 			best = other
 	if best != "" and best_ratio >= 2.0:
-		g.dip.declare_war(tag, best)
+		var w = g.dip.declare_war(tag, best)
+		if not w.is_empty():
+			g.dip.ai_call_allies(w, tag)
 
 
 func _peace(tag: String) -> void:
@@ -277,6 +307,13 @@ func _peace(tag: String) -> void:
 		var ws = g.dip.score_for(w, tag)
 		var months = (g.day_index - int(w["start"])) / 30.0
 		var demands = _pick_demands(w, tag, enemy, ws)
+		if g.dip.fully_occupied(w, tag, enemy):
+			# everything is ours: no need to ask
+			var terms = [{"type": "annex"}] if g.nation_dev(enemy) <= 40 else _pick_demands(w, tag, enemy, 100.0)
+			if terms.is_empty():
+				terms = [{"type": "gold", "pct": 0.5}]
+			g.dip.enforce_peace(w, tag, enemy, terms)
+			return
 		if enemy == g.player_tag:
 			# occasionally offer the player terms
 			if ws >= 25.0 and g.rng.randf() < 0.15 and not demands.is_empty():

@@ -1,16 +1,168 @@
 {
-  "_note": "Unit types. cost in sanctum, manpower per regiment (1000 men), maintenance per month, months to recruit. fire/shock are combat strength per regiment before tech and modifiers. Ships: hull, guns (combat), capacity (regiments carried), trade (trade power when protecting a node). Skyfall's ships are airships and sail only between the sky islands.",
+  "_note": "Unit types. category (inf, cav, art) decides which modifiers apply. cost in sanctum, manpower per regiment (1000 men), maintenance per month, months to recruit. fire/shock are combat strength per regiment before tech and modifiers; morale is extra morale on top of the nation's. nations: only these tags may recruit it (special regiments); gov: only these government types. Ships: hull, guns (combat), capacity (regiments carried), trade (trade power when protecting a node). Skyfall's ships are airships and sail only between the sky islands.",
   "land": {
-    "inf": {"name": "Infantry",  "cost": 10, "manpower": 1000, "maintenance": 0.20, "months": 1, "fire": 1.0, "shock": 0.8, "tech": 1},
-    "cav": {"name": "Cavalry",   "cost": 25, "manpower": 1000, "maintenance": 0.45, "months": 2, "fire": 0.4, "shock": 2.0, "tech": 1},
-    "art": {"name": "Artillery", "cost": 30, "manpower": 1000, "maintenance": 0.55, "months": 2, "fire": 2.0, "shock": 0.4, "tech": 3, "siege": 1}
+    "inf": {
+      "name": "Infantry",
+      "category": "inf",
+      "cost": 18,
+      "manpower": 1000,
+      "maintenance": 0.2,
+      "months": 2,
+      "fire": 1.0,
+      "shock": 0.8,
+      "tech": 1
+    },
+    "cav": {
+      "name": "Cavalry",
+      "category": "cav",
+      "cost": 40,
+      "manpower": 1000,
+      "maintenance": 0.45,
+      "months": 3,
+      "fire": 0.4,
+      "shock": 2.0,
+      "tech": 1
+    },
+    "art": {
+      "name": "Artillery",
+      "category": "art",
+      "cost": 50,
+      "manpower": 1000,
+      "maintenance": 0.55,
+      "months": 3,
+      "fire": 2.0,
+      "shock": 0.4,
+      "tech": 3,
+      "siege": 1
+    },
+    "unity_guard": {
+      "name": "Unity Guard",
+      "category": "inf",
+      "cost": 45,
+      "manpower": 1000,
+      "maintenance": 0.4,
+      "months": 4,
+      "fire": 1.4,
+      "shock": 1.3,
+      "morale": 0.2,
+      "tech": 2,
+      "nations": [
+        "MEN"
+      ],
+      "text": "Menslosia's elite infantry, trained on Unity."
+    },
+    "angel_host": {
+      "name": "Angel Host",
+      "category": "cav",
+      "cost": 75,
+      "manpower": 1000,
+      "maintenance": 0.7,
+      "months": 4,
+      "fire": 0.9,
+      "shock": 2.8,
+      "morale": 0.25,
+      "tech": 2,
+      "nations": [
+        "SKY"
+      ],
+      "text": "Winged angels of Skyfall. The finest cavalry in Arcadia."
+    },
+    "moon_zealots": {
+      "name": "Moon Zealots",
+      "category": "inf",
+      "cost": 22,
+      "manpower": 1000,
+      "maintenance": 0.25,
+      "months": 2,
+      "fire": 1.0,
+      "shock": 1.3,
+      "morale": 0.4,
+      "tech": 1,
+      "nations": [
+        "BLM"
+      ],
+      "text": "Cultists who do not break."
+    },
+    "boar_raiders": {
+      "name": "Boar Raiders",
+      "category": "cav",
+      "cost": 30,
+      "manpower": 1000,
+      "maintenance": 0.3,
+      "months": 2,
+      "fire": 0.6,
+      "shock": 2.1,
+      "morale": 0.1,
+      "tech": 1,
+      "gov": [
+        "horde"
+      ],
+      "text": "Horde riders. Cheaper and fiercer than cavalry."
+    },
+    "automaton_battery": {
+      "name": "Automaton Battery",
+      "category": "art",
+      "cost": 70,
+      "manpower": 500,
+      "maintenance": 0.65,
+      "months": 4,
+      "fire": 2.8,
+      "shock": 0.8,
+      "tech": 3,
+      "nations": [
+        "MID"
+      ],
+      "text": "Midrean clockwork guns that need half the crew."
+    }
   },
-  "sky_names": {"inf": "Edenite Guard", "cav": "Angel Cavalry", "art": "Holy Artillery"},
-  "tribe_names": {"inf": "Tusk Warriors", "cav": "Boar Riders", "art": "Stone Throwers"},
+  "sky_names": {
+    "inf": "Edenite Guard",
+    "cav": "Winged Riders",
+    "art": "Holy Artillery"
+  },
+  "tribe_names": {
+    "inf": "Tusk Warriors",
+    "cav": "Boar Riders",
+    "art": "Stone Throwers"
+  },
   "ships": {
-    "heavy":     {"name": "Heavy ship", "cost": 50, "maintenance": 0.50, "months": 4, "hull": 3.0, "guns": 3.0, "capacity": 1, "trade": 0.0, "tech": 3},
-    "light":     {"name": "Light ship", "cost": 20, "maintenance": 0.20, "months": 2, "hull": 1.0, "guns": 1.0, "capacity": 0, "trade": 3.0, "tech": 1},
-    "transport": {"name": "Transport",  "cost": 12, "maintenance": 0.10, "months": 1, "hull": 1.0, "guns": 0.2, "capacity": 2, "trade": 0.0, "tech": 1}
+    "heavy": {
+      "name": "Heavy ship",
+      "cost": 90,
+      "maintenance": 0.5,
+      "months": 6,
+      "hull": 3.0,
+      "guns": 3.0,
+      "capacity": 1,
+      "trade": 0.0,
+      "tech": 3
+    },
+    "light": {
+      "name": "Light ship",
+      "cost": 35,
+      "maintenance": 0.2,
+      "months": 3,
+      "hull": 1.0,
+      "guns": 1.0,
+      "capacity": 0,
+      "trade": 3.0,
+      "tech": 1
+    },
+    "transport": {
+      "name": "Transport",
+      "cost": 20,
+      "maintenance": 0.1,
+      "months": 2,
+      "hull": 1.0,
+      "guns": 0.2,
+      "capacity": 2,
+      "trade": 0.0,
+      "tech": 1
+    }
   },
-  "airship_names": {"heavy": "War airship", "light": "Scout airship", "transport": "Cargo airship"}
+  "airship_names": {
+    "heavy": "War airship",
+    "light": "Scout airship",
+    "transport": "Cargo airship"
+  }
 }

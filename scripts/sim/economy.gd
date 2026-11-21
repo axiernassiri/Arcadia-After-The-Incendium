@@ -3,10 +3,14 @@ extends RefCounted
 ## colony and interest expenses; loans and bankruptcy; market prices; development; buildings;
 ## colonisation of empty land.
 
-const LOAN_RATE := 0.04          # yearly interest
+const LOAN_RATE := 0.05          # yearly interest
 const MAX_LOANS := 10
-const COLONY_COST := 30.0
-const COLONY_UPKEEP := 1.0
+const COLONY_COST := 80.0
+const COLONY_UPKEEP := 1.5
+const TAX_PER_DEV := 0.75          # sanctum a year per tax development
+const GOODS_PER_DEV := 0.15        # goods a year per production development
+const EARLY_ERA_END := 4339        # until then provinces drift toward autonomy
+const AUTONOMY_DRIFT_CAP := 60.0
 const MISSIONARY_UPKEEP := 0.5
 
 var g: Node
@@ -37,7 +41,7 @@ func goods_produced(pid: int) -> float:
 	var p: Dictionary = g.provinces[pid]
 	if p["owner"] == "":
 		return 0.0
-	return 0.2 * float(p["dev"][1]) * (1.0 + g.mods.loc(pid, "local_production_mod"))
+	return GOODS_PER_DEV * float(p["dev"][1]) * (1.0 + g.mods.loc(pid, "local_production_mod"))
 
 
 func goods_value(pid: int) -> float:
@@ -95,7 +99,7 @@ func province_tax(pid: int) -> float:
 		return 0.0
 	var mult = 1.0 + g.mods.nat(tag, "tax_mod") + g.mods.loc(pid, "local_tax_mod")
 	mult -= 0.02 * maxf(0.0, float(p.get("unrest", 0.0)))
-	return maxf(0.0, float(p["dev"][0]) * mult * core_factor(tag, pid) * occupation_factor(pid))
+	return maxf(0.0, TAX_PER_DEV * float(p["dev"][0]) * mult * core_factor(tag, pid) * occupation_factor(pid) * autonomy_factor(pid))
 
 
 func province_production(pid: int) -> float:
@@ -105,7 +109,7 @@ func province_production(pid: int) -> float:
 	if tag == "":
 		return 0.0
 	var mult = 1.0 + g.mods.nat(tag, "production_mod")
-	return maxf(0.0, goods_value(pid) * mult * core_factor(tag, pid) * occupation_factor(pid))
+	return maxf(0.0, goods_value(pid) * mult * core_factor(tag, pid) * occupation_factor(pid) * autonomy_factor(pid))
 
 
 func province_manpower(pid: int) -> float:
@@ -115,7 +119,7 @@ func province_manpower(pid: int) -> float:
 	if tag == "":
 		return 0.0
 	var mult = 1.0 + g.mods.nat(tag, "manpower_mod") + g.mods.loc(pid, "local_manpower_mod")
-	return float(p["dev"][2]) * 250.0 * maxf(0.1, mult) * core_factor(tag, pid)
+	return float(p["dev"][2]) * 200.0 * maxf(0.1, mult) * core_factor(tag, pid) * (1.0 - 0.75 * autonomy(pid) / 100.0)
 
 
 func max_manpower(tag: String) -> int:
@@ -140,6 +144,8 @@ func budget(tag: String) -> Dictionary:
 		prod += province_production(pid)
 		dev += g.total_dev(pid)
 		for b in g.provinces[pid]["buildings"]:
+			if b == "fort" and pid == g.capital_of(tag):
+				continue   # the capital's walls are paid for
 			forts += float(g.building_data.get(b, {}).get("upkeep", 0.0))
 	tax /= 12.0
 	prod /= 12.0
@@ -150,7 +156,11 @@ func budget(tag: String) -> Dictionary:
 			subjects += 0.10 * float(g.nations[s].get("last_income", 0.0))
 	var army = g.mil.land_maintenance(tag)
 	var navy = g.mil.naval_maintenance(tag)
-	var admin = 0.012 * dev
+	var admin = 0.008 * dev
+	var mines = 0.0
+	for pid in owned:
+		mines += mine_income(pid)
+	var advisors = g.court.salaries(tag)
 	var colonies = 0.0
 	var missions_cost = 0.0
 	for pid in g.provinces:
@@ -166,10 +176,10 @@ func budget(tag: String) -> Dictionary:
 	var overlord = 0.0
 	if n["overlord"] != "":
 		overlord = 0.10 * (tax + prod + trade)
-	var income = tax + prod + trade + subjects
-	var expenses = army + navy + forts + admin + colonies + missions_cost + interest + overlord
+	var income = tax + prod + trade + subjects + mines
+	var expenses = army + navy + forts + admin + colonies + missions_cost + interest + overlord + advisors
 	return {
-		"tax": tax, "production": prod, "trade": trade, "subjects": subjects, "income": income,
+		"tax": tax, "production": prod, "trade": trade, "subjects": subjects, "mines": mines, "advisors": advisors, "income": income,
 		"army": army, "navy": navy, "forts": forts, "admin": admin, "colonies": colonies,
 		"missionaries": missions_cost, "interest": interest, "overlord": overlord, "expenses": expenses,
 		"balance": income - expenses,
@@ -181,7 +191,7 @@ func loan_rate(tag: String) -> float:
 
 
 func loan_size(tag: String) -> int:
-	return int(round((60.0 + g.nation_dev(tag) * 0.25) / 10.0) * 10.0)
+	return int(round((50.0 + g.nation_dev(tag) * 0.4) / 10.0) * 10.0)
 
 
 func take_loan(tag: String) -> bool:
@@ -249,13 +259,13 @@ func develop_cost(tag: String, pid: int) -> int:
 	var terr = float(g.terrain_data.get(p["terrain"], {}).get("dev_cost", 0.0))
 	var mods = 1.0 + terr + g.mods.nat(tag, "dev_cost_mod") + g.mods.loc(pid, "local_dev_cost")
 	var scale = 1.0 + maxf(0.0, g.total_dev(pid) - 9.0) * 0.04
-	return maxi(5, int(round(30.0 * maxf(0.3, mods) * scale)))
+	return maxi(10, int(round(50.0 * maxf(0.3, mods) * scale)))
 
 
 func dev_cost_breakdown(tag: String, pid: int) -> String:
 	var p: Dictionary = g.provinces[pid]
 	var terr = float(g.terrain_data.get(p["terrain"], {}).get("dev_cost", 0.0))
-	var lines: PackedStringArray = ["Base cost 30"]
+	var lines: PackedStringArray = ["Base cost 50"]
 	if terr != 0.0:
 		lines.append("%s terrain %+d%%" % [g.terrain_data[p["terrain"]]["name"], int(round(terr * 100))])
 	var nm = g.mods.nat(tag, "dev_cost_mod")
@@ -331,6 +341,8 @@ func can_build(tag: String, pid: int, bid: String) -> String:
 		return "Needs %s tech %d." % [tech[0], int(tech[1])]
 	if bd.get("requires", "") == "coastal" and not p["coastal"]:
 		return "Needs a coastal province."
+	if bd.get("requires", "") == "mine_site" and not ("mine_site" in p["flags"]):
+		return "Mines can only be dug on mine sites (ore, copper, gems, crystals, salt, sulfur, marble)."
 	if used_slots(pid) >= build_slots(pid):
 		return "No free building slots (%d)." % build_slots(pid)
 	var cost = building_cost(tag, bid)
@@ -472,3 +484,84 @@ func monthly_colonies() -> void:
 			p["ethnicity"] = n["ethnicity"]
 			g.post("%s: the colony of %s is now a full province." % [n["short"], p["name"]])
 		g.province_changed.emit(pid)
+
+
+# ---------------------------------------------------------------- mines
+
+func mine_income(pid: int) -> float:
+	## Sanctum a month from a mine (before its upkeep).
+	var p: Dictionary = g.provinces[pid]
+	if not p["buildings"].has("mine") or p["owner"] == "":
+		return 0.0
+	return (1.5 + 0.25 * g.total_dev(pid)) * occupation_factor(pid) * autonomy_factor(pid)
+
+
+# ---------------------------------------------------------------- autonomy
+
+func autonomy(pid: int) -> float:
+	return float(g.provinces[pid].get("autonomy", 0.0))
+
+
+func autonomy_factor(pid: int) -> float:
+	return 1.0 - autonomy(pid) / 100.0
+
+
+func min_autonomy(tag: String, pid: int) -> float:
+	return 0.0 if g.provinces[pid]["cores"].has(tag) else 50.0
+
+
+func autonomy_drift(tag: String, pid: int) -> float:
+	## Autonomy points a month: in the early Arcadian era, provinces slowly slip from the centre.
+	if g.year >= EARLY_ERA_END or g.capital_of(tag) == pid:
+		return 0.0
+	var mult = 1.0 + g.mods.nat(tag, "autonomy_gain") + g.mods.loc(pid, "local_autonomy_gain")
+	return maxf(0.0, 0.25 * mult)
+
+
+func monthly_autonomy() -> void:
+	for pid in g.provinces:
+		var p: Dictionary = g.provinces[pid]
+		var tag: String = p["owner"]
+		if tag == "":
+			p["autonomy"] = 0.0
+			continue
+		var a = autonomy(pid)
+		if a < AUTONOMY_DRIFT_CAP:
+			a = minf(AUTONOMY_DRIFT_CAP, a + autonomy_drift(tag, pid))
+		p["autonomy"] = maxf(a, min_autonomy(tag, pid))
+
+
+func lower_autonomy_cost(pid: int) -> int:
+	return 2 * g.total_dev(pid)
+
+
+func can_change_autonomy(tag: String, pid: int, down: bool) -> String:
+	var p: Dictionary = g.provinces[pid]
+	if p["owner"] != tag:
+		return "Not your province."
+	for m in p["modifiers"]:
+		if m.get("id", "") == "autonomy_changed":
+			return "Autonomy was changed recently."
+	if down:
+		if autonomy(pid) - 25.0 < min_autonomy(tag, pid) - 0.01:
+			return "Can't go lower (uncored provinces stay at 50%)."
+		if int(g.nations[tag]["power"][0]) < lower_autonomy_cost(pid):
+			return "Needs %d %s power." % [lower_autonomy_cost(pid), g.nations[tag]["power_names"][0]]
+	elif autonomy(pid) >= 100.0:
+		return "Already fully autonomous."
+	return ""
+
+
+func change_autonomy(tag: String, pid: int, down: bool) -> bool:
+	if can_change_autonomy(tag, pid, down) != "":
+		return false
+	var p: Dictionary = g.provinces[pid]
+	if down:
+		g.nations[tag]["power"][0] -= lower_autonomy_cost(pid)
+		p["autonomy"] = maxf(min_autonomy(tag, pid), autonomy(pid) - 25.0)
+		g.add_province_modifier(pid, "autonomy_changed", "Autonomy lowered", {"local_unrest": 4}, 12)
+	else:
+		p["autonomy"] = minf(100.0, autonomy(pid) + 25.0)
+		g.add_province_modifier(pid, "autonomy_changed", "Autonomy granted", {"local_unrest": -3}, 12)
+	g.touch(tag)
+	return true

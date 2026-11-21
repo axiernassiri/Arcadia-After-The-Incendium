@@ -39,6 +39,21 @@ func build() -> void:
 		v.add_child(UI.label("Battles %+d of the score, occupation the rest. Started %d months ago." % [
 			int(float(w["battle_score"]) * (1 if side == "attackers" else -1)), int((Game.day_index - int(w["start"])) / 30)], 11, UI.TEXT_DIM))
 		var lead: bool = w[side][0] == tag
+		if lead:
+			for ally in Game.dip.uncalled_allies(w, tag):
+				var q: Dictionary = Game.dip.call_quote(w, tag, ally)
+				var lines: PackedStringArray = []
+				for r in q["reasons"]:
+					lines.append("%s: %+d" % [r[0], int(r[1])])
+				var why: String = q["why"]
+				if why == "" and not q["accept"]:
+					why = "%s won't join (%+d)." % [Game.nation_name(ally), int(q["score"])]
+				elif why == "" and float(n["treasury"]) < float(q["price"]):
+					why = "They want %d sanctum; you can't pay." % int(q["price"])
+				v.add_child(UI.row([UI.label(Game.nation_name(ally), 12, UI.INFO), UI.spacer(),
+					UI.label("wants %d sanctum" % int(q["price"]) if q["accept"] else "refuses", 11, UI.GOLD if q["accept"] else UI.BAD),
+					UI.action("Call to arms", why, func(): Game.post(Game.dip.call_ally(w, tag, ally)); mark_dirty(),
+						"Allies don't join on their own. They decide by what they think of you, the enemy and their own situation, and want sanctum in return.\n" + "\n".join(lines))]))
 		v.add_child(UI.action("Negotiate peace", "" if lead or true else "", func(): peace_requested.emit(int(w["id"]))))
 		add(c)
 	section("Nations")

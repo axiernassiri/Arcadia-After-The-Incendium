@@ -8,6 +8,7 @@ const TABS := [
 	["court", "Court", "Ruler, heir, stability and modifiers (C)"],
 	["government", "Government", "Government reforms (G)"],
 	["economy", "Economy", "Income, expenses, loans and buildings (E)"],
+	["production", "Production", "Build, recruit and lay down ships in every province (B)"],
 	["trade", "Trade", "Trade nodes, merchants and prices (T)"],
 	["tech", "Technology", "Administrative, diplomatic and military tech (R)"],
 	["ideas", "Ideas", "National ideas and idea groups (I)"],
@@ -15,6 +16,7 @@ const TABS := [
 	["diplomacy", "Diplomacy", "Nations, wars and peace deals (O)"],
 	["peoples", "Peoples", "Cultures, religions and ethnicities (P)"],
 	["missions", "Missions", "Mission tree (M)"],
+	["help", "Help", "How to play (F1)"],
 ]
 
 var _buttons = {}

@@ -1,0 +1,19 @@
+{
+  "_note": "Advisors, like EU4. A nation employs one advisor of each power type (adm, dip, mil). An advisor adds its skill (1-3) to that power every month and gives its modifier. Hiring costs hire_cost x skill^2 (scaled by the nation's size); the salary is salary x skill^2 sanctum a month. Candidates appear every few months.",
+  "hire_cost": 40, "salary": 0.6, "candidates_per_type": 3,
+  "types": {
+    "treasurer":      {"name": "Lotus Treasurer",    "power": "adm", "modifiers": {"tax_mod": 0.10}, "text": "Counts every coin of sanctum."},
+    "mud_priest":     {"name": "Mud Priest",         "power": "adm", "modifiers": {"tolerance_own": 1, "missionary_strength": 0.02}, "text": "Keeps the faith strong."},
+    "sty_warden":     {"name": "Sty Warden",         "power": "adm", "modifiers": {"unrest": -1, "autonomy_gain": -0.05}, "text": "Keeps the provinces in line."},
+    "green_engineer": {"name": "Green Engineer",     "power": "adm", "modifiers": {"production_mod": 0.10}, "text": "Windmills, solar farms, clean water."},
+    "mine_foreman":   {"name": "Mine Foreman",       "power": "adm", "modifiers": {"build_cost_mod": -0.10}, "text": "Builds cheaper and faster."},
+    "envoy":          {"name": "Snout Envoy",        "power": "dip", "modifiers": {"improve_relations_mod": 0.25, "diplomatic_reputation": 1}, "text": "Every court's favourite guest."},
+    "merchant":       {"name": "Waterfall Merchant", "power": "dip", "modifiers": {"trade_efficiency": 0.10}, "text": "Knows every market up and down the Waterfall."},
+    "navigator":      {"name": "Island Navigator",   "power": "dip", "modifiers": {"naval_morale": 0.15, "colonist_growth": 10}, "text": "Charts the islands."},
+    "haze_scout":     {"name": "Haze Scout",         "power": "dip", "modifiers": {"explore_cost_mod": -0.25, "colonist_growth": 10}, "text": "Goes where the maps end."},
+    "drillmaster":    {"name": "Unity Drillmaster",  "power": "mil", "modifiers": {"land_morale": 0.10}, "text": "Trained on Unity."},
+    "quartermaster":  {"name": "Quartermaster",      "power": "mil", "modifiers": {"land_force_limit": 3, "reinforce_speed": 0.15}, "text": "Feeds and arms the troops."},
+    "siege_master":   {"name": "Siege Master",       "power": "mil", "modifiers": {"siege_ability": 0.15}, "text": "No wall stands forever."},
+    "barrier_veteran":{"name": "Barrier Veteran",    "power": "mil", "modifiers": {"fort_defense": 0.20, "doomsday_resistance": 0.15}, "text": "Has fought at the Doomsday Portal."}
+  }
+}

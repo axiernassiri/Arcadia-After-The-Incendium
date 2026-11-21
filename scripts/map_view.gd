@@ -214,7 +214,7 @@ func refresh() -> void:
 		var stripe := Color(0, 0, 0, 0)
 		if not fogged and mode in ["political", "diplomacy"]:
 			if p["owner"] != "" and p["controller"] != p["owner"]:
-				stripe = Color(0.1, 0.1, 0.1, 0.85) if p["controller"] == "REB" else Game.nations.get(p["controller"], {}).get("colour", Color.BLACK)
+				stripe = Color(0.1, 0.1, 0.1, 0.85) if p["controller"] == "REB" else (Color(0.55, 0.2, 0.9, 0.9) if p["controller"] == "ENT" else Game.nations.get(p["controller"], {}).get("colour", Color.BLACK))
 				stripe.a = 0.85
 			elif not p["colony"].is_empty() and Game.nations.has(p["colony"]["tag"]):
 				stripe = Game.nations[p["colony"]["tag"]]["colour"]
@@ -454,7 +454,7 @@ func _draw_units() -> void:
 		var n: int = int(stack.get(loc, 0))
 		stack[loc] = n + 1
 		var pos := base + Vector2(0, -22 * s - n * 20 * s)
-		var col: Color = Color(0.15, 0.15, 0.15) if a["owner"] == "REB" else Game.nations[a["owner"]]["colour"]
+		var col: Color = Color(0.15, 0.15, 0.15) if a["owner"] == "REB" else (Color(0.45, 0.1, 0.75) if a["owner"] == "ENT" else Game.nations[a["owner"]]["colour"])
 		var men := 0.0
 		for r in a["regiments"]:
 			men += float(r["men"])

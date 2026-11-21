@@ -42,11 +42,11 @@ MIN_PIECE = 260          # islands smaller than this (game px) are merged into a
 LORE_W, LORE_H = 1251, 682
 ANCHORS = [
     # (name, region, (x, y) on the lore map, overrides)
-    ("Mentos", "Mentos", (600, 185), dict(dev=[6, 6, 5], flags=["capital"], goods="lotus", terrain="grassland")),
+    ("Mentos", "Mentos", (600, 185), dict(dev=[5, 5, 4], flags=["capital"], goods="lotus", terrain="grassland")),
     ("Lotus Vale", "Mentos", (545, 200), dict(goods="lotus", terrain="grassland")),
     ("Canada Ruins", "Mentos", (470, 150), dict(goods="relics", terrain="hills")),          # the Pig Lord's old home
     ("Yellowstone Caldera", "Mentos", (420, 125), dict(goods="sulfur", terrain="volcanic", flags=["volcano"])),
-    ("Falls Landing", "Mentos", (680, 245), dict(goods="water", terrain="hills", flags=["waterfall_base"])),
+    ("Falls Landing", "Mentos", (680, 245), dict(goods="water", terrain="hills")),
     ("Frost Reach", "Frost Reach", (790, 200), dict(goods="furs", terrain="tundra")),
     ("Bay of Pigs", "Sylvania", (405, 388), dict(goods="fish", terrain="coast")),
     ("Staircase Glade", "Sylvania", (485, 300), dict(goods="relics", terrain="anomalous", flags=["staircase"])),
@@ -58,12 +58,12 @@ ANCHORS = [
     ("The Center", "Midrea", (750, 325), dict(hidden=True, goods="crystals", terrain="anomalous", flags=["mist"],
                                              dev=[2, 3, 1])),
     ("Eurome Fields", "Eurome", (680, 470), dict(goods="grain", terrain="farmland", dev=[4, 3, 3])),
-    ("Ore Isle", "Western Archipelago", (385, 480), dict(goods="iron")),
-    ("Mine Key", "Western Archipelago", (395, 560), dict(goods="iron")),
+    ("Ore Isle", "Western Archipelago", (385, 480), dict(goods="iron", flags=["mine_site"])),
+    ("Mine Key", "Western Archipelago", (395, 560), dict(goods="iron", flags=["mine_site"])),
     ("Unity", "Southern Isles", (560, 612), dict(owner="MEN", goods="steel", terrain="fortress",
                                                   flags=["unity_base"], dev=[2, 2, 4])),
     ("Vesuvius", "Southern Isles", (790, 600), dict(owner=None, goods="sulfur", terrain="volcanic", flags=["volcano"])),
-    ("Equator Isle", "Southern Isles", (1010, 337), dict(owner=None, goods="fish")),
+    ("Equator Isle", "Southern Isles", (1010, 337), dict(goods="water", terrain="coast", flags=["waterfall_base"], dev=[2, 2, 2])),
 ]
 NAME_POOLS = {
     "Mentos": ["Pigwood", "Trufflebrook", "Hogsmere", "Snowsnout", "Northpen", "Boarhaven", "Sowbridge", "Oinkfield",
@@ -102,7 +102,32 @@ MEN_CULTURE = {"Mentos": ("Mentosian", "Pig"), "Sylvania": ("Sylvanian", "Pig"),
                "Eurome": ("Euromean", "Pig"), "Western Archipelago": ("Archipelagan", "Pigman"),
                "Southern Isles": ("Archipelagan", "Pigman")}
 TRIBES = {"SNT": ("Snowtusk", "Boar"), "SAL": ("Saltjaw", "Boar"), "DRF": ("Driftboar", "Boar"),
-          "CRL": ("Coralsnout", "Boar")}
+          "CRL": ("Coralsnout", "Boar"), "CDH": ("Cinderhoof", "Boar")}
+# The pig states that hold the land Menslosia lost after the Incendium: (culture, people)
+PIG_STATES = {"SYL": ("Sylvanian", "Pig"), "BAY": ("Sylvanian", "Pig"), "EUR": ("Euromean", "Pig"),
+              "RYE": ("Euromean", "Pig"), "MID": ("Midrean", "Pigman")}
+# Who holds what at the start. Provinces not listed fall back to the region rules in design_ground.
+OWNERS = {
+    "MEN": ["Canada Ruins", "Oinkfield", "Piggston", "Hamlet Cove", "Curlytail", "Truffle Downs", "Sty Royal",
+            "Lotus Vale", "Lardmere", "Mentos", "Coldsty", "Pigwood", "Whitefrost Bay", "Falls Landing", "Rindhold",
+            "Bristleback", "Squealwater", "Mudwallow", "Sowbridge", "Midrea Labworks", "Dynamo Downs", "Marble Hog",
+            "Gearhollow", "Ore Isle", "Slag Isle", "Unity"],
+    "CDH": ["Yellowstone Caldera", "Swillmarsh", "Snowtrough", "Mudpie Downs"],
+    "SNT": ["Boarhaven", "Glacier Gate", "Baconvale", "Grunting Hills", "Hoarfrost Point", "Frost Reach", "Icejaw"],
+    "SYL": ["Sylvan Gate", "Staircase Glade", "Willowsty", "Wildsow Glen", "Elderwood", "Mosshog", "Rootdig",
+            "Mossy Trough", "Tusk Hollow", "Dewpond", "Snoutshore", "Sylvan Deep"],
+    "BAY": ["Bay of Pigs", "Leafwallow", "Thornwallow", "Oakroot", "Barkbristle", "Fernsnout", "Bramblepen", "Ferncombe"],
+    "MID": ["Midrea Foothills", "Signal Peak", "Lenscombe", "Space Observatory", "Voltmire", "Prism Pass"],
+    "EUR": ["Granary Point", "Vineyard Coast", "Sowland", "Wheatwallow", "Southfurrow", "Cornrow", "Hayfold",
+            "Barleymarch", "Eurome Fields", "Grainhold", "Harvest Bay", "Sunfurrow", "Scarecrow Cape"],
+    "RYE": ["Turnip Downs", "Dustfurrow", "Duskfield", "Ryefield", "Millsnout", "Ploughshare", "Beetmarsh",
+            "Little Piglet Isle"],
+    "SKY": ["Equator Isle"],
+}
+OWNER_OF = {name: tag for tag, names in OWNERS.items() for name in names}
+# development per province at the start: (lowest, highest) total
+DEV_RANGE = {"MEN": (5, 8), "SYL": (5, 9), "BAY": (5, 9), "EUR": (5, 9), "RYE": (4, 8), "MID": (5, 9),
+             "SNT": (3, 6), "CDH": (3, 6), "SAL": (4, 7), "DRF": (4, 7), "CRL": (3, 5)}
 TRADE_NODE = {"Mentos": "Arcadian Sea", "Frost Reach": "Arcadian Sea", "Sylvania": "Bay of Pigs", "Midrea": "Midrea",
               "Eurome": "Eurome", "Western Archipelago": "Western Archipelago",
               "Southwest Island": "Western Archipelago", "Southern Isles": "Southern Sea"}
@@ -110,6 +135,7 @@ TRADE_NODE = {"Mentos": "Arcadian Sea", "Frost Reach": "Arcadian Sea", "Sylvania
 TRADE_SEATS = {"Arcadian Sea": (195, 160), "Bay of Pigs": (390, 398), "Midrea": (720, 398), "Eurome": (645, 573),
                "Western Archipelago": (288, 635), "Southern Sea": (648, 665)}
 
+MINE_GOODS = ("iron", "copper", "gems", "crystals", "salt", "sulfur", "marble")
 REGION_THEME = {
     # region: (terrain weights, goods weights)
     "Mentos": ({"grassland": 3, "forest": 3, "hills": 2}, {"livestock": 3, "timber": 2, "truffles": 2, "wool": 2,
@@ -128,8 +154,8 @@ REGION_THEME = {
 NORTH_SNOW_Y = 150       # lore-map y: Mentos provinces north of this are snowfields
 
 SKY_ISLANDS = [
-    # (name, terrain, goods, dev, flags, cx, cy, radius) in game pixels
-    ("Eden's Crown", "skyland", "core_energy", [5, 5, 5], ["capital", "core"], 1000, 500, 150),
+    # (name, terrain, goods, dev, flags, cx, cy, radius) in game pixels; owner Skyfall unless listed in SKY_OWNERS
+    ("Eden's Crown", "skyland", "core_energy", [6, 6, 6], ["capital", "core"], 1000, 500, 150),
     ("Holy Waterfall of Eden", "skyland", "water", [2, 2, 2], ["waterfall_top"], 670, 640, 92),     # lore
     ("Portal Isle", "anomalous", "relics", [1, 1, 1], ["doomsday_portal"], 1580, 712, 72),          # lore
     ("Volcanic Deltas", "volcanic", "sulfur", [2, 2, 1], [], 1405, 850, 84),                       # lore
@@ -145,7 +171,15 @@ SKY_ISLANDS = [
     ("Lantern Isle", "skyland", "glass", [1, 1, 1], [], 1580, 1000, 52),
     ("Sunward Shelf", "skyland", "feathers", [2, 1, 1], [], 1780, 280, 60),
     ("Mistveil", "skyland", "water", [1, 1, 1], [], 1830, 760, 56),
+    # the Order of the Black Moon: a smaller chain of islands that worships the Doomsday Portal
+    ("Moonfall Rock", "anomalous", "relics", [2, 2, 2], ["capital"], 1790, 905, 66),
+    ("Hollow Spire", "anomalous", "crystals", [1, 2, 1], [], 1935, 990, 46),
+    ("Eclipse Isle", "volcanic", "sulfur", [1, 1, 2], [], 1700, 1045, 42),
+    ("Shade Reef", "anomalous", "feathers", [1, 1, 1], [], 1955, 840, 40),
+    ("Umbral Cay", "volcanic", "relics", [1, 1, 1], [], 1440, 1040, 40),
 ]
+SKY_OWNERS = {"Moonfall Rock": "BLM", "Hollow Spire": "BLM", "Eclipse Isle": "BLM", "Shade Reef": "BLM",
+              "Umbral Cay": "BLM"}
 
 TERRAIN_COLOURS = {
     "grassland": (0.62, 0.72, 0.45), "farmland": (0.78, 0.74, 0.45), "forest": (0.36, 0.55, 0.33),
@@ -331,7 +365,9 @@ def design_ground(ids, shapes, rng):
             flags.append("hidden")
             terrain = ov.get("terrain", "mountains")
         # ownership
-        if "owner" in ov:
+        if names[pid] in OWNER_OF:
+            owner = OWNER_OF[names[pid]]
+        elif "owner" in ov:
             owner = ov["owner"]
         elif hidden:
             owner = None
@@ -340,34 +376,40 @@ def design_ground(ids, shapes, rng):
         elif rname == "Southwest Island":
             owner = "DRF"
         elif rname == "Western Archipelago":
-            owner = "MEN" if ly < 520 else "SAL"
+            owner = "SAL"
         elif rname == "Southern Isles":
             owner = "CRL" if lx < 700 else None
-        elif rname == "Sylvania" and piece < 3000:
-            owner = None   # the scattered islets off Sylvania are uninhabited
         else:
-            owner = "MEN"
-        if owner is None:
+            owner = None   # scattered islets are uninhabited
+        drng = np.random.default_rng(1000 + pid)   # its own dice, so changing one rule doesn't reshuffle the map
+        if owner is None or owner not in DEV_RANGE:
             dev = [1, 1, 1]
-        elif owner == "MEN":
-            total = int(rng.integers(5, 11)) + (2 if rname == "Mentos" else 0)
-            split = rng.dirichlet([2, 2, 2])
-            dev = [max(1, int(round(total * s))) for s in split]
+        else:
+            lo, hi = DEV_RANGE[owner]
+            total = int(drng.integers(lo, hi + 1)) + (1 if rname == "Mentos" and owner == "MEN" else 0)
+            split = drng.dirichlet([2, 2, 2])
+            dev = [max(1, int(round(total * sp))) for sp in split]
             if rname == "Eurome":
                 dev[0] += 1
             if rname == "Midrea":
                 dev[1] += 1
-        else:
-            dev = [int(rng.integers(1, 3)), int(rng.integers(1, 3)), int(rng.integers(1, 3))]
-        dev = ov.get("dev", dev)
+        if "dev" in ov and owner in ("MEN", None):
+            dev = ov["dev"]
         if owner in TRIBES:
             culture, ethnicity = TRIBES[owner]
             religion = "Mud Spirits"
+        elif owner in PIG_STATES:
+            culture, ethnicity = PIG_STATES[owner]
+            religion = "Lotus Faith"
         elif owner == "MEN":
             culture, ethnicity = MEN_CULTURE.get(rname, ("Mentosian", "Pig"))
             religion = "Lotus Faith"
+        elif owner == "SKY":
+            culture, ethnicity, religion = "Edenite", "Human", "Will of Eden"
         else:
             culture, ethnicity, religion = "", "", ""
+        if goods in MINE_GOODS or "mine_site" in ov.get("flags", []):
+            flags.append("mine_site")
         provinces.append(dict(
             id=pid, name=names[pid], region=rname, layer="ground", owner=owner,
             terrain=ov.get("terrain", terrain), goods=ov.get("goods", goods), development=dev, flags=flags,
@@ -404,10 +446,15 @@ def build_sky(rng, first_id):
     for (name, terrain, goods, dev, flags, cx, cy, r) in SKY_ISLANDS:
         m = blob_mask(cx, cy, r, rng, wobble=0.5) & (ids == 0)
         ids[m] = pid
-        provinces.append(dict(id=pid, name=name, region="Skyfall", layer="sky", owner="SKY", terrain=terrain,
-                              goods=goods, development=dev, flags=list(flags) + ["coastal"], culture="Edenite",
-                              ethnicity="Angel" if name in ("Angelreach", "Seraph Rock", "Halo Isle") else "Human",
-                              religion="Will of Eden", trade_node="Skyfall", links=[]))
+        owner = SKY_OWNERS.get(name, "SKY")
+        cult = owner == "BLM"
+        if not cult:
+            dev = [dev[0] + 1, dev[1], dev[2] + (1 if dev[2] <= 2 else 0)]
+        provinces.append(dict(id=pid, name=name, region="Black Moon Isles" if cult else "Skyfall", layer="sky",
+                              owner=owner, terrain=terrain, goods=goods, development=dev,
+                              flags=list(flags) + ["coastal"], culture="Moonsworn" if cult else "Edenite",
+                              ethnicity="Human" if cult or name not in ("Angelreach", "Seraph Rock", "Halo Isle") else "Angel",
+                              religion="Black Moon" if cult else "Will of Eden", trade_node="Skyfall", links=[]))
         pid += 1
     yy = np.mgrid[0:H, 0:W][0] / H
     clouds = smooth_noise((H, W), 20, rng)

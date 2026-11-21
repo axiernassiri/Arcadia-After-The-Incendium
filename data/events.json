@@ -1,128 +1,2547 @@
 {
-  "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'tribes' or 'player'. Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types.",
-  "events": [
-    {"id": "arcadian_era_begins", "for": "all", "trigger": {"date": "4289-01-02"},
-     "title": "The Arcadian Era Begins",
-     "text": "The ash has cleared and the Incendium is over. Menslosia and Skyfall have sworn friendship. The world is ours to rebuild.",
-     "options": [
-       {"text": "Rebuild with green power, never fossil fuels.", "effects": [{"type": "add_stability", "amount": 1}, {"type": "add_modifier", "id": "green_rebuilding", "name": "Green Rebuilding", "modifiers": {"production_mod": 0.05}, "months": 120}]},
-       {"text": "Rebuild fast, whatever it takes.", "effects": [{"type": "add_treasury", "amount": 100}, {"type": "add_stability", "amount": -1}]}]},
-
-    {"id": "doomsday_men", "for": "MEN", "trigger": {"special": "doomsday"},
-     "title": "The Black Moon Rises over Our Troops",
-     "text": "It is the 29th of February. The moon has turned black over Skyfall and the Doomsday Barrier has fallen. Our soldiers in Skyfall are caught in it as anomalies pour from the portal. Tomorrow time will reverse, but what we choose today will be remembered.",
-     "options": [
-       {"text": "Join the Barrier Pact: fight beside Skyfall.", "effects": [{"type": "add_power", "index": 2, "amount": -40}, {"type": "add_opinion", "target": "SKY", "amount": 25}, {"type": "set_flag", "name": "barrier_pact"}, {"type": "add_stability", "amount": 1}]},
-       {"text": "Exploit the chaos: study the anomalies in Midrea's labs.", "effects": [{"type": "add_power", "index": 1, "amount": 60}, {"type": "add_opinion", "target": "SKY", "amount": -40}, {"type": "add_stability", "amount": -1}, {"type": "set_flag", "name": "studied_anomalies"}]},
-       {"text": "Pull our soldiers back and wait for the dawn.", "effects": [{"type": "add_manpower", "amount": -3000}]}]},
-    {"id": "doomsday_sky", "for": "SKY", "trigger": {"special": "doomsday"},
-     "title": "The Black Moon Rises",
-     "text": "The Black Moon has torn the barrier open. Our king holds the line at Portal Isle while Demons and Angels clash above the clouds. Tomorrow time will reverse, but courage and cowardice will both be remembered.",
-     "options": [
-       {"text": "Hold the Barrier alone, by the Will of Eden.", "effects": [{"type": "add_power", "index": 2, "amount": -50}, {"type": "add_stability", "amount": 1}, {"type": "add_power", "index": 0, "amount": 40}]},
-       {"text": "Call on Menslosia for the Barrier Pact.", "effects": [{"type": "add_opinion", "target": "MEN", "amount": 15}, {"type": "add_power", "index": 1, "amount": -30}, {"type": "set_flag", "name": "barrier_pact"}]},
-       {"text": "Cast holy spells on everything that moves.", "effects": [{"type": "add_power", "index": 2, "amount": -20}, {"type": "add_manpower", "amount": -1500}, {"type": "set_flag", "name": "holy_spells_unleashed"}, {"type": "add_army_tradition", "amount": 10}]}]},
-    {"id": "doomsday_other", "for": "tribes", "trigger": {"special": "doomsday"},
-     "title": "The Black Moon Rises",
-     "text": "Our warriors in the sky islands watch the moon turn black. Things are coming out of the portal.",
-     "options": [{"text": "Hold fast.", "effects": [{"type": "add_manpower", "amount": -500}]}]},
-
-    {"id": "photographer_incident", "for": "MEN", "once": true,
-     "trigger": {"monthly_chance": 0.15, "conditions": [{"type": "year_at_least", "value": 4291}, {"type": "explored_count", "layer": "sky", "at_least": 3}, {"type": "not_flag", "name": "great_war", "scope": "global"}]},
-     "title": "The Photographer",
-     "text": "One of our explorers, a pig with a camera, was caught photographing Skyfall. Cameras are forbidden there. Skyfall has jailed him and refuses to release him.",
-     "options": [
-       {"text": "Demand his return. He is a pig of Menslosia!", "ai_weight": 0.5, "effects": [{"type": "add_opinion", "target": "SKY", "amount": -30}, {"type": "fire_event", "id": "photographer_executed", "target": "MEN", "delay_days": 20}]},
-       {"text": "Apologise and pay for his release.", "effects": [{"type": "add_treasury", "amount": -80}, {"type": "add_opinion", "target": "SKY", "amount": 10}, {"type": "set_flag", "name": "photographer_freed", "scope": "global"}]}]},
-    {"id": "photographer_executed", "for": "MEN", "trigger": {"special": "fired_by_effect"},
-     "title": "Execution in the Sky",
-     "text": "Skyfall has publicly executed our photographer. The whole of Menslosia is in uproar. This is a question of who will be the great power of Arcadia.",
-     "options": [
-       {"text": "Declare the Great War for Arcadia.", "ai_weight": 0.3, "effects": [{"type": "set_flag", "name": "great_war", "scope": "global"}, {"type": "clear_flag", "name": "allied_SKY"}, {"type": "declare_war", "target": "SKY"}]},
-       {"text": "Swallow our pride. For now.", "effects": [{"type": "add_stability", "amount": -2}, {"type": "add_power", "index": 0, "amount": 50}]}]},
-    {"id": "napoleons_blueprints", "for": "SKY", "once": true, "trigger": {"monthly_chance": 0.05, "conditions": [{"type": "year_at_least", "value": 4290}]},
-     "title": "Scraps and Blueprints",
-     "text": "King Bonaparte has found blueprints left by King Eden, written in a human language he calls German. He says they describe 'artillery' and 'tanks', lost machines of the human era.",
-     "options": [
-       {"text": "Begin the war machine project.", "effects": [{"type": "set_flag", "name": "tank_project"}, {"type": "add_power", "index": 2, "amount": -30}, {"type": "add_modifier", "id": "war_machine", "name": "War Machine Project", "modifiers": {"artillery_power": 0.10}, "months": -1}]},
-       {"text": "Too much power for anyone. Lock them away.", "effects": [{"type": "add_stability", "amount": 1}]}]},
-    {"id": "staircase_to_nowhere", "for": "all", "once": true, "trigger": {"monthly_chance": 0.02, "conditions": [{"type": "year_at_least", "value": 4290}]},
-     "title": "The Staircase to Nowhere",
-     "text": "A curious citizen has gone down a staircase that leads nowhere. They have not come back up. It is said the stairs only go one way: down, into the Backrooms.",
-     "options": [
-       {"text": "Seal the staircases.", "effects": [{"type": "add_stability", "amount": 1}]},
-       {"text": "Send explorers after them.", "effects": [{"type": "add_power", "index": 1, "amount": 30}, {"type": "add_manpower", "amount": -500}, {"type": "set_flag", "name": "backrooms_expedition"}]}]},
-    {"id": "eden_masks", "for": "SKY", "once": true, "trigger": {"monthly_chance": 0.08, "conditions": [{"type": "year_at_least", "value": 4290}, {"type": "not_flag", "name": "breathing_masks"}]},
-     "title": "Masks for the Mainland",
-     "text": "Skyfallins cannot breathe the air of the mainland for more than a day or two. Our alchemists have designed an expensive mask that might let settlers and soldiers survive below.",
-     "options": [
-       {"text": "Fund the masks.", "effects": [{"type": "add_treasury", "amount": -60}, {"type": "set_flag", "name": "breathing_masks"}]},
-       {"text": "Skyfall belongs in the sky.", "effects": [{"type": "add_stability", "amount": 1}]}]},
-
-    {"id": "heir_born", "for": "player", "trigger": {"special": "fired_by_effect"},
-     "title": "An Heir is Born",
-     "text": "The court rejoices: the realm has an heir.",
-     "options": [{"text": "Long may they live.", "effects": [{"type": "add_stability", "amount": 0}]}]},
-    {"id": "new_ruler", "for": "player", "trigger": {"special": "fired_by_effect"},
-     "title": "A New Ruler",
-     "text": "The old ruler is dead. Long live the new ruler! The court looks to them for direction.",
-     "options": [
-       {"text": "Focus on the realm.", "effects": [{"type": "add_power", "index": 0, "amount": 30}]},
-       {"text": "Focus on our neighbours.", "effects": [{"type": "add_power", "index": 1, "amount": 30}]},
-       {"text": "Focus on the army.", "effects": [{"type": "add_power", "index": 2, "amount": 30}]}]},
-    {"id": "regency_council", "for": "player", "trigger": {"special": "fired_by_effect"},
-     "title": "A Regency Council",
-     "text": "Our ruler has died with no heir old enough to rule. A council of nobles governs until an heir can be found and comes of age.",
-     "options": [{"text": "Find an heir quickly.", "effects": [{"type": "add_power", "index": 0, "amount": -25}]}]},
-    {"id": "rebels_rise", "for": "player", "trigger": {"special": "fired_by_effect"},
-     "title": "Rebellion!",
-     "text": "Rebels have taken up arms in one of our provinces. If they hold it for half a year they will force their demands on us. Send an army to crush them.",
-     "options": [
-       {"text": "Crush them.", "effects": [{"type": "add_power", "index": 2, "amount": -10}]},
-       {"text": "Hear their grievances.", "effects": [{"type": "add_stability", "amount": -1}, {"type": "add_modifier", "id": "grievances", "name": "Grievances Heard", "modifiers": {"unrest": -2}, "months": 24}]}]},
-
-    {"id": "bountiful_harvest", "for": "all", "trigger": {"monthly_chance": 0.006, "conditions": [{"type": "not_at_war"}]},
-     "title": "Bountiful Harvest",
-     "text": "The farms have outdone themselves this year. There is more grain than anyone can eat.",
-     "options": [
-       {"text": "Sell the surplus.", "effects": [{"type": "add_treasury", "amount": 60}, {"type": "price_shock", "goods": "grain", "factor": 0.8}]},
-       {"text": "Feed the people.", "effects": [{"type": "add_modifier", "id": "full_bellies", "name": "Full Bellies", "modifiers": {"unrest": -1, "manpower_mod": 0.1}, "months": 24}]}]},
-    {"id": "truffle_rush", "for": "MEN", "trigger": {"monthly_chance": 0.01, "conditions": [{"type": "year_at_least", "value": 4290}]},
-     "title": "Truffle Rush",
-     "text": "A pig in Sylvania has rooted up a truffle the size of a cabbage. Every pig in the empire wants to go digging.",
-     "options": [
-       {"text": "Let them dig!", "effects": [{"type": "price_shock", "goods": "truffles", "factor": 1.4}, {"type": "add_treasury", "amount": 40}]},
-       {"text": "Back to work, everyone.", "effects": [{"type": "add_power", "index": 0, "amount": 25}]}]},
-    {"id": "core_surge", "for": "SKY", "trigger": {"monthly_chance": 0.01, "conditions": [{"type": "year_at_least", "value": 4290}]},
-     "title": "The Core Surges",
-     "text": "The Core flares with power. The islands rise a little higher, and every workshop in Skyfall hums.",
-     "options": [
-       {"text": "Put the power to work.", "effects": [{"type": "add_modifier", "id": "core_surge", "name": "Core Surge", "modifiers": {"production_mod": 0.15}, "months": 12}, {"type": "price_shock", "goods": "core_energy", "factor": 0.8}]},
-       {"text": "Store it for the Black Moon.", "effects": [{"type": "add_modifier", "id": "core_reserve", "name": "Core Reserve", "modifiers": {"doomsday_resistance": 0.25}, "months": 60}]}]},
-    {"id": "boar_raid", "for": "tribes", "trigger": {"monthly_chance": 0.01, "conditions": [{"type": "not_at_war"}]},
-     "title": "The Young Boars Grow Restless",
-     "text": "The young warriors of the tribe want to prove themselves.",
-     "options": [
-       {"text": "Let them train.", "effects": [{"type": "add_army_tradition", "amount": 10}]},
-       {"text": "Put them to work.", "effects": [{"type": "add_power", "index": 0, "amount": 25}]}]},
-    {"id": "great_scholar", "for": "all", "trigger": {"monthly_chance": 0.004},
-     "title": "A Great Scholar",
-     "text": "A brilliant mind has appeared at court, full of new ideas.",
-     "options": [
-       {"text": "Put them in charge of the treasury.", "effects": [{"type": "add_power", "index": 0, "amount": 50}]},
-       {"text": "Send them abroad as an envoy.", "effects": [{"type": "add_power", "index": 1, "amount": 50}]},
-       {"text": "Have them draw up war plans.", "effects": [{"type": "add_power", "index": 2, "amount": 50}]}]},
-    {"id": "war_weariness", "for": "all", "trigger": {"monthly_chance": 0.03, "conditions": [{"type": "at_war"}]},
-     "title": "Weariness of War",
-     "text": "The people are tired of war. Mothers want their sons home.",
-     "options": [
-       {"text": "Promise peace soon.", "effects": [{"type": "add_war_exhaustion", "amount": -1}, {"type": "add_stability", "amount": -1}]},
-       {"text": "The war goes on.", "effects": [{"type": "add_war_exhaustion", "amount": 1}]}]},
-    {"id": "skyfall_feast", "for": "MEN", "once": true, "trigger": {"monthly_chance": 0.03, "conditions": [{"type": "allied_with", "tag": "SKY"}, {"type": "year_at_least", "value": 4290}]},
-     "title": "A Feast at Eden's Crown",
-     "text": "King Napoleon invites the Pig Lord to a feast above the clouds to celebrate the friendship of our two nations.",
-     "options": [
-       {"text": "Accept with thanks.", "effects": [{"type": "add_opinion", "target": "SKY", "amount": 20}, {"type": "add_treasury", "amount": -30}]},
-       {"text": "Send a gift instead.", "effects": [{"type": "add_opinion", "target": "SKY", "amount": 10}, {"type": "add_treasury", "amount": -50}]}]}
-  ]
+ "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'player', 'tribes' (tribes and hordes), 'republics', 'monarchies', 'pig_states' (pig nations other than Menslosia) or 'others' (everyone but Menslosia and Skyfall). Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types.",
+ "events": [
+  {
+   "id": "arcadian_era_begins",
+   "for": "all",
+   "trigger": {
+    "date": "4289-01-02"
+   },
+   "title": "The Arcadian Era Begins",
+   "text": "The ash has cleared and the Incendium is over. Menslosia and Skyfall have sworn friendship. The world is ours to rebuild.",
+   "options": [
+    {
+     "text": "Rebuild with green power, never fossil fuels.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_modifier",
+       "id": "green_rebuilding",
+       "name": "Green Rebuilding",
+       "modifiers": {
+        "production_mod": 0.05
+       },
+       "months": 120
+      }
+     ]
+    },
+    {
+     "text": "Rebuild fast, whatever it takes.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 100
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "doomsday_men",
+   "for": "MEN",
+   "trigger": {
+    "special": "doomsday"
+   },
+   "title": "The Black Moon Rises over Our Troops",
+   "text": "It is the 29th of February. The moon has turned black over Skyfall and the Doomsday Barrier has fallen. Our soldiers in Skyfall are caught in it as anomalies pour from the portal. Tomorrow time will reverse, but what we choose today will be remembered.",
+   "options": [
+    {
+     "text": "Join the Barrier Pact: fight beside Skyfall.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -40
+      },
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": 25
+      },
+      {
+       "type": "set_flag",
+       "name": "barrier_pact"
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Exploit the chaos: study the anomalies in Midrea's labs.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 60
+      },
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": -40
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "set_flag",
+       "name": "studied_anomalies"
+      }
+     ]
+    },
+    {
+     "text": "Pull our soldiers back and wait for the dawn.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -3000
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "doomsday_sky",
+   "for": "SKY",
+   "trigger": {
+    "special": "doomsday"
+   },
+   "title": "The Black Moon Rises",
+   "text": "The Black Moon has torn the barrier open. Our king holds the line at Portal Isle while Demons and Angels clash above the clouds. Tomorrow time will reverse, but courage and cowardice will both be remembered.",
+   "options": [
+    {
+     "text": "Hold the Barrier alone, by the Will of Eden.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -50
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      }
+     ]
+    },
+    {
+     "text": "Call on Menslosia for the Barrier Pact.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "MEN",
+       "amount": 15
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": -30
+      },
+      {
+       "type": "set_flag",
+       "name": "barrier_pact"
+      }
+     ]
+    },
+    {
+     "text": "Cast holy spells on everything that moves.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -20
+      },
+      {
+       "type": "add_manpower",
+       "amount": -1500
+      },
+      {
+       "type": "set_flag",
+       "name": "holy_spells_unleashed"
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "doomsday_other",
+   "for": "others",
+   "trigger": {
+    "special": "doomsday"
+   },
+   "title": "The Black Moon Rises",
+   "text": "Our warriors in the sky islands watch the moon turn black. Things are coming out of the portal.",
+   "options": [
+    {
+     "text": "Hold fast.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -500
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "photographer_incident",
+   "for": "MEN",
+   "once": true,
+   "trigger": {
+    "monthly_chance": 0.15,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4291
+     },
+     {
+      "type": "explored_count",
+      "layer": "sky",
+      "at_least": 3
+     },
+     {
+      "type": "not_flag",
+      "name": "great_war",
+      "scope": "global"
+     }
+    ]
+   },
+   "title": "The Photographer",
+   "text": "One of our explorers, a pig with a camera, was caught photographing Skyfall. Cameras are forbidden there. Skyfall has jailed him and refuses to release him.",
+   "options": [
+    {
+     "text": "Demand his return. He is a pig of Menslosia!",
+     "ai_weight": 0.5,
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": -30
+      },
+      {
+       "type": "fire_event",
+       "id": "photographer_executed",
+       "target": "MEN",
+       "delay_days": 20
+      }
+     ]
+    },
+    {
+     "text": "Apologise and pay for his release.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -80
+      },
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": 10
+      },
+      {
+       "type": "set_flag",
+       "name": "photographer_freed",
+       "scope": "global"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "photographer_executed",
+   "for": "MEN",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "Execution in the Sky",
+   "text": "Skyfall has publicly executed our photographer. The whole of Menslosia is in uproar. This is a question of who will be the great power of Arcadia.",
+   "options": [
+    {
+     "text": "Declare the Great War for Arcadia.",
+     "ai_weight": 0.3,
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "great_war",
+       "scope": "global"
+      },
+      {
+       "type": "clear_flag",
+       "name": "allied_SKY"
+      },
+      {
+       "type": "declare_war",
+       "target": "SKY"
+      }
+     ]
+    },
+    {
+     "text": "Swallow our pride. For now.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -2
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "napoleons_blueprints",
+   "for": "SKY",
+   "once": true,
+   "trigger": {
+    "monthly_chance": 0.05,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "Scraps and Blueprints",
+   "text": "King Bonaparte has found blueprints left by King Eden, written in a human language he calls German. He says they describe 'artillery' and 'tanks', lost machines of the human era.",
+   "options": [
+    {
+     "text": "Begin the war machine project.",
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "tank_project"
+      },
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -30
+      },
+      {
+       "type": "add_modifier",
+       "id": "war_machine",
+       "name": "War Machine Project",
+       "modifiers": {
+        "artillery_power": 0.1
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "Too much power for anyone. Lock them away.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "staircase_to_nowhere",
+   "for": "all",
+   "once": true,
+   "trigger": {
+    "monthly_chance": 0.02,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "The Staircase to Nowhere",
+   "text": "A curious citizen has gone down a staircase that leads nowhere. They have not come back up. It is said the stairs only go one way: down, into the Backrooms.",
+   "options": [
+    {
+     "text": "Seal the staircases.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Send explorers after them.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 30
+      },
+      {
+       "type": "add_manpower",
+       "amount": -500
+      },
+      {
+       "type": "set_flag",
+       "name": "backrooms_expedition"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "eden_masks",
+   "for": "SKY",
+   "once": true,
+   "trigger": {
+    "monthly_chance": 0.08,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     },
+     {
+      "type": "not_flag",
+      "name": "breathing_masks"
+     }
+    ]
+   },
+   "title": "Masks for the Mainland",
+   "text": "Skyfallins cannot breathe the air of the mainland for more than a day or two. Our alchemists have designed an expensive mask that might let settlers and soldiers survive below.",
+   "options": [
+    {
+     "text": "Fund the masks.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "set_flag",
+       "name": "breathing_masks"
+      }
+     ]
+    },
+    {
+     "text": "Skyfall belongs in the sky.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "heir_born",
+   "for": "player",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "An Heir is Born",
+   "text": "The court rejoices: the realm has an heir.",
+   "options": [
+    {
+     "text": "Long may they live.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "new_ruler",
+   "for": "player",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "A New Ruler",
+   "text": "The old ruler is dead. Long live the new ruler! The court looks to them for direction.",
+   "options": [
+    {
+     "text": "Focus on the realm.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 30
+      }
+     ]
+    },
+    {
+     "text": "Focus on our neighbours.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 30
+      }
+     ]
+    },
+    {
+     "text": "Focus on the army.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": 30
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "regency_council",
+   "for": "player",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "A Regency Council",
+   "text": "Our ruler has died with no heir old enough to rule. A council of nobles governs until an heir can be found and comes of age.",
+   "options": [
+    {
+     "text": "Find an heir quickly.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": -25
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "rebels_rise",
+   "for": "player",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "Rebellion!",
+   "text": "Rebels have taken up arms in one of our provinces. If they hold it for half a year they will force their demands on us. Send an army to crush them.",
+   "options": [
+    {
+     "text": "Crush them.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -10
+      }
+     ]
+    },
+    {
+     "text": "Hear their grievances.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_modifier",
+       "id": "grievances",
+       "name": "Grievances Heard",
+       "modifiers": {
+        "unrest": -2
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "bountiful_harvest",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "not_at_war"
+     }
+    ]
+   },
+   "title": "Bountiful Harvest",
+   "text": "The farms have outdone themselves this year. There is more grain than anyone can eat.",
+   "options": [
+    {
+     "text": "Sell the surplus.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 60
+      },
+      {
+       "type": "price_shock",
+       "goods": "grain",
+       "factor": 0.8
+      }
+     ]
+    },
+    {
+     "text": "Feed the people.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "full_bellies",
+       "name": "Full Bellies",
+       "modifiers": {
+        "unrest": -1,
+        "manpower_mod": 0.1
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "truffle_rush",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "Truffle Rush",
+   "text": "A pig in Sylvania has rooted up a truffle the size of a cabbage. Every pig in the empire wants to go digging.",
+   "options": [
+    {
+     "text": "Let them dig!",
+     "effects": [
+      {
+       "type": "price_shock",
+       "goods": "truffles",
+       "factor": 1.4
+      },
+      {
+       "type": "add_treasury",
+       "amount": 40
+      }
+     ]
+    },
+    {
+     "text": "Back to work, everyone.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 25
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "core_surge",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "The Core Surges",
+   "text": "The Core flares with power. The islands rise a little higher, and every workshop in Skyfall hums.",
+   "options": [
+    {
+     "text": "Put the power to work.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "core_surge",
+       "name": "Core Surge",
+       "modifiers": {
+        "production_mod": 0.15
+       },
+       "months": 12
+      },
+      {
+       "type": "price_shock",
+       "goods": "core_energy",
+       "factor": 0.8
+      }
+     ]
+    },
+    {
+     "text": "Store it for the Black Moon.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "core_reserve",
+       "name": "Core Reserve",
+       "modifiers": {
+        "doomsday_resistance": 0.25
+       },
+       "months": 60
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "boar_raid",
+   "for": "tribes",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "not_at_war"
+     }
+    ]
+   },
+   "title": "The Young Boars Grow Restless",
+   "text": "The young warriors of the tribe want to prove themselves.",
+   "options": [
+    {
+     "text": "Let them train.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "text": "Put them to work.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 25
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "great_scholar",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.004
+   },
+   "title": "A Great Scholar",
+   "text": "A brilliant mind has appeared at court, full of new ideas.",
+   "options": [
+    {
+     "text": "Put them in charge of the treasury.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ]
+    },
+    {
+     "text": "Send them abroad as an envoy.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      }
+     ]
+    },
+    {
+     "text": "Have them draw up war plans.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": 50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "war_weariness",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "at_war"
+     }
+    ]
+   },
+   "title": "Weariness of War",
+   "text": "The people are tired of war. Mothers want their sons home.",
+   "options": [
+    {
+     "text": "Promise peace soon.",
+     "effects": [
+      {
+       "type": "add_war_exhaustion",
+       "amount": -1
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    },
+    {
+     "text": "The war goes on.",
+     "effects": [
+      {
+       "type": "add_war_exhaustion",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "skyfall_feast",
+   "for": "MEN",
+   "once": true,
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "allied_with",
+      "tag": "SKY"
+     },
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "A Feast at Eden's Crown",
+   "text": "King Napoleon invites the Pig Lord to a feast above the clouds to celebrate the friendship of our two nations.",
+   "options": [
+    {
+     "text": "Accept with thanks.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": 20
+      },
+      {
+       "type": "add_treasury",
+       "amount": -30
+      }
+     ]
+    },
+    {
+     "text": "Send a gift instead.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": 10
+      },
+      {
+       "type": "add_treasury",
+       "amount": -50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "entity_invasion",
+   "for": "all",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "Entities Through the Portal",
+   "text": "The Black Moon did more than crack the barrier. Things from beyond have come through the Doomsday Portal, and time reversing has not sent them back. They will take what they can reach.",
+   "options": [
+    {
+     "text": "Raise every soldier we have.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 1500
+      },
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -25
+      }
+     ]
+    },
+    {
+     "text": "Pray the Barrier Guard holds.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_modifier",
+       "id": "entity_dread",
+       "name": "Dread of the Entities",
+       "modifiers": {
+        "land_morale": 0.1,
+        "unrest": 1
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "republic_election",
+   "for": "player",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "A New Term",
+   "text": "The votes are counted and the republic has its leader for the next term.",
+   "options": [
+    {
+     "text": "Govern for the people.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Reward our supporters.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -30
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "autonomy_demands",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.012,
+    "conditions": [
+     {
+      "type": "provinces_owned_at_least",
+      "at_least": 8
+     },
+     {
+      "type": "is_tag",
+      "tag": "MEN",
+      "negate": true
+     }
+    ]
+   },
+   "title": "The Provinces Want a Say",
+   "text": "Far from the capital, local lords and councils run things their own way. They want the crown to admit it.",
+   "options": [
+    {
+     "text": "Grant them their charters.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": 10
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Send royal governors.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": -10
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": -40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "loyal_governors",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.005,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     }
+    ]
+   },
+   "title": "Loyal Governors",
+   "text": "A generation of governors trained in the capital is taking up posts in the provinces.",
+   "options": [
+    {
+     "text": "Good.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": -8
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 20
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sanctum_vein",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "mines_at_least",
+      "at_least": 1
+     }
+    ]
+   },
+   "title": "A Rich Vein",
+   "text": "Our miners have struck a rich vein of sanctum ore.",
+   "options": [
+    {
+     "text": "Dig it out.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 120
+      }
+     ]
+    },
+    {
+     "text": "Save it for later.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "rich_vein",
+       "name": "Rich Vein",
+       "modifiers": {
+        "production_mod": 0.1
+       },
+       "months": 60
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mine_collapse",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "mines_at_least",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "Mine Collapse",
+   "text": "A shaft has collapsed with the night shift inside.",
+   "options": [
+    {
+     "text": "Pay the families.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -50
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Keep digging.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "court_scandal",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "has_advisors_at_least",
+      "at_least": 1
+     }
+    ]
+   },
+   "title": "Scandal at Court",
+   "text": "One of our advisors has been caught taking bribes from foreign merchants.",
+   "options": [
+    {
+     "text": "Make an example of them.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 30
+      }
+     ]
+    },
+    {
+     "text": "Hush it up.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "brilliant_advisor",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.003,
+    "conditions": [
+     {
+      "type": "has_advisors_at_least",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "A Brilliant Mind",
+   "text": "A young member of our council has impressed everyone.",
+   "options": [
+    {
+     "text": "Give them more to do.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 40
+      },
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": 40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "legitimacy_doubts",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "stability_at_least",
+      "at_least": -3
+     },
+     {
+      "type": "not_at_war"
+     }
+    ]
+   },
+   "title": "Whispers Against the Throne",
+   "text": "Pamphlets in the capital question whether our ruler is fit to rule.",
+   "options": [
+    {
+     "text": "Arrest the printers.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Win them over with a festival.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fort_engineer",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "buildings_at_least",
+      "building": "fort",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "The Fort Engineer",
+   "text": "An engineer offers to modernise our walls.",
+   "options": [
+    {
+     "text": "Hire him.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -75
+      },
+      {
+       "type": "add_modifier",
+       "id": "modern_walls",
+       "name": "Modernised Walls",
+       "modifiers": {
+        "fort_defense": 0.15
+       },
+       "months": 120
+      }
+     ]
+    },
+    {
+     "text": "Our walls are fine.",
+     "effects": []
+    }
+   ]
+  },
+  {
+   "id": "veterans_return",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "battles_won_at_least",
+      "at_least": 3
+     },
+     {
+      "type": "not_at_war"
+     }
+    ]
+   },
+   "title": "The Veterans Return",
+   "text": "Soldiers home from the wars bring stories, scars and skills.",
+   "options": [
+    {
+     "text": "Make them drill sergeants.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "text": "Give them farms.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 1000
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "plague_of_rats",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.002,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4300
+     }
+    ]
+   },
+   "title": "Rats in the Granaries",
+   "text": "A plague of rats has eaten through our winter stores.",
+   "options": [
+    {
+     "text": "Buy grain abroad.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      }
+     ]
+    },
+    {
+     "text": "Ration it.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_manpower",
+       "amount": -500
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "comet",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.001,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4320
+     }
+    ]
+   },
+   "title": "A Comet in the Sky",
+   "text": "A bright comet hangs over Arcadia for weeks. The priests argue about what it means.",
+   "options": [
+    {
+     "text": "It is a good omen!",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "It is a warning.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 25
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tech_ahead_scholars",
+   "for": "all",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 4
+     }
+    ]
+   },
+   "title": "Scholars Ahead of Their Time",
+   "text": "Our academies have outpaced the rest of Arcadia. Foreign students are arriving in droves.",
+   "options": [
+    {
+     "text": "Welcome them.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 40
+      }
+     ]
+    },
+    {
+     "text": "Keep our secrets.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "merchant_guild",
+   "for": "republics",
+   "trigger": {
+    "monthly_chance": 0.008,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "The Guilds Demand a Seat",
+   "text": "The great trading houses want more say in the council.",
+   "options": [
+    {
+     "text": "Give them seats.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": -10
+      },
+      {
+       "type": "add_treasury",
+       "amount": 80
+      }
+     ]
+    },
+    {
+     "text": "The council is full.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "term_limit_debate",
+   "for": "republics",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     }
+    ]
+   },
+   "title": "Term Limits",
+   "text": "Some in the council want our leader to rule for life.",
+   "options": [
+    {
+     "text": "Never. We are a republic.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "text": "Perhaps a longer term...",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": -15
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "horde_great_hunt",
+   "for": "tribes",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "not_at_war"
+     }
+    ]
+   },
+   "title": "The Great Hunt",
+   "text": "The clans gather for the great hunt of the season.",
+   "options": [
+    {
+     "text": "Lead the hunt yourself.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      }
+     ]
+    },
+    {
+     "text": "Let the young lead.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 800
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "horde_clan_feud",
+   "for": "tribes",
+   "trigger": {
+    "monthly_chance": 0.008,
+    "conditions": []
+   },
+   "title": "Clan Feud",
+   "text": "Two clans of the horde are at each other's throats over grazing land.",
+   "options": [
+    {
+     "text": "Side with the stronger clan.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    },
+    {
+     "text": "Split the land.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": -25
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "horde_settle",
+   "for": "tribes",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4300
+     },
+     {
+      "type": "buildings_at_least",
+      "building": "market",
+      "at_least": 1
+     }
+    ]
+   },
+   "title": "Settling Down",
+   "text": "Some of our people want to stop wandering and build towns.",
+   "options": [
+    {
+     "text": "Let them build.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "settled_towns",
+       "name": "Settled Towns",
+       "modifiers": {
+        "tax_mod": 0.1,
+        "manpower_mod": -0.05
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "We are the herd!",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "tribe_shaman",
+   "for": "tribes",
+   "trigger": {
+    "monthly_chance": 0.005,
+    "conditions": []
+   },
+   "title": "The Shaman's Vision",
+   "text": "Our shaman has seen the black moon in a dream and warns us of what comes through the portal.",
+   "options": [
+    {
+     "text": "Heed the warning.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "shaman_warning",
+       "name": "The Shaman's Warning",
+       "modifiers": {
+        "doomsday_resistance": 0.2
+       },
+       "months": 120
+      }
+     ]
+    },
+    {
+     "text": "Dreams are dreams.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "pig_lord_envoy",
+   "for": "pig_states",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "An Envoy from the Pig Lord",
+   "text": "The Holy Empire of Menslosia sends an envoy demanding we return to the Empire.",
+   "options": [
+    {
+     "text": "Send him back with a firm no.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_opinion",
+       "amount": -25,
+       "target": "MEN"
+      }
+     ]
+    },
+    {
+     "text": "Pay tribute to buy time.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_opinion",
+       "amount": 30,
+       "target": "MEN"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "independence_day",
+   "for": "pig_states",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4300
+     }
+    ]
+   },
+   "title": "Independence Day",
+   "text": "Our people celebrate the day we broke from the Holy Empire during the Incendium.",
+   "options": [
+    {
+     "text": "Let the bells ring!",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_pig_lord_speech",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     },
+     {
+      "type": "not_flag",
+      "name": "pig_lord_speech"
+     }
+    ]
+   },
+   "title": "The Pig Lord Speaks",
+   "text": "The Pig Lord addresses the Empire from the balcony of Sty Royal. The breakaway states, he says, are still Menslosian.",
+   "options": [
+    {
+     "text": "Reclaim what is ours!",
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "pig_lord_speech"
+      },
+      {
+       "type": "add_modifier",
+       "id": "reclaim_fervour",
+       "name": "Reclamation Fervour",
+       "modifiers": {
+        "land_morale": 0.1,
+        "core_cost_mod": -0.15
+       },
+       "months": 120
+      }
+     ]
+    },
+    {
+     "text": "Peace first. Then we rebuild.",
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "pig_lord_speech"
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_unity_parade",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.008,
+    "conditions": [
+     {
+      "type": "regiments_at_least",
+      "at_least": 15
+     }
+    ]
+   },
+   "title": "Parade in Unity",
+   "text": "The Unity Guard marches through the capital in its new uniforms.",
+   "options": [
+    {
+     "text": "Glorious!",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_lotus_pilgrims",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.008,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4292
+     }
+    ]
+   },
+   "title": "Pilgrims to Lotus Vale",
+   "text": "Thousands of pilgrims travel to the Lotus temples to give thanks for surviving the Incendium.",
+   "options": [
+    {
+     "text": "Tax the pilgrim roads.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 70
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    },
+    {
+     "text": "Feed them for free.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -30
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_sylvanian_question",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4291
+     },
+     {
+      "type": "not_flag",
+      "name": "sylvania_question"
+     },
+     {
+      "type": "nation_dead",
+      "tag": "SYL",
+      "negate": true
+     }
+    ]
+   },
+   "title": "The Sylvanian Question",
+   "text": "Sylvania broke away when the Incendium burned the old roads. The Imperial Council is split on what to do about it.",
+   "options": [
+    {
+     "text": "Prepare for war.",
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "sylvania_question"
+      },
+      {
+       "type": "add_claim",
+       "tag": "SYL"
+      },
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -50
+      }
+     ]
+    },
+    {
+     "text": "Win them back with gifts.",
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "sylvania_question"
+      },
+      {
+       "type": "add_opinion",
+       "amount": 50,
+       "target": "SYL"
+      },
+      {
+       "type": "add_treasury",
+       "amount": -80
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_green_engineers",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "Green Engineers",
+   "text": "Menslosian engineers have built windmills that power a whole town.",
+   "options": [
+    {
+     "text": "Build more.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "windmills",
+       "name": "Imperial Windmills",
+       "modifiers": {
+        "production_mod": 0.08
+       },
+       "months": 180
+      },
+      {
+       "type": "add_treasury",
+       "amount": -50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_old_bureaucracy",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "provinces_owned_at_least",
+      "at_least": 20
+     }
+    ]
+   },
+   "title": "The Old Bureaucracy",
+   "text": "The Imperial bureaucracy is slow, corrupt and hungry for paperwork.",
+   "options": [
+    {
+     "text": "Clean house.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": -60
+      },
+      {
+       "type": "add_modifier",
+       "id": "clean_bureaucracy",
+       "name": "Clean Bureaucracy",
+       "modifiers": {
+        "tax_mod": 0.1
+       },
+       "months": 120
+      }
+     ]
+    },
+    {
+     "text": "It works, more or less.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_skyfall_embassy",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "allied_with",
+      "tag": "SKY"
+     }
+    ]
+   },
+   "title": "The Skyfall Embassy",
+   "text": "Skyfall has opened a grand embassy in Mentos.",
+   "options": [
+    {
+     "text": "Host a feast for the angels.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      },
+      {
+       "type": "add_opinion",
+       "amount": 40,
+       "target": "SKY"
+      }
+     ]
+    },
+    {
+     "text": "Ask for their scholars.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_truffle_war",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.004,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4300
+     }
+    ]
+   },
+   "title": "The Truffle Wars",
+   "text": "Truffle barons in Truffle Downs are fighting each other over the best groves.",
+   "options": [
+    {
+     "text": "Send the army.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": -30
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Let them fight it out.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": 5
+      },
+      {
+       "type": "add_treasury",
+       "amount": 40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_heir_education",
+   "for": "MEN",
+   "trigger": {
+    "monthly_chance": 0.005,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     }
+    ]
+   },
+   "title": "The Heir's Education",
+   "text": "The heir to the Pig Throne needs tutors.",
+   "options": [
+    {
+     "text": "The finest scholars.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -50
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ]
+    },
+    {
+     "text": "The army will teach him.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_waterfall_pilgrims",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Equator Isle"
+     }
+    ]
+   },
+   "title": "Pilgrims at the Holy Waterfall",
+   "text": "Pilgrims from the mainland come to Equator Isle to touch the waters that fall from Eden.",
+   "options": [
+    {
+     "text": "Let them come.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 60
+      },
+      {
+       "type": "add_opinion",
+       "amount": 15,
+       "target": "MEN"
+      }
+     ]
+    },
+    {
+     "text": "The waters are sacred. Close the shore.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_barrier_guard",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.008,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "The Barrier Guard",
+   "text": "The angels who guard the Doomsday Barrier ask for more soldiers.",
+   "options": [
+    {
+     "text": "Send them our best.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -1000
+      },
+      {
+       "type": "add_modifier",
+       "id": "barrier_guard",
+       "name": "Strengthened Barrier Guard",
+       "modifiers": {
+        "doomsday_resistance": 0.3
+       },
+       "months": 120
+      }
+     ]
+    },
+    {
+     "text": "We need them at home.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_cult_preachers",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.012,
+    "conditions": [
+     {
+      "type": "nation_dead",
+      "tag": "BLM",
+      "negate": true
+     }
+    ]
+   },
+   "title": "Black Moon Preachers",
+   "text": "Preachers of the Black Moon are spreading their faith in the markets of Eden.",
+   "options": [
+    {
+     "text": "Arrest them.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Let them talk. No one listens.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "cult_whispers",
+       "name": "Cult Whispers",
+       "modifiers": {
+        "unrest": 1
+       },
+       "months": 36
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_wing_trials",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4292
+     }
+    ]
+   },
+   "title": "The Wing Trials",
+   "text": "Young angels compete in the great flying trials over Eden's Crown.",
+   "options": [
+    {
+     "text": "Recruit the winners.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      },
+      {
+       "type": "add_manpower",
+       "amount": 500
+      }
+     ]
+    },
+    {
+     "text": "Celebrate them.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_eden_gardens",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.006,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4291
+     }
+    ]
+   },
+   "title": "The Gardens of Eden",
+   "text": "The gardens of Eden are in bloom again for the first time since the Incendium.",
+   "options": [
+    {
+     "text": "Open them to all.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    },
+    {
+     "text": "Sell their fruit.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 80
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_angel_council",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.005,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     }
+    ]
+   },
+   "title": "The Council of Angels",
+   "text": "The elder angels argue about whether Skyfall should rule the islands directly or through local chiefs.",
+   "options": [
+    {
+     "text": "Direct rule.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": -10
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      }
+     ]
+    },
+    {
+     "text": "Let the chiefs rule.",
+     "effects": [
+      {
+       "type": "add_autonomy",
+       "amount": 10
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_falling_island",
+   "for": "SKY",
+   "trigger": {
+    "monthly_chance": 0.002,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4300
+     }
+    ]
+   },
+   "title": "An Island Sinks",
+   "text": "One of the smaller sky islands has started to sink towards the clouds.",
+   "options": [
+    {
+     "text": "Evacuate it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_manpower",
+       "amount": -300
+      }
+     ]
+    },
+    {
+     "text": "Hold it up with our magic.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": -60
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "blm_eclipse_rites",
+   "for": "BLM",
+   "trigger": {
+    "monthly_chance": 0.02,
+    "conditions": []
+   },
+   "title": "The Eclipse Rites",
+   "text": "Under a dark sky the Order of the Black Moon holds its rites.",
+   "options": [
+    {
+     "text": "Feed the fervour.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    },
+    {
+     "text": "Gather gold for the cause.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "blm_converts",
+   "for": "BLM",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "Converts from Eden",
+   "text": "Some angels of Skyfall have joined our Order in secret.",
+   "options": [
+    {
+     "text": "Welcome them.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 400
+      },
+      {
+       "type": "add_opinion",
+       "amount": -20,
+       "target": "SKY"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "blm_portal_whispers",
+   "for": "BLM",
+   "trigger": {
+    "monthly_chance": 0.01,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4292
+     }
+    ]
+   },
+   "title": "Whispers from the Portal",
+   "text": "Our priests hear voices from beyond the Doomsday Portal. They promise help.",
+   "options": [
+    {
+     "text": "Listen.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "portal_voices",
+       "name": "Voices from Beyond",
+       "modifiers": {
+        "land_morale": 0.15,
+        "unrest": 1
+       },
+       "months": 60
+      }
+     ]
+    },
+    {
+     "text": "Not yet.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 20
+      }
+     ]
+    }
+   ]
+  }
+ ]
 }

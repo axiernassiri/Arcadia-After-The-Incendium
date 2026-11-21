@@ -70,7 +70,7 @@ func province_trade_power(pid: int) -> float:
 	var p: Dictionary = g.provinces[pid]
 	if p["owner"] == "" or p["controller"] != p["owner"]:
 		return 0.0
-	return 0.2 * g.total_dev(pid) + g.mods.loc(pid, "local_trade_power")
+	return (0.2 * g.total_dev(pid) + g.mods.loc(pid, "local_trade_power")) * g.eco.autonomy_factor(pid)
 
 
 func power_in(tag: String, node: String) -> float:

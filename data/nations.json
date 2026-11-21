@@ -1,90 +1,955 @@
 {
-  "_note": "Nations of the First World. power_names rename EU4's admin / diplomatic / military points. ruler stats (adm, dip, mil, 0-6) add to monthly power. tech is the starting level of each tech track. Tribes are the native groups on land Menslosia hasn't conquered; their names are placeholders.",
+  "_note": "Nations of the First World. power_names rename EU4's admin / diplomatic / military points. ruler stats (adm, dip, mil, 0-6) add to monthly power. tech is the starting level of each track. known_regions are explored at the start (plus a nation's own land and its neighbours). Names other than Menslosia, Skyfall, the Pig Lord and Napoleon are placeholders.",
   "nations": {
     "MEN": {
-      "name": "Holy Empire of Menslosia", "short": "Menslosia", "adjective": "Menslosian", "colour": "#c8505a",
-      "government": "holy_pig_monarchy", "capital": "Mentos", "ideas": "MEN",
-      "culture": "Mentosian", "accepted_cultures": ["Sylvanian", "Midrean", "Euromean", "Archipelagan"],
-      "religion": "Lotus Faith", "ethnicity": "Pig",
-      "ruler": {"name": "The Pig Lord", "adm": 5, "dip": 4, "mil": 3, "age": 41, "dynasty": "of Canada"},
-      "heir": {"name": "Prince Truffle", "adm": 3, "dip": 3, "mil": 2, "age": 12, "dynasty": "of Canada"},
-      "ruler_names": ["Hamwise", "Bristle", "Snoutimer", "Porcius", "Truffle", "Oinkhart", "Rindgar", "Sowena", "Curlina", "Hogwald"],
-      "power_names": ["Lotus", "Accord", "Unity"],
-      "treasury": 150, "manpower": 22000, "stability": 1, "tech": [3, 3, 3],
-      "army": {"location": "Mentos", "inf": 10, "cav": 3, "art": 0},
-      "army2": {"location": "Eurome Fields", "inf": 6, "cav": 1, "art": 0},
-      "fleet": {"location": "Bay of Pigs", "heavy": 2, "light": 4, "transport": 4},
-      "known_layers": ["ground"], "known_extra": ["Holy Waterfall of Eden"],
-      "relations": {"SKY": {"opinion": 50, "alliance": true}},
-      "flags": [], "playable": true, "difficulty": "Easy",
-      "blurb": "The wide nation. Pigs and pigmen rebuilding the supercontinent after the Incendium: many provinces, farms in Eurome, labs in Midrea and mines in the Western Archipelago. Wild boar tribes still hold the fringes."
+      "name": "Holy Empire of Menslosia",
+      "short": "Menslosia",
+      "adjective": "Menslosian",
+      "colour": "#c8505a",
+      "government": "holy_pig_monarchy",
+      "capital": "Mentos",
+      "ideas": "MEN",
+      "culture": "Mentosian",
+      "accepted_cultures": [
+        "Midrean",
+        "Archipelagan"
+      ],
+      "religion": "Lotus Faith",
+      "ethnicity": "Pig",
+      "legitimacy": 80,
+      "ruler": {
+        "name": "The Pig Lord",
+        "adm": 5,
+        "dip": 4,
+        "mil": 3,
+        "age": 41,
+        "dynasty": "of Canada"
+      },
+      "heir": {
+        "name": "Prince Truffle",
+        "adm": 3,
+        "dip": 3,
+        "mil": 2,
+        "age": 12,
+        "dynasty": "of Canada"
+      },
+      "ruler_names": [
+        "Hamwise",
+        "Bristle",
+        "Snoutimer",
+        "Porcius",
+        "Truffle",
+        "Oinkhart",
+        "Rindgar",
+        "Sowena",
+        "Curlina",
+        "Hogwald"
+      ],
+      "power_names": [
+        "Lotus",
+        "Accord",
+        "Unity"
+      ],
+      "treasury": 80,
+      "manpower": 9000,
+      "stability": 1,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Mentos",
+        "inf": 7,
+        "cav": 2,
+        "art": 0
+      },
+      "army2": {
+        "location": "Midrea Labworks",
+        "inf": 3,
+        "cav": 0,
+        "art": 0
+      },
+      "fleet": {
+        "location": "Unity",
+        "heavy": 1,
+        "light": 2,
+        "transport": 3
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Mentos",
+        "Frost Reach",
+        "Sylvania",
+        "Midrea",
+        "Eurome",
+        "Western Archipelago",
+        "Southern Isles"
+      ],
+      "known_extra": [
+        "Holy Waterfall of Eden"
+      ],
+      "relations": {
+        "SKY": {
+          "opinion": 50,
+          "alliance": true
+        },
+        "EUR": {
+          "opinion": -20
+        },
+        "SYL": {
+          "opinion": -30
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "The Pig Lord's Holy Empire, shrunk to Mentos and the Midrean labs after the Incendium. Still the strongest power in Arcadia, but Sylvania, Eurome and Midrea now rule themselves and the wild boars press on every border. Unity guards the south.",
+      "claims_cultures": [
+        "Sylvanian",
+        "Euromean",
+        "Midrean",
+        "Archipelagan"
+      ]
     },
     "SKY": {
-      "name": "Skyfall", "short": "Skyfall", "adjective": "Skyfallin", "colour": "#e8b84a",
-      "government": "edenic_monarchy", "capital": "Eden's Crown", "ideas": "SKY",
-      "culture": "Edenite", "accepted_cultures": [], "religion": "Will of Eden", "ethnicity": "Human",
-      "ruler": {"name": "Napoleon Bonaparte", "adm": 3, "dip": 3, "mil": 6, "age": 52, "dynasty": "Bonaparte", "ageless": true},
+      "name": "Skyfall",
+      "short": "Skyfall",
+      "adjective": "Skyfallin",
+      "colour": "#e8b84a",
+      "government": "edenic_monarchy",
+      "capital": "Eden's Crown",
+      "ideas": "SKY",
+      "culture": "Edenite",
+      "accepted_cultures": [],
+      "religion": "Will of Eden",
+      "ethnicity": "Human",
+      "legitimacy": 100,
+      "ruler": {
+        "name": "Napoleon Bonaparte",
+        "adm": 3,
+        "dip": 3,
+        "mil": 6,
+        "age": 52,
+        "dynasty": "Bonaparte",
+        "ageless": true
+      },
       "heir": {},
-      "ruler_names": ["Josephine", "Gabriel", "Seraphine", "Michel", "Aurelian", "Celeste"],
-      "power_names": ["Core", "Eden", "Wings"],
-      "treasury": 120, "manpower": 9000, "stability": 2, "tech": [3, 3, 4],
-      "army": {"location": "Eden's Crown", "inf": 6, "cav": 3, "art": 2},
-      "fleet": {"location": "Eden's Crown", "heavy": 2, "light": 2, "transport": 2},
-      "known_layers": ["sky"], "known_extra": ["Falls Landing"],
-      "relations": {"MEN": {"opinion": 50, "alliance": true}},
-      "flags": ["will_of_eden"], "playable": true, "difficulty": "Normal",
-      "blurb": "The tall nation. Flying islands that fell into Arcadia in the Universal Merge, ruled by an ageless Napoleon. Few provinces, strong armies, airships instead of ships, and the burden of holding the Doomsday Barrier."
+      "ruler_names": [
+        "Josephine",
+        "Gabriel",
+        "Seraphine",
+        "Michel",
+        "Aurelian",
+        "Celeste"
+      ],
+      "power_names": [
+        "Core",
+        "Eden",
+        "Wings"
+      ],
+      "treasury": 70,
+      "manpower": 6000,
+      "stability": 2,
+      "tech": [
+        1,
+        1,
+        2
+      ],
+      "army": {
+        "location": "Eden's Crown",
+        "inf": 5,
+        "cav": 2,
+        "art": 1
+      },
+      "fleet": {
+        "location": "Eden's Crown",
+        "heavy": 1,
+        "light": 2,
+        "transport": 2
+      },
+      "known_layers": [
+        "sky",
+        "ground"
+      ],
+      "known_regions": [],
+      "known_extra": [],
+      "relations": {
+        "MEN": {
+          "opinion": 50,
+          "alliance": true
+        },
+        "BLM": {
+          "opinion": -150,
+          "rival": true,
+          "truce_years": 12
+        }
+      },
+      "flags": [
+        "will_of_eden"
+      ],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "Flying islands that fell into Arcadia in the Universal Merge, ruled by an ageless Napoleon. From above the clouds Skyfall sees the whole continent. Few provinces, strong armies, airships, and the burden of holding the Doomsday Barrier against the Black Moon and its cultists."
+    },
+    "BLM": {
+      "name": "Order of the Black Moon",
+      "short": "Black Moon",
+      "adjective": "Moonsworn",
+      "colour": "#5a3a78",
+      "government": "black_moon_cult",
+      "capital": "Moonfall Rock",
+      "ideas": "BLM",
+      "culture": "Moonsworn",
+      "accepted_cultures": [],
+      "religion": "Black Moon",
+      "ethnicity": "Human",
+      "legitimacy": 90,
+      "ruler": {
+        "name": "The Eclipsed Prophet",
+        "adm": 2,
+        "dip": 2,
+        "mil": 5,
+        "age": 46,
+        "dynasty": "of the Moon"
+      },
+      "heir": {
+        "name": "Acolyte Vesper",
+        "adm": 2,
+        "dip": 1,
+        "mil": 4,
+        "age": 19,
+        "dynasty": "of the Moon"
+      },
+      "ruler_names": [
+        "Vesper",
+        "Umbra",
+        "Nyx",
+        "Morrow",
+        "Eclipsa",
+        "Selene"
+      ],
+      "power_names": [
+        "Rite",
+        "Whisper",
+        "Fervor"
+      ],
+      "treasury": 20,
+      "manpower": 2500,
+      "stability": 1,
+      "tech": [
+        1,
+        1,
+        2
+      ],
+      "army": {
+        "location": "Moonfall Rock",
+        "inf": 4,
+        "cav": 1,
+        "art": 0
+      },
+      "fleet": {
+        "location": "Moonfall Rock",
+        "light": 1,
+        "transport": 1
+      },
+      "known_layers": [
+        "sky"
+      ],
+      "known_regions": [],
+      "known_extra": [],
+      "relations": {
+        "SKY": {
+          "opinion": -150,
+          "rival": true,
+          "truce_years": 12
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "A smaller chain of sky islands whose people worship the Doomsday Portal and pray for the Black Moon. Fanatical troops with high morale, but few of them and little wealth. The anomalies from the portal spare them, and Skyfall wants them gone."
+    },
+    "SYL": {
+      "name": "Kingdom of Sylvania",
+      "short": "Sylvania",
+      "adjective": "Sylvanian",
+      "colour": "#4a9a5a",
+      "government": "pig_kingdom",
+      "capital": "Elderwood",
+      "ideas": "SYL",
+      "culture": "Sylvanian",
+      "accepted_cultures": [],
+      "religion": "Lotus Faith",
+      "ethnicity": "Pig",
+      "legitimacy": 70,
+      "ruler": {
+        "name": "Queen Bramble",
+        "adm": 3,
+        "dip": 4,
+        "mil": 2,
+        "age": 36,
+        "dynasty": "Oakroot"
+      },
+      "heir": {
+        "name": "Prince Acorn",
+        "adm": 2,
+        "dip": 2,
+        "mil": 3,
+        "age": 10,
+        "dynasty": "Oakroot"
+      },
+      "ruler_names": [
+        "Bramble",
+        "Acorn",
+        "Fern",
+        "Willow",
+        "Hazel",
+        "Thorn"
+      ],
+      "power_names": [
+        "Crown",
+        "Court",
+        "Spear"
+      ],
+      "treasury": 40,
+      "manpower": 4500,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Elderwood",
+        "inf": 5,
+        "cav": 1,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Sylvania",
+        "Mentos",
+        "Western Archipelago"
+      ],
+      "known_extra": [],
+      "relations": {
+        "MEN": {
+          "opinion": -30
+        },
+        "BAY": {
+          "opinion": 20
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "The forest kingdom of Sylvania broke away from the Holy Empire during the Incendium. Its pigs remember the Pig Lord's rule, and the Pig Lord remembers theirs."
+    },
+    "BAY": {
+      "name": "Merchant Republic of the Bay",
+      "short": "Bay of Pigs",
+      "adjective": "Bayfolk",
+      "colour": "#3a7aa8",
+      "government": "merchant_republic",
+      "capital": "Bay of Pigs",
+      "ideas": "BAY",
+      "culture": "Sylvanian",
+      "accepted_cultures": [],
+      "religion": "Lotus Faith",
+      "ethnicity": "Pig",
+      "legitimacy": 80,
+      "ruler": {
+        "name": "Doge Barnaby Snoutwell",
+        "adm": 3,
+        "dip": 4,
+        "mil": 1,
+        "age": 58,
+        "dynasty": "Snoutwell"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Barnaby",
+        "Cornelius",
+        "Marigold",
+        "Silas",
+        "Tobias",
+        "Honora"
+      ],
+      "power_names": [
+        "Senate",
+        "Guilds",
+        "Marines"
+      ],
+      "treasury": 70,
+      "manpower": 2500,
+      "stability": 1,
+      "tech": [
+        1,
+        2,
+        1
+      ],
+      "army": {
+        "location": "Bay of Pigs",
+        "inf": 3,
+        "cav": 0,
+        "art": 0
+      },
+      "fleet": {
+        "location": "Bay of Pigs",
+        "light": 3,
+        "heavy": 1
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Sylvania",
+        "Western Archipelago",
+        "Southwest Island",
+        "Southern Isles",
+        "Eurome"
+      ],
+      "known_extra": [],
+      "relations": {
+        "SYL": {
+          "opinion": 20
+        },
+        "SAL": {
+          "opinion": 20
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "Merchant pigs who run the Bay of Pigs as a republic. Small, rich in trade, and every few years they elect a new Doge."
+    },
+    "EUR": {
+      "name": "Euromean Grain League",
+      "short": "Grain League",
+      "adjective": "Euromean",
+      "colour": "#d09a40",
+      "government": "farmers_republic",
+      "capital": "Eurome Fields",
+      "ideas": "EUR",
+      "culture": "Euromean",
+      "accepted_cultures": [],
+      "religion": "Lotus Faith",
+      "ethnicity": "Pig",
+      "legitimacy": 75,
+      "ruler": {
+        "name": "Grand Steward Ploughman",
+        "adm": 4,
+        "dip": 2,
+        "mil": 2,
+        "age": 49,
+        "dynasty": "Ploughman"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Barley",
+        "Oats",
+        "Rye",
+        "Clover",
+        "Sorrel",
+        "Furrow"
+      ],
+      "power_names": [
+        "Harvest",
+        "Market",
+        "Militia"
+      ],
+      "treasury": 50,
+      "manpower": 5000,
+      "stability": 1,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Eurome Fields",
+        "inf": 5,
+        "cav": 1,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Eurome",
+        "Midrea",
+        "Sylvania",
+        "Southern Isles"
+      ],
+      "known_extra": [],
+      "relations": {
+        "MEN": {
+          "opinion": -20
+        },
+        "RYE": {
+          "opinion": -10
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "The farming towns of Eurome, bound into a league. They grow the food Menslosia used to eat, and sell it at Menslosia's expense."
+    },
+    "RYE": {
+      "name": "Duchy of Ryefield",
+      "short": "Ryefield",
+      "adjective": "Ryefolk",
+      "colour": "#a86838",
+      "government": "pig_kingdom",
+      "capital": "Ryefield",
+      "ideas": "RYE",
+      "culture": "Euromean",
+      "accepted_cultures": [],
+      "religion": "Lotus Faith",
+      "ethnicity": "Pig",
+      "legitimacy": 65,
+      "ruler": {
+        "name": "Duke Hamstead",
+        "adm": 2,
+        "dip": 2,
+        "mil": 4,
+        "age": 44,
+        "dynasty": "Hamstead"
+      },
+      "heir": {
+        "name": "Lady Sorrel",
+        "adm": 3,
+        "dip": 3,
+        "mil": 2,
+        "age": 16,
+        "dynasty": "Hamstead"
+      },
+      "ruler_names": [
+        "Hamstead",
+        "Sorrel",
+        "Mallow",
+        "Tansy",
+        "Burdock"
+      ],
+      "power_names": [
+        "Crown",
+        "Court",
+        "Spear"
+      ],
+      "treasury": 35,
+      "manpower": 3500,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Ryefield",
+        "inf": 4,
+        "cav": 1,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Eurome",
+        "Southern Isles"
+      ],
+      "known_extra": [],
+      "relations": {
+        "EUR": {
+          "opinion": -10
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "A warlike duchy on Eurome's eastern coast that never joined the Grain League."
+    },
+    "MID": {
+      "name": "Midrean Technocracy",
+      "short": "Technocracy",
+      "adjective": "Midrean",
+      "colour": "#7a5ac0",
+      "government": "technocracy",
+      "capital": "Space Observatory",
+      "ideas": "MID",
+      "culture": "Midrean",
+      "accepted_cultures": [],
+      "religion": "Lotus Faith",
+      "ethnicity": "Pigman",
+      "legitimacy": 80,
+      "ruler": {
+        "name": "Chief Engineer Voltaire",
+        "adm": 4,
+        "dip": 2,
+        "mil": 1,
+        "age": 51,
+        "dynasty": "Gearwright"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Voltaire",
+        "Ada",
+        "Nikola",
+        "Copernica",
+        "Galileo",
+        "Marie"
+      ],
+      "power_names": [
+        "Theory",
+        "Network",
+        "Engineering"
+      ],
+      "treasury": 45,
+      "manpower": 2500,
+      "stability": 1,
+      "tech": [
+        2,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Space Observatory",
+        "inf": 3,
+        "cav": 0,
+        "art": 1
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Midrea",
+        "Eurome",
+        "Mentos"
+      ],
+      "known_extra": [],
+      "relations": {
+        "MEN": {
+          "opinion": 0
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "The pigmen engineers of southern Midrea, who kept the Space Observatory running when the Empire fell back. Clever, few and well armed."
     },
     "SNT": {
-      "name": "Snowtusk Clans", "short": "Snowtusk", "adjective": "Snowtusk", "colour": "#9ab8c8",
-      "government": "boar_tribe", "capital": "Frost Reach", "ideas": "TRIBE",
-      "culture": "Snowtusk", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
-      "ruler": {"name": "Chief Rimeback", "adm": 2, "dip": 1, "mil": 4, "age": 33, "dynasty": "Snowtusk"},
-      "heir": {"name": "Icejaw the Young", "adm": 1, "dip": 2, "mil": 3, "age": 9, "dynasty": "Snowtusk"},
-      "ruler_names": ["Rime", "Hoarfrost", "Glacius", "Sleet", "Frostbristle"],
-      "power_names": ["Council", "Kinship", "Tusks"],
-      "treasury": 25, "manpower": 4000, "stability": 0, "tech": [1, 1, 2],
-      "army": {"location": "Frost Reach", "inf": 3, "cav": 1, "art": 0},
-      "known_layers": [], "flags": [], "playable": true, "difficulty": "Very hard",
-      "blurb": "Wild boars of the frozen northeast of Mentos, right on the Pig Lord's doorstep."
+      "name": "Snowtusk Horde",
+      "short": "Snowtusk",
+      "adjective": "Snowtusk",
+      "colour": "#9ab8c8",
+      "government": "boar_horde",
+      "capital": "Frost Reach",
+      "ideas": "HORDE",
+      "culture": "Snowtusk",
+      "accepted_cultures": [],
+      "religion": "Mud Spirits",
+      "ethnicity": "Boar",
+      "legitimacy": 70,
+      "ruler": {
+        "name": "Khan Rimeback",
+        "adm": 1,
+        "dip": 1,
+        "mil": 5,
+        "age": 33,
+        "dynasty": "Snowtusk"
+      },
+      "heir": {
+        "name": "Icejaw the Young",
+        "adm": 1,
+        "dip": 2,
+        "mil": 3,
+        "age": 9,
+        "dynasty": "Snowtusk"
+      },
+      "ruler_names": [
+        "Rime",
+        "Hoarfrost",
+        "Glacius",
+        "Sleet",
+        "Frostbristle"
+      ],
+      "power_names": [
+        "Council",
+        "Kinship",
+        "Tusks"
+      ],
+      "treasury": 15,
+      "manpower": 4000,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Frost Reach",
+        "inf": 2,
+        "cav": 3,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Frost Reach",
+        "Mentos"
+      ],
+      "known_extra": [],
+      "relations": {
+        "MEN": {
+          "opinion": -50
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "A horde of wild boars riding out of the frozen northeast of Mentos, right on the Pig Lord's doorstep."
+    },
+    "CDH": {
+      "name": "Cinderhoof Horde",
+      "short": "Cinderhoof",
+      "adjective": "Cinderhoof",
+      "colour": "#8a4a3a",
+      "government": "boar_horde",
+      "capital": "Yellowstone Caldera",
+      "ideas": "HORDE",
+      "culture": "Cinderhoof",
+      "accepted_cultures": [],
+      "religion": "Mud Spirits",
+      "ethnicity": "Boar",
+      "legitimacy": 60,
+      "ruler": {
+        "name": "Khan Ashmaw",
+        "adm": 1,
+        "dip": 2,
+        "mil": 4,
+        "age": 28,
+        "dynasty": "Cinderhoof"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Ashmaw",
+        "Ember",
+        "Scorch",
+        "Cinder",
+        "Smoulder"
+      ],
+      "power_names": [
+        "Council",
+        "Kinship",
+        "Tusks"
+      ],
+      "treasury": 10,
+      "manpower": 2500,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Yellowstone Caldera",
+        "inf": 1,
+        "cav": 2,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Mentos"
+      ],
+      "known_extra": [],
+      "relations": {
+        "MEN": {
+          "opinion": -50
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Very hard",
+      "blurb": "Boars who live in the ash around Yellowstone, the dormant volcano that fuelled the Incendium."
     },
     "SAL": {
-      "name": "Saltjaw Islanders", "short": "Saltjaw", "adjective": "Saltjaw", "colour": "#4a8a8a",
-      "government": "boar_tribe", "capital": "Mine Key", "ideas": "TRIBE",
-      "culture": "Saltjaw", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
-      "ruler": {"name": "Old Brinehide", "adm": 2, "dip": 3, "mil": 2, "age": 47, "dynasty": "Saltjaw"},
+      "name": "Saltjaw League",
+      "short": "Saltjaw",
+      "adjective": "Saltjaw",
+      "colour": "#4a8a8a",
+      "government": "merchant_republic",
+      "capital": "Mine Key",
+      "ideas": "TRIBE",
+      "culture": "Saltjaw",
+      "accepted_cultures": [],
+      "religion": "Mud Spirits",
+      "ethnicity": "Boar",
+      "legitimacy": 70,
+      "ruler": {
+        "name": "Speaker Brinehide",
+        "adm": 2,
+        "dip": 3,
+        "mil": 2,
+        "age": 47,
+        "dynasty": "Saltjaw"
+      },
       "heir": {},
-      "ruler_names": ["Brine", "Kelp", "Shoal", "Barnacle", "Tidebristle"],
-      "power_names": ["Council", "Kinship", "Tusks"],
-      "treasury": 20, "manpower": 3000, "stability": 0, "tech": [1, 2, 1],
-      "army": {"location": "Mine Key", "inf": 2, "cav": 0, "art": 0},
-      "known_layers": [], "flags": [], "playable": true, "difficulty": "Very hard",
-      "blurb": "Island boars of the southern Western Archipelago, sitting on the richest ore in Arcadia."
+      "ruler_names": [
+        "Brine",
+        "Kelp",
+        "Shoal",
+        "Barnacle",
+        "Tidebristle"
+      ],
+      "power_names": [
+        "Council",
+        "Kinship",
+        "Tusks"
+      ],
+      "treasury": 25,
+      "manpower": 2000,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Mine Key",
+        "inf": 2,
+        "cav": 0,
+        "art": 0
+      },
+      "fleet": {
+        "location": "Mine Key",
+        "light": 2
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Western Archipelago",
+        "Sylvania",
+        "Southwest Island"
+      ],
+      "known_extra": [],
+      "relations": {
+        "BAY": {
+          "opinion": 20
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Very hard",
+      "blurb": "A league of island boar clans in the Western Archipelago, trading the richest ore in Arcadia."
     },
     "DRF": {
-      "name": "Driftboar Tribe", "short": "Driftboar", "adjective": "Driftboar", "colour": "#9a9a3a",
-      "government": "boar_tribe", "capital": "Driftboar Shore", "ideas": "TRIBE",
-      "culture": "Driftboar", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
-      "ruler": {"name": "Chief Palmtusk", "adm": 3, "dip": 2, "mil": 3, "age": 29, "dynasty": "Driftboar"},
+      "name": "Driftboar Kingdom",
+      "short": "Driftboar",
+      "adjective": "Driftboar",
+      "colour": "#9a9a3a",
+      "government": "boar_kingdom",
+      "capital": "Driftboar Shore",
+      "ideas": "TRIBE",
+      "culture": "Driftboar",
+      "accepted_cultures": [],
+      "religion": "Mud Spirits",
+      "ethnicity": "Boar",
+      "legitimacy": 70,
+      "ruler": {
+        "name": "King Palmtusk",
+        "adm": 3,
+        "dip": 2,
+        "mil": 3,
+        "age": 29,
+        "dynasty": "Driftboar"
+      },
       "heir": {},
-      "ruler_names": ["Palm", "Coconut", "Mango", "Reef", "Sunbristle"],
-      "power_names": ["Council", "Kinship", "Tusks"],
-      "treasury": 30, "manpower": 4500, "stability": 1, "tech": [1, 1, 1],
-      "army": {"location": "Driftboar Shore", "inf": 4, "cav": 0, "art": 0},
-      "known_layers": [], "flags": [], "playable": true, "difficulty": "Hard",
-      "blurb": "Boars of the lone southwestern island across the equator, far from the Pig Lord's reach."
+      "ruler_names": [
+        "Palm",
+        "Coconut",
+        "Mango",
+        "Reef",
+        "Sunbristle"
+      ],
+      "power_names": [
+        "Crown",
+        "Kinship",
+        "Tusks"
+      ],
+      "treasury": 25,
+      "manpower": 3000,
+      "stability": 1,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Driftboar Shore",
+        "inf": 3,
+        "cav": 0,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Southwest Island",
+        "Western Archipelago"
+      ],
+      "known_extra": [],
+      "relations": {},
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "The boars of the lone southwestern island across the equator crowned a king of their own."
     },
     "CRL": {
-      "name": "Coralsnout Tribe", "short": "Coralsnout", "adjective": "Coralsnout", "colour": "#d07a60",
-      "government": "boar_tribe", "capital": "Sandsnout", "ideas": "TRIBE",
-      "culture": "Coralsnout", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
-      "ruler": {"name": "Shellmother Conch", "adm": 3, "dip": 3, "mil": 1, "age": 55, "dynasty": "Coralsnout"},
+      "name": "Coralsnout Tribe",
+      "short": "Coralsnout",
+      "adjective": "Coralsnout",
+      "colour": "#d07a60",
+      "government": "boar_tribe",
+      "capital": "Sandsnout",
+      "ideas": "TRIBE",
+      "culture": "Coralsnout",
+      "accepted_cultures": [],
+      "religion": "Mud Spirits",
+      "ethnicity": "Boar",
+      "legitimacy": 60,
+      "ruler": {
+        "name": "Shellmother Conch",
+        "adm": 3,
+        "dip": 3,
+        "mil": 1,
+        "age": 55,
+        "dynasty": "Coralsnout"
+      },
       "heir": {},
-      "ruler_names": ["Conch", "Pearl", "Urchin", "Coral", "Seafoam"],
-      "power_names": ["Council", "Kinship", "Tusks"],
-      "treasury": 20, "manpower": 2000, "stability": 0, "tech": [1, 2, 1],
-      "army": {"location": "Sandsnout", "inf": 2, "cav": 0, "art": 0},
-      "known_layers": [], "flags": [], "playable": true, "difficulty": "Very hard",
+      "ruler_names": [
+        "Conch",
+        "Pearl",
+        "Urchin",
+        "Coral",
+        "Seafoam"
+      ],
+      "power_names": [
+        "Council",
+        "Kinship",
+        "Tusks"
+      ],
+      "treasury": 15,
+      "manpower": 1500,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Sandsnout",
+        "inf": 2,
+        "cav": 0,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Southern Isles",
+        "Eurome"
+      ],
+      "known_extra": [],
+      "relations": {},
+      "flags": [],
+      "playable": true,
+      "difficulty": "Very hard",
       "blurb": "Pearl-diving boars of the Southern Isles, just off Unity."
     }
   },

@@ -103,6 +103,19 @@ func build() -> void:
 		add(UI.kv("Tax / production a year", "%.1f / %.1f" % [Game.eco.province_tax(province), Game.eco.province_production(province)]))
 		add(UI.kv("Manpower a year", "%d" % int(Game.eco.province_manpower(province))))
 		add(UI.kv("Trade power", "%.1f" % Game.trade.province_trade_power(province)))
+		var aut = Game.eco.autonomy(province)
+		var drift = Game.eco.autonomy_drift(owner, province)
+		add(UI.row([UI.tip_label("Autonomy %d%%" % int(aut), "Autonomy cuts this province's tax, production, manpower and trade power by %d%%, but lowers unrest.\nUncored provinces never go below 50%%.%s" % [int(aut),
+			"\nIn the early Arcadian era (until %d) provinces drift away from the centre: +%.2f a month." % [Game.eco.EARLY_ERA_END, drift] if drift > 0.0 else ""], 14,
+			UI.BAD if aut >= 50.0 else UI.TEXT), UI.bar(aut, 100.0, 100.0, UI.BAD, 8.0)]))
+		if mine:
+			add(UI.row([UI.action("Lower -25%% (%d %s)" % [Game.eco.lower_autonomy_cost(province), n["power_names"][0]], Game.eco.can_change_autonomy(tag, province, true),
+				func(): Game.eco.change_autonomy(tag, province, true), "More income from this province, but more unrest. Once every 5 years."),
+				UI.action("Raise +25%", Game.eco.can_change_autonomy(tag, province, false),
+				func(): Game.eco.change_autonomy(tag, province, false), "Calms unrest and gives a little power, but the province pays less.")]))
+		if "mine_site" in p["flags"]:
+			add(UI.kv("Sanctum mine site", ("mine: +%.1f a month" % Game.eco.mine_income(province)) if p["buildings"].has("mine") else "no mine yet",
+				"Sanctum ore lies under this province. Build a mine to dig it out.", UI.GOOD if p["buildings"].has("mine") else UI.INFO))
 
 	# unrest and rebels
 	if owner != "":
@@ -146,7 +159,7 @@ func build() -> void:
 				if p["buildings"].has(bid):
 					continue
 				var why: String = Game.eco.can_build(tag, province, bid)
-				if why.begins_with("Needs a coastal") or why.begins_with("Needs adm tech") and false:
+				if why.begins_with("Needs a coastal") or why.begins_with("Mines can only"):
 					continue
 				var bd: Dictionary = Game.building_data[bid]
 				var b = UI.action("Build %s (%d)" % [bd["name"], Game.eco.building_cost(tag, bid)], why,
@@ -158,12 +171,15 @@ func build() -> void:
 	# military
 	if mine and p["controller"] == tag:
 		section("Recruit")
-		var rr = HBoxContainer.new()
-		for ut in ["inf", "cav", "art"]:
+		var rr = HFlowContainer.new()
+		for ut in Game.unit_data["land"]:
+			var why0: String = Game.mil.can_recruit(tag, province, ut)
+			if why0.begins_with("Only "):
+				continue
 			var ud: Dictionary = Game.unit_data["land"][ut]
 			rr.add_child(UI.action("%s (%d)" % [Game.mil.unit_name(tag, ut), int(ud["cost"])], Game.mil.can_recruit(tag, province, ut),
-				func(): Game.mil.recruit(tag, province, ut), "1,000 men, %d sanctum, %.2f a month upkeep, %d month(s) to train." % [
-					int(ud["cost"]), float(ud["maintenance"]), int(ud.get("months", 1))]))
+				func(): Game.mil.recruit(tag, province, ut), "%s1,000 men, %d sanctum, %.2f a month upkeep, %d month(s) to train." % [
+					ud.get("text", "") + "\n" if ud.has("text") else "", int(ud["cost"]), float(ud["maintenance"]), int(ud.get("months", 1))]))
 		add(rr)
 		if p["coastal"]:
 			var sr = HBoxContainer.new()

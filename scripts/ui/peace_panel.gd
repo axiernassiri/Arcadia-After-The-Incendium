@@ -83,11 +83,13 @@ func build() -> void:
 		add(cb)
 	section("Other terms")
 	var gold_row = HBoxContainer.new()
-	gold_row.add_child(UI.label("Sanctum:", 13))
-	for amt in [0, 50, 100, 250]:
-		var gb = UI.button(str(amt), func(): _set_gold(amt))
+	gold_row.add_child(UI.label("Sanctum (share of a year's income):", 13))
+	var payer: String = me if give else loser
+	for pct in [0, 10, 25, 50, 100]:
+		var gb = UI.button("%d%%" % pct if pct > 0 else "none", func(): _set_gold(pct))
 		gb.toggle_mode = true
-		gb.button_pressed = _gold() == amt
+		gb.button_pressed = _gold() == pct
+		gb.tooltip_text = "%d sanctum from %s." % [Game.dip.gold_amount(payer, pct / 100.0), Game.nation_name(payer)] if pct > 0 else "No payment."
 		gold_row.add_child(gb)
 	add(gold_row)
 	if not give:
@@ -115,6 +117,10 @@ func build() -> void:
 	add(UI.label("They will %s." % ("ACCEPT" if acc[0] else "REFUSE"), 15, UI.GOOD if acc[0] else UI.BAD))
 	var label = "Offer white peace" if demands.is_empty() else ("Offer these concessions" if give else "Send peace demands")
 	add(UI.button(label, _send))
+	if not give and Game.dip.fully_occupied(w, me, target) and target == Game.dip.enemy_leader(w, me):
+		text("Every province of %s is occupied. You can force these terms on them; they have no say." % Game.nation_name(target), 12, UI.GOLD)
+		add(UI.action("Enforce peace", "" if cost_all <= 100.0 else "Terms cost more than 100%.", _enforce,
+			"Impose the terms without asking. Costs no extra, but they will hate you."))
 	if _msg != "":
 		text(_msg, 13, UI.GOLD)
 
@@ -155,6 +161,18 @@ func _send() -> void:
 	mark_dirty()
 
 
+func _enforce() -> void:
+	var w: Dictionary = Game.wars.get(war_id, {})
+	if w.is_empty():
+		return
+	var ds: Array = demands.duplicate(true)
+	if ds.is_empty():
+		ds = [{"type": "white"}]
+	Game.dip.add_opinion(target, Game.player_tag, -25.0, "Enforced peace on us", 0.5)
+	Game.dip.enforce_peace(w, Game.player_tag, target, ds)
+	visible = false
+
+
 func _has(d: Dictionary) -> bool:
 	for x in demands:
 		if x.get("type", "") == d["type"] and int(x.get("pid", -1)) == int(d.get("pid", -1)):
@@ -172,12 +190,12 @@ func _toggle(d: Dictionary, on: bool) -> void:
 func _gold() -> int:
 	for x in demands:
 		if x.get("type", "") == "gold":
-			return int(x["amount"])
+			return int(round(float(x.get("pct", 0.0)) * 100.0))
 	return 0
 
 
-func _set_gold(amt: int) -> void:
+func _set_gold(pct: int) -> void:
 	demands = demands.filter(func(x): return x.get("type", "") != "gold")
-	if amt > 0:
-		demands.append({"type": "gold", "amount": amt})
+	if pct > 0:
+		demands.append({"type": "gold", "pct": pct / 100.0})
 	mark_dirty()

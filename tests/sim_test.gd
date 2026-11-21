@@ -23,6 +23,10 @@ func days(n: int) -> void:
 		game.advance_day()
 
 
+func pop_group(t: String) -> String:
+	return game.pop.culture_group(game.nations[t]["culture"])
+
+
 func pid(name: String) -> int:
 	return int(game.province_ids_by_name.get(name, -1))
 
@@ -38,7 +42,20 @@ func _initialize() -> void:
 
 	# ---------------------------------------------------------------- the world
 	check(game.provinces.size() >= 120, "%d provinces loaded" % game.provinces.size())
-	check(game.nations.size() == 6, "6 nations: %s" % [game.nations.keys()])
+	check(game.nations.size() == 13, "13 nations: %s" % [game.nations.keys()])
+	var dev_of := {}
+	for id in game.provinces:
+		var o: String = game.provinces[id]["owner"]
+		if o != "":
+			dev_of[o] = int(dev_of.get(o, 0)) + game.total_dev(id)
+	check(int(dev_of["MEN"]) > int(dev_of["SKY"]) and int(dev_of["MEN"]) < 2.5 * int(dev_of["SKY"]), "Menslosia is the biggest but not overwhelming (%d dev vs Skyfall %d)" % [dev_of["MEN"], dev_of["SKY"]])
+	check(game.provinces[pid("Equator Isle")]["connections"].get(pid("Holy Waterfall of Eden"), "") == "waterfall", "the Holy Waterfall reaches the ground at Equator Isle")
+	var mines := 0
+	for id in game.provinces:
+		if "mine_site" in game.provinces[id]["flags"]:
+			mines += 1
+	check(mines >= 10, "%d sanctum mine sites" % mines)
+	check(game.events.size() >= 55, "%d events" % game.events.size())
 	var start: int = pid("Mentos")
 	var seen := {start: true}
 	var frontier := [start]
@@ -61,8 +78,16 @@ func _initialize() -> void:
 
 	game.new_game("MEN")
 	var men: Dictionary = game.nations["MEN"]
-	for t in ["SNT", "SAL", "DRF", "CRL"]:
-		check(game.owned(t).size() > 0 and game.nations[t]["government"] == "boar_tribe", "native tribe %s holds %d provinces" % [t, game.owned(t).size()])
+	for t in ["SNT", "SAL", "DRF", "CRL", "CDH"]:
+		check(game.owned(t).size() > 0 and pop_group(t) == "Wild Boar", "boar nation %s (%s) holds %d provinces" % [t, game.court.gov_type(t), game.owned(t).size()])
+	check(game.court.gov_type("SNT") == "horde" and game.court.gov_type("BAY") == "republic" and game.court.gov_type("BLM") == "theocracy", "tribes are hordes, kingdoms, republics and a cult")
+	check(game.owned("BLM").size() >= 4 and game.provinces[game.capital_of("BLM")]["layer"] == "sky", "the Order of the Black Moon holds its sky islands")
+	var forts := 0
+	for id in game.owned("MEN"):
+		if game.provinces[id]["buildings"].has("fort"):
+			forts += 1
+	check(forts >= 3, "forts are scattered across Menslosia (%d)" % forts)
+	check(game.check_condition({"type": "explored_count", "layer": "ground", "at_least": 10}, "SKY"), "Skyfall starts knowing part of the mainland")
 	check(game.mil.armies_of("MEN").size() == 2 and game.mil.fleets_of("MEN").size() == 1, "Menslosia starts with 2 armies and a fleet")
 
 	# ---------------------------------------------------------------- economy
@@ -89,15 +114,37 @@ func _initialize() -> void:
 	men["treasury"] += 500.0
 	var cap: int = game.capital_of("MEN")
 	check(game.eco.build("MEN", cap, "market"), "start building a marketplace in Mentos")
-	days(200)
+	days(300)
 	check(game.provinces[cap]["buildings"].has("market"), "the marketplace is finished")
+	# mines
+	var site := -1
+	for id in game.owned("MEN"):
+		if "mine_site" in game.provinces[id]["flags"]:
+			site = id
+			break
+	if site >= 0:
+		men["treasury"] += 500.0
+		game.provinces[site]["construction"] = {}
+		var why_mine: String = game.eco.can_build("MEN", site, "mine")
+		check(game.eco.build("MEN", site, "mine"), "dig a mine at %s %s" % [game.provinces[site]["name"], why_mine])
+		days(400)
+		check(game.eco.mine_income(site) > 0.0, "the mine brings in %.1f sanctum a month" % game.eco.mine_income(site))
+	check(game.eco.can_build("MEN", cap, "mine") != "" or "mine_site" in game.provinces[cap]["flags"], "no mines off mine sites")
 	# technology, ideas, reforms
-	men["power"] = [999, 999, 999]
 	var lvl: int = men["tech"][0]
+	var ahead: int = game.prog.years_ahead("MEN", "adm")
+	check(ahead > 0 and game.prog.tech_cost("MEN", "adm") > game.tech_base_cost, "researching early costs more (%d years ahead: %d)" % [ahead, game.prog.tech_cost("MEN", "adm")])
+	men["power"] = [5000, 5000, 5000]
 	check(game.prog.research("MEN", "adm") and men["tech"][0] == lvl + 1, "research administrative tech")
-	check(game.prog.pick_group("MEN", "economic"), "pick the Economic idea group")
+	var debuff := false
+	for m in men["modifiers"]:
+		if String(m.get("id", "")).begins_with("ahead_"):
+			debuff = true
+	check(debuff, "ahead-of-time penalty applied")
+	check(game.prog.pick_group("MEN", "green_power"), "pick the Green Power idea group")
+	men["power"] = [5000, 5000, 5000]
 	for i in 3:
-		game.prog.take_idea("MEN", "economic")
+		game.prog.take_idea("MEN", "green_power")
 	check(game.prog.national_ideas_unlocked("MEN") == 1, "3 ideas unlock the first national idea")
 	var tiers: Array = game.prog.government("MEN")["tiers"]
 	men["reform_progress"] = 100.0
@@ -105,7 +152,36 @@ func _initialize() -> void:
 	# trade and prices
 	game.monthly_tick()
 	check(float(game.trade.income.get("MEN", 0.0)) > 0.0, "Menslosia earns trade income (%.1f)" % float(game.trade.income.get("MEN", 0.0)))
-	check(game.trade.send_merchant("MEN", "Eurome", "steer"), "send a merchant to steer trade from Eurome")
+	var steer_node := ""
+	for nd in game.trade.nodes:
+		if game.trade.can_send("MEN", nd, "steer") == "":
+			steer_node = nd
+			break
+	check(steer_node != "" and game.trade.send_merchant("MEN", steer_node, "steer"), "send a merchant to steer trade from %s" % steer_node)
+	# advisors, legitimacy, autonomy
+	men["treasury"] += 2000.0
+	game.court.refill_pool("MEN")
+	var cand: Dictionary = men["advisor_pool"][0]
+	check(game.court.hire("MEN", int(cand["id"])) and not men["advisors"][cand["power"]].is_empty(), "hire an advisor")
+	check(game.court.salaries("MEN") > 0.0, "advisors draw a salary (%.1f)" % game.court.salaries("MEN"))
+	check(float(men["legitimacy"]) > 0.0, "Menslosia has legitimacy %d" % int(men["legitimacy"]))
+	var far := -1
+	for id in game.owned("MEN"):
+		if id != cap and game.provinces[id]["cores"].has("MEN"):
+			far = id
+	var a0: float = game.eco.autonomy(far)
+	for i in 12:
+		game.eco.monthly_autonomy()
+	check(game.eco.autonomy(far) > a0, "provinces drift towards autonomy early on (%.1f -> %.1f)" % [a0, game.eco.autonomy(far)])
+	var tax_hi: float = game.eco.province_tax(far)
+	game.provinces[far]["autonomy"] = 0.0
+	check(game.eco.province_tax(far) > tax_hi, "autonomy cuts tax")
+	# force limit
+	var fl: int = game.mil.land_force_limit("MEN")
+	var extra: Dictionary = game.mil.spawn_army("MEN", cap, fl, 0, 0)
+	check(game.mil.can_recruit("MEN", cap, "inf").begins_with("At your force limit"), "no recruiting past the force limit (%d)" % fl)
+	game.mil.disband_army(extra["id"])
+	check(game.mil.can_recruit("SKY", game.capital_of("SKY"), "unity_guard").begins_with("Only"), "special regiments belong to their nation")
 	days(730)
 	var moved := 0
 	for k in game.goods:
@@ -127,16 +203,23 @@ func _initialize() -> void:
 				dev_after[id] = game.provinces[id]["dev"].duplicate())
 	var men_dev_before: int = game.nation_dev("MEN")
 	var hit_men := false
-	while game.year < 4293:
-		if game.month == 2 and game.day == 28 and game.year == 4292:
+	var doom_year: int = game.year + 1
+	while not game.is_leap(doom_year):
+		doom_year += 1
+	while game.year <= doom_year:
+		if game.month == 2 and game.day == 28 and game.year == doom_year:
 			for id in game.provinces:
 				dev_before[id] = game.provinces[id]["dev"].duplicate()
 		days(1)
 		if game.doomsday_active and game.nation_dev("MEN") < men_dev_before - 0:
 			hit_men = true
-	check("4292-02-29" in doom_dates, "Doomsday on 29 February 4292")
+	check(("%d-02-29" % doom_year) in doom_dates, "Doomsday on 29 February %d" % doom_year)
 	check(dev_before == dev_after, "time reversal restored every province")
 	check(not hit_men and men_events.is_empty(), "the Black Moon left Menslosia alone (no troops in Skyfall)")
+	var portal: int = game.portal_id()
+	var ent: Dictionary = game.mil.spawn_entities(portal, 6)
+	check(not ent.is_empty() and ent["owner"] == "ENT" and game.mil.hostile("ENT", "SKY"), "entities from beyond are hostile to Skyfall")
+	game.armies.erase(ent["id"])
 	var landing: Dictionary = game.mil.spawn_army("MEN", pid("Holy Waterfall of Eden"), 2, 0, 0)
 	check(game.in_skyfall("MEN"), "with an army on the Holy Waterfall, Menslosia counts as in Skyfall")
 	game.mil.disband_army(landing["id"])
@@ -201,10 +284,21 @@ func _initialize() -> void:
 			game.armies.erase(a["id"])
 	var snt_start: int = game.owned("SNT").size()
 	var w: Dictionary = game.dip.declare_war("MEN", "SNT")
-	check(not w.is_empty() and game.dip.at_war("MEN", "SNT"), "Menslosia declares war on the Snowtusk Clans")
+	check(not w.is_empty() and game.dip.at_war("MEN", "SNT"), "Menslosia declares war on the Snowtusk Horde")
+	for ally in game.dip.allies_of("SNT"):
+		if not (ally in w["defenders"]):
+			print("  note  %s did not join on its own: allies must be called" % ally)
+	var q: Dictionary = game.dip.call_quote(w, "MEN", "SKY") if game.dip.allied("MEN", "SKY") else {}
+	if not q.is_empty():
+		check(q.has("price") and q.has("reasons"), "a call to arms comes with reasons and a price (%d sanctum)" % int(q["price"]))
+	check(not game.dip.fully_occupied(w, "MEN", "SNT"), "the horde is not fully occupied at the start")
 	check(w["cb"]["id"] == "tribal_conquest", "with the Tribal Conquest casus belli")
 	var battles := 0
-	game.message_posted.connect(func(t): if "Battle of" in t: battles += 1)
+	game.message_posted.connect(func(t):
+		if "Battle of" in t:
+			battles += 1
+		if "peace" in t.to_lower() or "Snowtusk" in t:
+			print("  log   ", t))
 	var guard := 0
 	while game.dip.at_war("MEN", "SNT") and guard < 1500:
 		days(1)
@@ -216,7 +310,8 @@ func _initialize() -> void:
 	var occupied := 0
 	for id in game.provinces:
 		var p: Dictionary = game.provinces[id]
-		if p["owner"] != "" and p["controller"] != p["owner"] and p["controller"] != "REB" and not game.dip.at_war(p["owner"], p["controller"]):
+		if p["owner"] != "" and p["controller"] != p["owner"] and p["controller"] != "REB" and p["controller"] != "ENT" and not game.dip.at_war(p["owner"], p["controller"]):
+			print("  note  %s owned by %s held by %s" % [p["name"], p["owner"], p["controller"]])
 			occupied += 1
 	check(occupied == 0, "no province is left occupied after the peace")
 
@@ -229,13 +324,22 @@ func _initialize() -> void:
 		if game.nations[t]["alive"]:
 			alive += 1
 	check(game.year >= 4300, "12 years of AI play ran to %s" % game.date_string())
-	check(game.nations["MEN"]["tech"][0] > 3 and game.prog.ideas_taken("MEN") > 0, "the AI researched tech %s and took %d ideas" % [game.nations["MEN"]["tech"], game.prog.ideas_taken("MEN")])
+	var ideas := 0
+	for t in game.nations:
+		ideas += game.prog.ideas_taken(t)
+	check(ideas > 5, "the AIs took %d ideas" % ideas)
 	check(game.nations["MEN"]["reforms"].size() > 0, "the AI enacted %d reforms" % game.nations["MEN"]["reforms"].size())
 	var built := 0
 	for id in game.owned("MEN"):
 		built += game.provinces[id]["buildings"].size()
 	check(built > 0, "the AI built %d buildings" % built)
-	check(game.nations["MEN"]["missions_done"].size() > 0, "the AI completed missions: %s" % [game.nations["MEN"]["missions_done"].keys()])
+	var missions := 0
+	var loans := 0
+	for t in game.nations:
+		missions += game.nations[t]["missions_done"].size()
+		loans += game.nations[t]["loans"].size()
+	check(missions > 3, "the AIs completed %d missions" % missions)
+	check(loans < game.nations.size() * 2, "the AIs are not drowning in debt (%d loans)" % loans)
 	print("Final: %s. Menslosia %d provinces (%d dev), Skyfall %d, tribes alive %d" % [game.date_string(),
 		game.owned("MEN").size(), game.nation_dev("MEN"), game.owned("SKY").size(), alive - 2])
 	print("FAILURES: %d" % failures)

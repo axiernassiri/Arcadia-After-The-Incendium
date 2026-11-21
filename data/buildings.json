@@ -1,17 +1,190 @@
 {
-  "_note": "Buildings, like EU4. cost in sanctum, months to build. tech: [track, level] needed. modifiers apply to the province (local_*) or, for keys without local_, to the nation. requires: coastal. upkeep: sanctum a month (forts). Each province has build slots from its terrain plus 1 per 10 development.",
+  "_note": "Buildings, like EU4. cost in sanctum, months to build. tech: [track, level] needed. modifiers apply to the province (local_*) or, for keys without local_, to the nation. requires: coastal or mine_site. upkeep: sanctum a month. Each province has build slots from its terrain plus 1 per 10 development.",
   "buildings": {
-    "market":      {"name": "Marketplace",   "cost": 60,  "months": 6,  "tech": ["adm", 1], "modifiers": {"local_trade_power": 2.0, "local_production_mod": 0.10}, "text": "+2 trade power, +10% production here."},
-    "temple":      {"name": "Lotus Temple",  "cost": 80,  "months": 8,  "tech": ["adm", 3], "modifiers": {"local_tax_mod": 0.40, "local_unrest": -1}, "text": "+40% tax and -1 unrest here."},
-    "courthouse":  {"name": "Courthouse",    "cost": 90,  "months": 8,  "tech": ["adm", 3], "modifiers": {"local_unrest": -2, "local_core_cost": -0.25}, "text": "-2 unrest, cheaper to core."},
-    "workshop":    {"name": "Workshop",      "cost": 100, "months": 10, "tech": ["adm", 5], "modifiers": {"local_production_mod": 0.50}, "text": "+50% goods produced here."},
-    "granary":     {"name": "Granary",       "cost": 70,  "months": 6,  "tech": ["adm", 7], "modifiers": {"local_supply": 3, "local_manpower_mod": 0.25}, "text": "+3 supply, +25% manpower here."},
-    "university":  {"name": "University",    "cost": 220, "months": 18, "tech": ["adm", 9], "modifiers": {"tech_cost_mod": -0.03}, "text": "-3% tech cost for the whole nation."},
-    "dock":        {"name": "Dock",          "cost": 60,  "months": 6,  "tech": ["dip", 1], "requires": "coastal", "modifiers": {"naval_force_limit": 2, "local_trade_power": 1.0}, "text": "+2 naval force limit."},
-    "trade_depot": {"name": "Trade Depot",   "cost": 100, "months": 8,  "tech": ["dip", 3], "modifiers": {"local_trade_power": 5.0}, "text": "+5 trade power here."},
-    "shipyard":    {"name": "Shipyard",      "cost": 90,  "months": 8,  "tech": ["dip", 4], "requires": "coastal", "modifiers": {"naval_force_limit": 3, "naval_maintenance_mod": -0.03}, "text": "+3 naval force limit, cheaper ships."},
-    "harbour":     {"name": "Harbour",       "cost": 150, "months": 12, "tech": ["dip", 8], "requires": "coastal", "modifiers": {"local_trade_power": 6.0, "trade_efficiency": 0.02}, "text": "+6 trade power, +2% trade efficiency."},
-    "barracks":    {"name": "Barracks",      "cost": 60,  "months": 6,  "tech": ["mil", 1], "modifiers": {"local_manpower_mod": 0.50, "land_force_limit": 1}, "text": "+50% manpower here, +1 force limit."},
-    "fort":        {"name": "Fort",          "cost": 150, "months": 12, "tech": ["mil", 3], "upkeep": 1.0, "modifiers": {"local_fort": 1}, "text": "A fort: enemies must besiege it. Costs 1 sanctum a month. Its level follows your fort tech."}
+    "market": {
+      "name": "Marketplace",
+      "cost": 120,
+      "months": 8,
+      "tech": [
+        "adm",
+        1
+      ],
+      "modifiers": {
+        "local_trade_power": 2.0,
+        "local_production_mod": 0.1
+      },
+      "text": "+2 trade power, +10% production here."
+    },
+    "temple": {
+      "name": "Lotus Temple",
+      "cost": 160,
+      "months": 10,
+      "tech": [
+        "adm",
+        2
+      ],
+      "modifiers": {
+        "local_tax_mod": 0.4,
+        "local_unrest": -1
+      },
+      "text": "+40% tax and -1 unrest here."
+    },
+    "mine": {
+      "name": "Mine",
+      "cost": 200,
+      "months": 12,
+      "tech": [
+        "adm",
+        1
+      ],
+      "requires": "mine_site",
+      "upkeep": 0.5,
+      "modifiers": {
+        "local_mine_income": 1.0
+      },
+      "text": "Digs sanctum out of the ground: 1.5 plus 0.25 per development a month, minus 0.5 upkeep. Only on mine sites (ore, copper, gems, crystals, salt, sulfur, marble)."
+    },
+    "courthouse": {
+      "name": "Courthouse",
+      "cost": 180,
+      "months": 10,
+      "tech": [
+        "adm",
+        4
+      ],
+      "modifiers": {
+        "local_unrest": -2,
+        "local_core_cost": -0.25,
+        "local_autonomy_gain": -0.5
+      },
+      "text": "-2 unrest, cheaper to core, slows autonomy."
+    },
+    "workshop": {
+      "name": "Workshop",
+      "cost": 200,
+      "months": 12,
+      "tech": [
+        "adm",
+        5
+      ],
+      "modifiers": {
+        "local_production_mod": 0.5
+      },
+      "text": "+50% goods produced here."
+    },
+    "granary": {
+      "name": "Granary",
+      "cost": 140,
+      "months": 8,
+      "tech": [
+        "adm",
+        7
+      ],
+      "modifiers": {
+        "local_supply": 3,
+        "local_manpower_mod": 0.25
+      },
+      "text": "+3 supply, +25% manpower here."
+    },
+    "university": {
+      "name": "University",
+      "cost": 450,
+      "months": 24,
+      "tech": [
+        "adm",
+        10
+      ],
+      "modifiers": {
+        "idea_cost_mod": -0.03,
+        "monthly_adm": 0.5
+      },
+      "text": "-3% idea cost and +0.5 admin power a month for the whole nation."
+    },
+    "dock": {
+      "name": "Dock",
+      "cost": 120,
+      "months": 8,
+      "tech": [
+        "dip",
+        1
+      ],
+      "requires": "coastal",
+      "modifiers": {
+        "naval_force_limit": 2,
+        "local_trade_power": 1.0
+      },
+      "text": "+2 naval force limit."
+    },
+    "trade_depot": {
+      "name": "Trade Depot",
+      "cost": 200,
+      "months": 10,
+      "tech": [
+        "dip",
+        3
+      ],
+      "modifiers": {
+        "local_trade_power": 5.0
+      },
+      "text": "+5 trade power here."
+    },
+    "shipyard": {
+      "name": "Shipyard",
+      "cost": 180,
+      "months": 10,
+      "tech": [
+        "dip",
+        4
+      ],
+      "requires": "coastal",
+      "modifiers": {
+        "naval_force_limit": 3,
+        "naval_maintenance_mod": -0.03
+      },
+      "text": "+3 naval force limit, cheaper ships."
+    },
+    "harbour": {
+      "name": "Harbour",
+      "cost": 300,
+      "months": 16,
+      "tech": [
+        "dip",
+        8
+      ],
+      "requires": "coastal",
+      "modifiers": {
+        "local_trade_power": 6.0,
+        "trade_efficiency": 0.02
+      },
+      "text": "+6 trade power, +2% trade efficiency."
+    },
+    "barracks": {
+      "name": "Barracks",
+      "cost": 120,
+      "months": 8,
+      "tech": [
+        "mil",
+        1
+      ],
+      "modifiers": {
+        "local_manpower_mod": 0.5,
+        "land_force_limit": 1
+      },
+      "text": "+50% manpower here, +1 force limit."
+    },
+    "fort": {
+      "name": "Fort",
+      "cost": 300,
+      "months": 16,
+      "tech": [
+        "mil",
+        2
+      ],
+      "upkeep": 0.75,
+      "modifiers": {
+        "local_fort": 1
+      },
+      "text": "A fort: enemies must besiege it. Costs 0.75 sanctum a month (the capital's fort is free). Its level follows your fort tech."
+    }
   }
 }

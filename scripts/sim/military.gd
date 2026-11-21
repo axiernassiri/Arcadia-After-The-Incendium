@@ -119,9 +119,25 @@ func army_leader(a: Dictionary) -> Dictionary:
 
 # ---------------------------------------------------------------- strength and costs
 
+static func special(tag: String) -> bool:
+	## Rebels and the entities from the Doomsday Portal are not nations.
+	return tag == "REB" or tag == "ENT"
+
+
+func reg_morale(tag: String, utype: String) -> float:
+	## Maximum morale of one regiment: the nation's, plus the unit's own bonus (elite regiments).
+	return max_morale(tag) * (1.0 + float(g.unit_data["land"].get(utype, {}).get("morale", 0.0)))
+
+
+func unit_category(utype: String) -> String:
+	return g.unit_data["land"].get(utype, {}).get("category", utype)
+
+
 func max_morale(tag: String) -> float:
 	if tag == "REB":
-		return 2.0
+		return 2.2
+	if tag == "ENT":
+		return 3.5
 	var slider = float(g.nations[tag]["maintenance"]["land"])
 	return BASE_MORALE * (1.0 + g.mods.nat(tag, "land_morale")) * (0.5 + 0.5 * slider)
 
@@ -136,7 +152,9 @@ func unit_power(tag: String, utype: String, phase: String) -> float:
 	var base = float(ud.get(phase, 1.0))
 	if tag == "REB":
 		return base * 0.9
-	var key: String = {"inf": "infantry_power", "cav": "cavalry_power", "art": "artillery_power"}.get(utype, "")
+	if tag == "ENT":
+		return base * 1.35
+	var key: String = {"inf": "infantry_power", "cav": "cavalry_power", "art": "artillery_power"}.get(unit_category(utype), "")
 	var tech: int = int(g.nations[tag]["tech"][2])
 	return base * (1.0 + g.mods.nat(tag, key)) * (1.0 + 0.06 * tech) * (1.0 + g.mods.nat(tag, "discipline"))
 
@@ -144,8 +162,8 @@ func unit_power(tag: String, utype: String, phase: String) -> float:
 func army_strength(a: Dictionary) -> float:
 	## Rough combat value, used by the AI and the UI.
 	var s = 0.0
-	var mm = max_morale(a["owner"])
 	for r in a["regiments"]:
+		var mm = reg_morale(a["owner"], r["type"])
 		var p = (unit_power(a["owner"], r["type"], "fire") + unit_power(a["owner"], r["type"], "shock")) * 0.5
 		s += float(r["men"]) / REGIMENT * p * (0.4 + 0.6 * clampf(float(r["morale"]) / maxf(mm, 0.1), 0.0, 1.0))
 	var l = army_leader(a)
@@ -198,7 +216,7 @@ func naval_maintenance(tag: String) -> float:
 
 
 func unit_name(tag: String, utype: String) -> String:
-	if tag != "REB" and g.nations.has(tag):
+	if not special(tag) and g.nations.has(tag):
 		var eth: String = g.nations[tag]["ethnicity"]
 		if eth in ["Human", "Angel"]:
 			return g.unit_data.get("sky_names", {}).get(utype, utype)
@@ -223,8 +241,15 @@ func can_recruit(tag: String, pid: int, utype: String) -> String:
 		return "Unknown unit."
 	if p["owner"] != tag or p["controller"] != tag:
 		return "Recruit in a province you own and control."
+	if ud.has("nations") and not (tag in ud["nations"]):
+		return "Only %s can raise %s." % [", ".join(PackedStringArray(ud["nations"].map(func(t): return g.nation_name(t)))), ud["name"]]
+	if ud.has("gov") and not (g.court.gov_type(tag) in ud["gov"]):
+		return "Only %ss can raise %s." % [", ".join(PackedStringArray(ud["gov"])), ud["name"]]
 	if not g.prog.land_unit_unlocked(tag, utype):
 		return "Needs military tech %d." % int(ud.get("tech", 1))
+	var cap = land_force_limit(tag) * (1.5 if g.dip.at_war_any(tag) else 1.0)
+	if regiment_count(tag) >= int(cap):
+		return "At your force limit (%d regiments%s)." % [int(cap), ", +50% in wartime" if g.dip.at_war_any(tag) else ""]
 	if int(n["manpower"]) < int(ud.get("manpower", 1000)):
 		return "Not enough manpower."
 	if n["treasury"] < float(ud["cost"]):
@@ -253,6 +278,8 @@ func can_build_ship(tag: String, pid: int, stype: String) -> String:
 		return "Build ships in a province you own and control."
 	if not p["coastal"]:
 		return "Needs a coastal province."
+	if ship_count(tag) >= naval_force_limit(tag):
+		return "At your naval force limit (%d ships)." % naval_force_limit(tag)
 	if not g.prog.ship_unlocked(tag, stype):
 		return "Needs a higher diplomatic tech."
 	if g.nations[tag]["treasury"] < float(sd["cost"]):
@@ -287,7 +314,7 @@ func _finish_queue() -> void:
 					break
 			if target.is_empty():
 				target = new_army(tag, q["pid"])
-			target["regiments"].append({"type": q["type"], "men": REGIMENT, "morale": max_morale(tag)})
+			target["regiments"].append({"type": q["type"], "men": REGIMENT, "morale": reg_morale(tag, q["type"])})
 		else:
 			var fleet = {}
 			for f in fleets_at(q["pid"]):
@@ -347,7 +374,7 @@ func disband_army(id: int) -> void:
 	if not g.armies.has(id):
 		return
 	var a: Dictionary = g.armies[id]
-	if a["owner"] != "REB" and g.nations.has(a["owner"]):
+	if not special(a["owner"]) and g.nations.has(a["owner"]):
 		var back = 0.0
 		for r in a["regiments"]:
 			back += float(r["men"]) * 0.5
@@ -456,7 +483,7 @@ func leader_pips(a: Dictionary, key: String) -> int:
 	var v = 0
 	if not l.is_empty():
 		v = int(l.get(key, 0))
-	if a["owner"] != "REB" and g.nations.has(a["owner"]):
+	if not special(a["owner"]) and g.nations.has(a["owner"]):
 		v += int(g.mods.nat(a["owner"], "leader_" + key))
 		if not l.is_empty() or key != "siege":
 			pass
@@ -468,14 +495,18 @@ func leader_pips(a: Dictionary, key: String) -> int:
 func hostile(a: String, b: String) -> bool:
 	if a == b:
 		return false
-	if a == "REB" or b == "REB":
-		return true   # refined per army by rebel_hostile
+	if special(a) or special(b):
+		return true   # refined per army by armies_hostile
 	return g.dip.at_war(a, b)
 
 
 func armies_hostile(x: Dictionary, y: Dictionary) -> bool:
 	if x["owner"] == y["owner"]:
 		return false
+	if x["owner"] == "ENT":
+		return y["owner"] != "BLM"
+	if y["owner"] == "ENT":
+		return x["owner"] != "BLM"
 	if x["owner"] == "REB":
 		return _rebel_hostile(x, y["owner"])
 	if y["owner"] == "REB":
@@ -497,9 +528,11 @@ func controller_hostile(a: Dictionary, pid: int) -> bool:
 		return false
 	if tag == "REB":
 		return p["owner"] == a["rebel"].get("target", "") and ctrl != "REB"
+	if tag == "ENT":
+		return ctrl != "ENT" and p["owner"] != "BLM"
 	if ctrl == tag:
 		return false
-	if ctrl == "REB":
+	if ctrl == "REB" or ctrl == "ENT":
 		return p["owner"] == tag or g.dip.allied(tag, p["owner"])
 	if g.dip.at_war(tag, ctrl):
 		return true
@@ -512,7 +545,7 @@ func controller_hostile(a: Dictionary, pid: int) -> bool:
 func can_enter(tag: String, pid: int) -> bool:
 	var p: Dictionary = g.provinces[pid]
 	var owner: String = p["owner"]
-	if tag == "REB" or owner == "" or owner == tag:
+	if special(tag) or owner == "" or owner == tag:
 		return true
 	if g.dip.at_war(tag, owner) or g.dip.at_war(tag, p["controller"]):
 		return true
@@ -531,13 +564,13 @@ func edge_days(a: Dictionary, from: int, to: int) -> float:
 	var base = 8.0 * terr
 	match via:
 		"sea":
-			if tag != "REB" and transport_capacity(tag) < a["regiments"].size():
+			if not special(tag) and transport_capacity(tag) < a["regiments"].size():
 				return -1.0
 			return base * 1.5
 		"waterfall":
 			return 14.0
 		"air":
-			var flies: bool = tag != "REB" and g.nations[tag]["ethnicity"] in ["Human", "Angel"]
+			var flies: bool = tag == "ENT" or (not special(tag) and g.nations[tag]["ethnicity"] in ["Human", "Angel"])
 			return 6.0 if flies else 14.0
 	return base
 
@@ -779,8 +812,8 @@ func _side_morale(ids: Array) -> float:
 		if not g.armies.has(i):
 			continue
 		var a: Dictionary = g.armies[i]
-		var mm = max_morale(a["owner"])
 		for r in a["regiments"]:
+			var mm = reg_morale(a["owner"], r["type"])
 			tot += clampf(float(r["morale"]) / maxf(mm, 0.01), 0.0, 1.0) * float(r["men"])
 			cnt += float(r["men"])
 	return tot / cnt if cnt > 0.0 else 0.0
@@ -800,10 +833,10 @@ func _side_damage(ids: Array, phase: String, roll: int) -> float:
 		if not g.armies.has(i):
 			continue
 		var a: Dictionary = g.armies[i]
-		var mm = max_morale(a["owner"])
 		for r in a["regiments"]:
+			var mm = reg_morale(a["owner"], r["type"])
 			var p = unit_power(a["owner"], r["type"], phase)
-			if r["type"] == "art" and phase == "shock":
+			if unit_category(r["type"]) == "art" and phase == "shock":
 				p *= 0.5
 			var morale_f = 0.5 + 0.5 * clampf(float(r["morale"]) / maxf(mm, 0.01), 0.0, 1.0)
 			dmg += float(r["men"]) / REGIMENT * p * float(5 + maxi(roll, 0)) * 7.0 * morale_f
@@ -950,9 +983,11 @@ func _retreat(a: Dictionary) -> void:
 					continue
 				seen[nb] = true
 				var p: Dictionary = g.provinces[nb]
-				var friendly: bool = (p["controller"] == tag) or (tag != "REB" and (g.dip.allied(tag, p["controller"]) or p["owner"] == ""))
+				var friendly: bool = (p["controller"] == tag) or (not special(tag) and (g.dip.allied(tag, p["controller"]) or p["owner"] == ""))
 				if tag == "REB":
 					friendly = p["controller"] == "REB" or p["owner"] == a["rebel"].get("target", "")
+				elif tag == "ENT":
+					friendly = p["controller"] == "ENT" or p["owner"] == "BLM"
 				var safe = true
 				for x in armies_at(nb):
 					if armies_hostile(a, x):
@@ -1107,7 +1142,7 @@ func siege_rate(ids: Array, pid: int) -> float:
 		return 100.0 / SIEGE_UNFORTIFIED_DAYS if men >= 1000.0 else 0.0
 	if men < fort * 1500.0:
 		return 0.0
-	var ability = 0.0 if tag == "REB" else g.mods.nat(tag, "siege_ability")
+	var ability = 0.0 if special(tag) else g.mods.nat(tag, "siege_ability")
 	var defence = 0.0
 	var owner: String = g.provinces[pid]["owner"]
 	if owner != "":
@@ -1141,13 +1176,13 @@ func _sieges() -> void:
 		if float(p["siege"]["progress"]) >= 100.0:
 			p["siege"] = {}
 			var new_ctrl = tag
-			if tag != "REB" and (p["owner"] == tag or (g.dip.allied(tag, p["owner"]) and not g.dip.at_war(tag, p["owner"]))):
+			if not special(tag) and (p["owner"] == tag or (g.dip.allied(tag, p["owner"]) and not g.dip.at_war(tag, p["owner"]))):
 				new_ctrl = p["owner"]
 			var old: String = p["controller"]
 			p["controller"] = new_ctrl
 			if tag == "REB":
 				group[0]["held_days"] = 0
-			var who = g.nation_name(tag) if tag != "REB" else group[0]["name"]
+			var who = g.nation_name(tag) if not special(tag) else group[0]["name"]
 			if g.player_tag in [p["owner"], tag, old]:
 				g.post("%s %s %s." % [who, "liberated" if new_ctrl == p["owner"] else "occupied", p["name"]])
 			g.province_changed.emit(pid)
@@ -1158,7 +1193,7 @@ func _sieges() -> void:
 
 func spawn_rebels(pid: int, rtype: String) -> void:
 	var p: Dictionary = g.provinces[pid]
-	var regs = clampi(int(g.total_dev(pid) / 4) + 1, 1, 8)
+	var regs = clampi(int(g.total_dev(pid) / 2) + 2, 2, 16)
 	var tag = "REB"
 	g.next_id += 1
 	var label: String = g.peoples.get("rebels", {}).get(rtype, {}).get("name", "Rebels")
@@ -1176,11 +1211,53 @@ func spawn_rebels(pid: int, rtype: String) -> void:
 	g.armies_changed.emit()
 
 
+func spawn_entities(pid: int, regs: int) -> Dictionary:
+	g.next_id += 1
+	var a = {"id": g.next_id, "owner": "ENT", "name": "Entities from the Portal", "location": pid, "regiments": [],
+		"leader": -1, "path": [], "progress": 0.0, "hop_days": 0.0, "in_battle": false, "retreating": false,
+		"held_days": 0, "rebel": {"type": "entities"}}
+	for i in regs:
+		a["regiments"].append({"type": "inf" if i % 3 != 2 else "cav", "men": REGIMENT, "morale": 3.5})
+	g.armies[g.next_id] = a
+	g.armies_changed.emit()
+	return a
+
+
+func _entity_ai(a: Dictionary) -> void:
+	if a["in_battle"] or a["retreating"] or not a["path"].is_empty():
+		return
+	if controller_hostile(a, int(a["location"])):
+		return   # keep besieging
+	var best = -1
+	var best_d = 999
+	var dist = {int(a["location"]): 0}
+	var frontier = [int(a["location"])]
+	for step in 8:
+		var nxt: Array = []
+		for c in frontier:
+			for nb in g.provinces[c]["connections"]:
+				if dist.has(nb):
+					continue
+				dist[nb] = step + 1
+				nxt.append(nb)
+				if controller_hostile(a, nb) and step + 1 < best_d:
+					best_d = step + 1
+					best = nb
+		frontier = nxt
+		if best >= 0:
+			break
+	if best >= 0:
+		move_army(a["id"], best)
+
+
 func _rebel_ai() -> void:
 	for id in g.armies.keys():
 		if not g.armies.has(id):
 			continue
 		var a: Dictionary = g.armies[id]
+		if a["owner"] == "ENT":
+			_entity_ai(a)
+			continue
 		if a["owner"] != "REB" or a["in_battle"] or a["retreating"]:
 			continue
 		var target: String = a["rebel"].get("target", "")
@@ -1245,20 +1322,22 @@ func monthly() -> void:
 		var loss = 0.0
 		if regs > supply:
 			loss += 0.05 * (regs - supply) / float(regs)
-		if tag != "REB" and p["owner"] != "" and g.dip.at_war(tag, p["owner"]):
+		if not special(tag) and p["owner"] != "" and g.dip.at_war(tag, p["owner"]):
 			loss += 0.01
-		if p["layer"] == "ground" and tag != "REB" and g.nations[tag]["ethnicity"] in ["Human", "Angel"] and not g.nations[tag]["flags"].has("breathing_masks"):
+		if tag == "ENT":
+			loss += 0.02   # entities fade away slowly in our world
+		if p["layer"] == "ground" and not special(tag) and g.nations[tag]["ethnicity"] in ["Human", "Angel"] and not g.nations[tag]["flags"].has("breathing_masks"):
 			loss += 0.04   # Skyfallins without masks suffocate below the clouds
 		if loss > 0.0:
 			for r in a["regiments"]:
 				r["men"] = float(r["men"]) * (1.0 - loss)
-		if tag == "REB" or a["in_battle"]:
+		if special(tag) or a["in_battle"]:
 			continue
 		# reinforce and recover morale at home or with friends
 		var friendly: bool = p["controller"] == tag or g.dip.allied(tag, p["controller"]) or p["owner"] == ""
 		var n: Dictionary = g.nations[tag]
-		var mm = max_morale(tag)
 		for r in a["regiments"]:
+			var mm = reg_morale(tag, r["type"])
 			r["morale"] = minf(mm, float(r["morale"]) + mm * 0.15)
 			if friendly and float(r["men"]) < REGIMENT:
 				var want = minf(REGIMENT - float(r["men"]), REGIMENT * 0.1 * (1.0 + g.mods.nat(tag, "reinforce_speed")) * float(n["maintenance"]["land"]))

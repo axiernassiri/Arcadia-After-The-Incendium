@@ -28,7 +28,9 @@ const LABELS := {
 	"leader_siege": ["General siege", false], "reinforce_speed": ["Reinforce speed", true],
 	"land_force_limit": ["Army force limit", false], "naval_force_limit": ["Navy force limit", false],
 	"accepted_cultures": ["Max accepted cultures", false], "doomsday_resistance": ["Doomsday resistance", true],
-	"explore_cost_mod": ["Exploration cost", true],
+	"explore_cost_mod": ["Exploration cost", true], "legitimacy_gain": ["Legitimacy a year", false],
+	"autonomy_gain": ["Autonomy growth", true], "local_autonomy_gain": ["Local autonomy growth", true],
+	"local_mine_income": ["Mine", false],
 	"local_tax_mod": ["Local tax", true], "local_production_mod": ["Local production", true],
 	"local_trade_power": ["Local trade power", false], "local_unrest": ["Local unrest", false],
 	"local_manpower_mod": ["Local manpower", true], "local_supply": ["Supply limit", false],
@@ -37,7 +39,8 @@ const LABELS := {
 ## Keys where a negative value is good for the nation (shown green).
 const LOWER_IS_BETTER := ["land_maintenance_mod", "naval_maintenance_mod", "dev_cost_mod", "tech_cost_mod",
 	"idea_cost_mod", "core_cost_mod", "stability_cost_mod", "build_cost_mod", "build_time_mod", "unrest",
-	"interest_mod", "local_unrest", "local_core_cost", "local_dev_cost", "explore_cost_mod"]
+	"interest_mod", "local_unrest", "local_core_cost", "local_dev_cost", "explore_cost_mod", "autonomy_gain",
+	"local_autonomy_gain"]
 
 var g: Node
 var _cache = {}          # tag -> {key: value}
@@ -137,6 +140,18 @@ func _build(tag: String) -> void:
 					bm[k] = float(bm.get(k, 0.0)) + float(bd["modifiers"][k])
 	if not bm.is_empty():
 		src.append(["Buildings", bm])
+	# advisors
+	for k in n.get("advisors", {}):
+		var adv: Dictionary = n["advisors"][k]
+		if not adv.is_empty():
+			var at: Dictionary = g.advisor_data.get("types", {}).get(adv["type"], {})
+			src.append(["Advisor: %s (skill %d)" % [at.get("name", adv["type"]), int(adv["skill"])], at.get("modifiers", {})])
+	# legitimacy
+	var leg: float = float(n.get("legitimacy", 50.0))
+	if leg < 50.0:
+		src.append(["Low legitimacy (%d)" % int(leg), {"unrest": (50.0 - leg) / 20.0, "tax_mod": -(50.0 - leg) / 250.0}])
+	elif leg >= 90.0:
+		src.append(["High legitimacy (%d)" % int(leg), {"unrest": -1.0}])
 	# stability
 	var st: int = int(n["stability"])
 	if st != 0:

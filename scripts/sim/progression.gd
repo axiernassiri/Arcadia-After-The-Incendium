@@ -21,15 +21,19 @@ func max_level(track: String) -> int:
 	return g.tech_data.get(track, []).size()
 
 
-func tech_cost(tag: String, track: String) -> int:
+func level_year(track: String, level: int) -> int:
+	return int(level_info(track, level).get("year", g.year))
+
+
+func years_ahead(tag: String, track: String) -> int:
+	## How many years before its time the next level of this track would be.
 	var lvl: int = int(g.nations[tag]["tech"][g.TRACKS.find(track)]) + 1
-	var info = level_info(track, lvl)
-	var cost = float(g.tech_base_cost + g.tech_per_level * lvl)
-	var mult = 1.0 + g.mods.nat(tag, "tech_cost_mod")
-	var early = int(info.get("year", g.year)) - g.year
-	if early > 0:
-		mult += 0.05 * early
-	return maxi(20, int(round(cost * maxf(0.3, mult))))
+	return maxi(0, level_year(track, lvl) - g.year)
+
+
+func tech_cost(tag: String, track: String) -> int:
+	## A flat base cost (600), raised only when researching ahead of time.
+	return int(round(float(g.tech_base_cost) * (1.0 + g.tech_ahead_cost * years_ahead(tag, track))))
 
 
 func can_research(tag: String, track: String) -> String:
@@ -48,8 +52,12 @@ func research(tag: String, track: String) -> bool:
 		return false
 	var i: int = g.TRACKS.find(track)
 	var n: Dictionary = g.nations[tag]
+	var ahead = years_ahead(tag, track)
 	n["power"][i] -= tech_cost(tag, track)
 	n["tech"][i] += 1
+	if ahead > 0:
+		var deb: Dictionary = g.tech_ahead_debuff.get(track, {})
+		g.add_nation_modifier(tag, "ahead_" + track, deb.get("name", "Ahead of Time"), deb.get("modifiers", {}), g.tech_debuff_years * 12)
 	if tag == g.player_tag:
 		g.post("Researched %s: %s." % [track.to_upper(), level_info(track, n["tech"][i]).get("name", "")])
 	g.touch(tag)
@@ -131,6 +139,11 @@ func idea_cost(tag: String) -> int:
 
 func can_pick_group(tag: String, gid: String) -> String:
 	var n: Dictionary = g.nations[tag]
+	if not g.idea_data["groups"].has(gid):
+		return "No such idea group."
+	var only: Array = g.idea_data["groups"].get(gid, {}).get("only", [])
+	if not only.is_empty() and not (tag in only):
+		return "Only for %s." % ", ".join(PackedStringArray(only.map(func(t): return g.nation_name(t))))
 	for ig in n["idea_groups"]:
 		if ig["id"] == gid:
 			return "Already chosen."

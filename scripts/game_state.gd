@@ -54,8 +54,12 @@ var peoples := {}
 var governments := {}
 var reform_cost_per_tier := 40
 var tech_data := {}
-var tech_base_cost := 160
-var tech_per_level := 30
+var tech_base_cost := 600
+var tech_ahead_cost := 0.1
+var tech_ahead_debuff := {}
+var tech_debuff_years := 10
+var end_year := 4789
+var advisor_data := {}
 var idea_data := {}
 var building_data := {}
 var unit_data := {}
@@ -143,8 +147,12 @@ func load_data() -> void:
 	reform_cost_per_tier = int(gov.get("cost_per_tier", 40))
 	var tech: Dictionary = _read_json("res://data/technology.json")
 	tech_data = tech.get("tracks", {})
-	tech_base_cost = int(tech.get("base_cost", 160))
-	tech_per_level = int(tech.get("per_level", 30))
+	tech_base_cost = int(tech.get("base_cost", 600))
+	tech_ahead_cost = float(tech.get("ahead_cost_per_year", 0.1))
+	tech_ahead_debuff = tech.get("ahead_debuff", {})
+	tech_debuff_years = int(tech.get("debuff_years", 10))
+	end_year = int(tech.get("end_year", 4789))
+	advisor_data = _read_json("res://data/advisors.json")
 	idea_data = _read_json("res://data/ideas.json")
 	building_data = _read_json("res://data/buildings.json").get("buildings", {})
 	unit_data = _read_json("res://data/units.json")
@@ -193,7 +201,7 @@ func load_data() -> void:
 			"centre": Vector2(float(c[0]), float(c[1])), "area": int(gm.get("area", 0)),
 			"culture": p.get("culture", ""), "religion": p.get("religion", ""), "ethnicity": p.get("ethnicity", ""),
 			"trade_node": p.get("trade_node", ""), "buildings": [], "construction": {}, "modifiers": [],
-			"unrest": 0.0, "rebel_progress": 0.0, "siege": {}, "colony": {}, "conversion": {},
+			"unrest": 0.0, "rebel_progress": 0.0, "siege": {}, "colony": {}, "conversion": {}, "autonomy": 0.0,
 		}
 		province_ids_by_name[p["name"]] = id
 		var tn: String = p.get("trade_node", "")
@@ -242,6 +250,8 @@ func _make_nation(tag: String, d: Dictionary) -> Dictionary:
 		"leaders": [], "capital_name": d.get("capital", ""), "capital_id": -1,
 		"playable": d.get("playable", true), "difficulty": d.get("difficulty", ""),
 		"last_income": 0.0, "last_balance": 0.0, "battles_won": 0,
+		"legitimacy": float(d.get("legitimacy", 70)), "advisors": {"adm": {}, "dip": {}, "mil": {}}, "elected_day": 0,
+		"known_regions": d.get("known_regions", []),
 	}
 
 
@@ -288,6 +298,13 @@ func setup_world(seed_value: int = 4289) -> void:
 				dip.rel(tag, rkey)["opinion"] = float(rd.get("opinion", 0))
 				if rd.get("alliance", false):
 					dip.set_both(tag, rkey, "alliance", true)
+				if rd.get("rival", false):
+					dip.rel(tag, rkey)["rival"] = true
+				if int(rd.get("truce_years", 0)) > 0:
+					dip.set_both(tag, rkey, "truce_until", day_index + 365 * int(rd["truce_years"]))
+		for pid in provinces:
+			if provinces[pid]["culture"] in d.get("claims_cultures", []) and provinces[pid]["owner"] != tag and provinces[pid]["owner"] != "":
+				n["claims"][pid] = true
 		for key in ["army", "army2"]:
 			if d.has(key):
 				var ad: Dictionary = d[key]
@@ -308,7 +325,9 @@ func setup_world(seed_value: int = 4289) -> void:
 				mil.spawn_fleet(tag, floc, counts)
 		for pid in provinces:
 			var p: Dictionary = provinces[pid]
-			var known: bool = (p["layer"] in n["known_layers"] and not ("hidden" in p["flags"])) \
+			var visible_land: bool = not ("hidden" in p["flags"])
+			var known: bool = (p["layer"] in n["known_layers"] and visible_land) \
+				or (p["region"] in n["known_regions"] and visible_land) \
 				or p["name"] in n["known_extra"] or p["owner"] == tag
 			if known:
 				n["explored"][pid] = true
@@ -317,6 +336,11 @@ func setup_world(seed_value: int = 4289) -> void:
 				if not "hidden" in provinces[nb]["flags"]:
 					n["explored"][nb] = true
 		n["max_manpower"] = eco.max_manpower(tag)
+		n["elected_day"] = -rng.randi_range(0, 3 * 365)
+		court.refill_pool(tag)
+		for pid in owned(tag):
+			provinces[pid]["autonomy"] = 0.0 if pid == n["capital_id"] else float(rng.randi_range(0, 3) * 5)
+		_place_forts(tag)
 	# Menslosia's mainland forts: the capital has one; give Unity its walls
 	dip.rebuild_pairs()
 	mods.invalidate()
@@ -326,6 +350,35 @@ func setup_world(seed_value: int = 4289) -> void:
 		if nations[tag]["alive"]:
 			pop.monthly()
 			break
+
+
+func _place_forts(tag: String) -> void:
+	## Forts scattered across every realm: the capital, then the richest provinces at least two steps
+	## from another fort, about one fort for every six provinces.
+	var mine: Array = owned(tag).duplicate()
+	mine.sort_custom(func(a, b): return total_dev(a) > total_dev(b))
+	var want: int = maxi(1, int(mine.size() / 6.0 + 0.5))
+	var forts: Array = []
+	var cap := capital_of(tag)
+	if cap >= 0:
+		forts.append(cap)
+	for pid in mine:
+		if forts.size() >= want:
+			break
+		if pid in forts:
+			continue
+		var near := false
+		for f in forts:
+			if provinces[f]["connections"].has(pid):
+				near = true
+			for nb in provinces[f]["connections"]:
+				if provinces[nb]["connections"].has(pid):
+					near = true
+		if not near:
+			forts.append(pid)
+	for f in forts:
+		if not provinces[f]["buildings"].has("fort"):
+			provinces[f]["buildings"].append("fort")
 
 
 func _biggest_province(tag: String) -> int:
@@ -456,6 +509,8 @@ func nation_dev(tag: String) -> int:
 func nation_name(tag: String) -> String:
 	if tag == "REB":
 		return "Rebels"
+	if tag == "ENT":
+		return "Entities"
 	return nations[tag]["short"] if nations.has(tag) else tag
 
 
@@ -597,6 +652,7 @@ func monthly_tick() -> void:
 		prog.monthly(tag)
 		court.monthly(tag)
 	pop.monthly()
+	eco.monthly_autonomy()
 	mil.monthly()
 	dip.monthly()
 	eco.monthly_colonies()
@@ -605,6 +661,14 @@ func monthly_tick() -> void:
 		if nations[tag]["alive"] and nations[tag]["ai"]:
 			ai.monthly(tag)
 	_check_monthly_events()
+	_entity_pressure()
+	if year >= end_year and not global_flags.has("game_over"):
+		global_flags["game_over"] = true
+		speed = 0
+		if player_tag != "":
+			fire_dynamic_event({"id": "end_of_era", "title": "The End of an Era",
+				"text": "It is %d. Five hundred years have passed since the Incendium. Whatever comes next, the age of %s is written in the histories." % [year, nation_name(player_tag)],
+				"options": [{"text": "Keep playing.", "effects": []}]}, player_tag)
 	mods.invalidate()
 	month_ticked.emit()
 	for tag in nations:
@@ -730,6 +794,14 @@ func start_doomsday() -> void:
 				_doomsday_damage.append({"id": id, "index": k, "amount": 1})
 		province_changed.emit(id)
 	post("29 February %d: THE BLACK MOON RISES. The Doomsday Barrier has fallen." % year)
+	# sometimes something comes through, and time reversing does not send it back
+	var chance := minf(0.7, 0.3 + 0.05 * doomsday_count + (0.1 if nations.has("BLM") and nations["BLM"]["alive"] else 0.0))
+	if portal >= 0 and rng.randf() < chance:
+		var regs := mini(18, 6 + doomsday_count)
+		mil.spawn_entities(portal, regs)
+		post("ENTITIES POUR THROUGH THE PORTAL: %d regiments of things from beyond are loose in Skyfall!" % regs)
+		for tag in affected:
+			fire_event("entity_invasion", tag)
 	if player_tag != "" and not (player_tag in affected):
 		post("The anomalies stay in Skyfall. %s has no one there, so the Black Moon passes us by." % nation_name(player_tag))
 	doomsday_changed.emit(true)
@@ -739,6 +811,19 @@ func start_doomsday() -> void:
 			if e.get("trigger", {}).get("special", "") == "doomsday" and _event_applies(e, tag) \
 					and check_conditions(e.get("trigger", {}).get("conditions", []), tag):
 				fire_event(eid, tag)
+
+
+func _entity_pressure() -> void:
+	## While entities hold the Doomsday Portal, the sky islands around it suffer.
+	var portal := portal_id()
+	if portal < 0 or provinces[portal]["controller"] != "ENT":
+		return
+	for nb in provinces[portal]["connections"]:
+		if provinces[nb]["owner"] != "" and provinces[nb]["owner"] != "BLM":
+			add_province_modifier(nb, "entity_incursion", "Entity incursion", {"local_unrest": 3, "local_production_mod": -0.5}, 3)
+	if rng.randf() < 0.15:
+		mil.spawn_entities(portal, 2 + rng.randi_range(0, 2))
+		post("More entities crawl out of the occupied portal.")
 
 
 func end_doomsday() -> void:
@@ -762,8 +847,17 @@ func _event_applies(e: Dictionary, tag: String) -> bool:
 	var f: String = e.get("for", "all")
 	if f == "all":
 		return true
+	var gt: String = court.gov_type(tag)
 	if f == "tribes":
-		return nations[tag]["government"] == "boar_tribe"
+		return gt == "tribe" or gt == "horde"
+	if f == "republics":
+		return gt == "republic"
+	if f == "monarchies":
+		return gt == "monarchy"
+	if f == "pig_states":
+		return tag != "MEN" and pop.culture_group(nations[tag]["culture"]) == "Porcine"
+	if f == "others":
+		return tag != "MEN" and tag != "SKY"
 	if f == "player":
 		return tag == player_tag
 	return f == tag
@@ -881,10 +975,16 @@ func describe_effects(effects: Array, tag: String) -> String:
 				parts.append("%+d army tradition" % amt)
 			"add_reform_progress":
 				parts.append("%+d reform progress" % amt)
+			"add_legitimacy":
+				parts.append("%+d %s" % [amt, court.legitimacy_name(tag).to_lower() if nations.has(tag) else "legitimacy"])
+			"add_autonomy":
+				parts.append("%+d autonomy in every province" % amt)
+			"spawn_entities":
+				parts.append("%d regiments of entities appear at the portal" % amt)
 			"declare_war":
 				parts.append("declares war on %s" % nation_name(e.get("target", "")))
 			"add_claim":
-				parts.append("claim on %s" % e.get("province", ""))
+				parts.append("claims on all of %s" % nation_name(e["tag"]) if e.has("tag") else "claim on %s" % e.get("province", ""))
 			"spawn_leader":
 				parts.append("a new general")
 			"set_flag", "clear_flag", "fire_event", "message", "join_war", "refuse_call", "accept_peace":
@@ -953,9 +1053,13 @@ func apply_effects(effects: Array, tag: String) -> void:
 				if nations.has(t) and nations[t]["alive"] and t != tag:
 					dip.declare_war(tag, t)
 			"add_claim":
-				var cid := int(province_ids_by_name.get(e.get("province", ""), -1))
-				if cid >= 0:
-					n["claims"][cid] = true
+				if e.has("tag"):
+					for cpid in owned_provinces(String(e["tag"])):
+						n["claims"][cpid] = true
+				else:
+					var cid := int(province_ids_by_name.get(e.get("province", ""), -1))
+					if cid >= 0:
+						n["claims"][cid] = true
 			"add_core":
 				var coid := int(province_ids_by_name.get(e.get("province", ""), -1))
 				if coid >= 0 and provinces[coid]["owner"] == tag:
@@ -969,7 +1073,22 @@ func apply_effects(effects: Array, tag: String) -> void:
 				var w: Dictionary = wars.get(int(e.get("war", -1)), {})
 				if not w.is_empty():
 					dip._join(w, tag, e.get("side", "attackers"))
+					var payer: String = e.get("payer", "")
+					if nations.has(payer) and int(e.get("price", 0)) > 0:
+						var pay := minf(float(e["price"]), maxf(0.0, float(nations[payer]["treasury"])))
+						nations[payer]["treasury"] -= pay
+						n["treasury"] += pay
 					war_changed.emit()
+			"add_legitimacy":
+				court.add_legitimacy(tag, float(amt))
+			"spawn_entities":
+				var portal := portal_id()
+				if portal >= 0:
+					mil.spawn_entities(portal, maxi(1, amt))
+			"add_autonomy":
+				for pid in owned(tag):
+					if capital_of(tag) != pid:
+						provinces[pid]["autonomy"] = clampf(float(provinces[pid]["autonomy"]) + amt, eco.min_autonomy(tag, pid), 100.0)
 			"refuse_call":
 				var caller: String = e.get("caller", "")
 				if nations.has(caller):
@@ -995,6 +1114,10 @@ func check_conditions(conds: Array, tag: String) -> bool:
 
 
 func check_condition(c: Dictionary, tag: String) -> bool:
+	if bool(c.get("negate", false)):
+		var c2 := c.duplicate()
+		c2.erase("negate")
+		return not check_condition(c2, tag)
 	var n: Dictionary = nations[tag]
 	match c.get("type", ""):
 		"year_at_least":
@@ -1100,6 +1223,24 @@ func check_condition(c: Dictionary, tag: String) -> bool:
 			return rc >= int(c["at_least"])
 		"has_reform":
 			return c["id"] in n["reforms"]
+		"legitimacy_at_least":
+			return float(n.get("legitimacy", 0.0)) >= float(c["at_least"])
+		"has_advisors_at_least":
+			var ac := 0
+			for k in n.get("advisors", {}):
+				if not n["advisors"][k].is_empty():
+					ac += 1
+			return ac >= int(c["at_least"])
+		"mines_at_least":
+			var mc := 0
+			for id in owned(tag):
+				if provinces[id]["buildings"].has("mine"):
+					mc += 1
+			return mc >= int(c["at_least"])
+		"portal_held_by_entities":
+			return portal_id() >= 0 and provinces[portal_id()]["controller"] == "ENT"
+		"gov_type":
+			return court.gov_type(tag) == c["value"]
 		"no_loans":
 			return n["loans"].is_empty()
 	push_warning("Unknown condition type: %s" % c.get("type", "?"))
@@ -1147,13 +1288,23 @@ func describe_condition(c: Dictionary) -> String:
 		"religion_provinces_at_least": return "%d provinces of your faith" % int(c["at_least"])
 		"has_reform": return "Reform: %s" % prog.reform_name(tag, c["id"]) if tag != "" else c["id"]
 		"no_loans": return "No loans"
+		"legitimacy_at_least": return "Legitimacy %d" % int(c["at_least"])
+		"has_advisors_at_least": return "%d advisors employed" % int(c["at_least"])
+		"mines_at_least": return "%d mines" % int(c["at_least"])
+		"portal_held_by_entities": return "Entities hold the Doomsday Portal"
+		"gov_type": return "Government: %s" % c["value"]
 	return str(c)
 
 
 func missions_for(tag: String) -> Array:
 	var key: String = tag
-	if nations.has(tag) and nations[tag]["government"] == "boar_tribe":
-		key = "TRIBE"
+	var has_own := false
+	for m in missions:
+		if m.get("nation", "") == tag:
+			has_own = true
+			break
+	if not has_own:
+		key = "TRIBE" if nations.has(tag) and pop.culture_group(nations[tag]["culture"]) == "Wild Boar" else "STATE"
 	var out: Array = []
 	for m in missions:
 		if m.get("nation", "") == key:

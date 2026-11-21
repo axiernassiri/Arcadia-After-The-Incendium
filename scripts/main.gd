@@ -18,15 +18,15 @@ extends Node
 const UI = preload("res://scripts/ui/ui_util.gd")
 const MapView = preload("res://scripts/map_view.gd")
 const MapCamera = preload("res://scripts/map_camera.gd")
-const PANELS := ["court", "government", "economy", "trade", "tech", "ideas", "military", "diplomacy", "peoples", "missions"]
+const PANELS := ["court", "government", "economy", "production", "trade", "tech", "ideas", "military", "diplomacy", "peoples", "missions"]
 const PANEL_SCRIPTS := {
 	"court": "res://scripts/ui/court_panel.gd", "government": "res://scripts/ui/government_panel.gd",
-	"economy": "res://scripts/ui/economy_panel.gd", "trade": "res://scripts/ui/trade_panel.gd",
+	"economy": "res://scripts/ui/economy_panel.gd", "production": "res://scripts/ui/production_panel.gd", "trade": "res://scripts/ui/trade_panel.gd",
 	"tech": "res://scripts/ui/tech_panel.gd", "ideas": "res://scripts/ui/ideas_panel.gd",
 	"military": "res://scripts/ui/military_panel.gd", "diplomacy": "res://scripts/ui/diplomacy_panel.gd",
 	"peoples": "res://scripts/ui/peoples_panel.gd", "missions": "res://scripts/ui/missions_panel.gd",
 }
-const SHORTCUTS := {KEY_C: "court", KEY_G: "government", KEY_E: "economy", KEY_T: "trade", KEY_R: "tech",
+const SHORTCUTS := {KEY_C: "court", KEY_G: "government", KEY_E: "economy", KEY_B: "production", KEY_T: "trade", KEY_R: "tech",
 	KEY_I: "ideas", KEY_L: "military", KEY_O: "diplomacy", KEY_P: "peoples", KEY_M: "missions"}
 
 var map: MapView
@@ -44,6 +44,8 @@ var peace_panel
 var event_popup
 var map_controls
 var log_panel
+var alerts
+var help_overlay
 var main_menu
 var intro
 var nation_select
@@ -77,6 +79,7 @@ func _ready() -> void:
 	tab_bar = _add("res://scripts/ui/tab_bar.gd")
 	map_controls = _add("res://scripts/ui/map_controls.gd")
 	log_panel = _add("res://scripts/ui/log_panel.gd")
+	alerts = _add("res://scripts/ui/alerts.gd")
 	for k in PANELS:
 		panels[k] = _add(PANEL_SCRIPTS[k])
 		panels[k].closed.connect(func(): if open_name == k: open_name = ""; tab_bar.set_active(""))
@@ -94,6 +97,11 @@ func _ready() -> void:
 	intro = _add("res://scripts/ui/intro.gd")
 	main_menu = _add("res://scripts/ui/main_menu.gd")
 	game_menu = _add("res://scripts/ui/game_menu.gd")
+	help_overlay = _add("res://scripts/ui/help_overlay.gd")
+	alerts.open_panel.connect(open_panel)
+	alerts.go_to_province.connect(focus_province)
+	alerts.open_peace.connect(_open_peace)
+	panels["production"].go_to_province.connect(focus_province)
 
 	map.province_clicked.connect(_on_province_clicked)
 	map.province_right_clicked.connect(_on_right_click)
@@ -154,8 +162,10 @@ func _add(script_path: String) -> Control:
 func _set_state(s: String) -> void:
 	state = s
 	var in_game := s == "game"
-	for c in [top_bar, tab_bar, map_controls, log_panel]:
+	for c in [top_bar, tab_bar, map_controls, log_panel, alerts]:
 		c.visible = in_game
+	if not in_game:
+		help_overlay.visible = false
 	if not in_game:
 		_close_all()
 	main_menu.visible = s == "menu"
@@ -207,6 +217,7 @@ func _after_start() -> void:
 	map.refresh()
 	top_bar.refresh()
 	log_panel.refresh()
+	alerts.refresh()
 	_update_badges()
 
 
@@ -234,6 +245,9 @@ func _to_main_menu() -> void:
 # ---------------------------------------------------------------- panels
 
 func open_panel(name: String) -> void:
+	if name == "help":
+		help_overlay.visible = not help_overlay.visible
+		return
 	if state != "game" or not panels.has(name):
 		return
 	if open_name == name and panels[name].visible:
@@ -416,6 +430,8 @@ func _layout() -> void:
 	var vp := get_viewport().get_visible_rect().size
 	var top: float = top_bar.size.y + 8.0 if top_bar.visible else 8.0
 	tab_bar.position = Vector2(8, top)
+	alerts.position = Vector2(tab_bar.size.x + 16.0 + (panels[open_name].size.x + 8.0 if open_name != "" and panels[open_name].visible else 0.0), top)
+	help_overlay.position = ((vp - help_overlay.size) / 2.0).round()
 	map_controls.position = Vector2(8, vp.y - map_controls.size.y - 8)
 	log_panel.position = Vector2(clampf((vp.x - log_panel.size.x) / 2.0, map_controls.size.x + 16, vp.x), vp.y - log_panel.size.y - 8)
 	var left_x: float = tab_bar.size.x + 16.0
@@ -431,7 +447,8 @@ func _layout() -> void:
 	country_panel.position = Vector2(vp.x - province_panel.size.x - country_panel.size.x - 20 if province_panel.visible else vp.x - country_panel.size.x - 8, top)
 	peace_panel.max_height = maxf(200.0, vp.y - top - 120.0)
 	peace_panel.position = ((vp - peace_panel.size) / 2.0).round()
-	nation_select.position = Vector2(16, maxf(16.0, (vp.y - nation_select.size.y) / 2.0))
+	nation_select.fit_height(vp.y)
+	nation_select.position = Vector2(16, maxf(8.0, (vp.y - nation_select.size.y) / 2.0))
 	event_popup.position = ((vp - event_popup.size) / 2.0).round()
 
 
@@ -449,7 +466,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_TAB:
 			map.set_layer("sky" if map.layer == "ground" else "ground")
 		KEY_ESCAPE:
-			if army_panel.visible:
+			if help_overlay.visible:
+				help_overlay.visible = false
+			elif army_panel.visible:
 				army_panel.close()
 			elif peace_panel.visible or country_panel.visible:
 				peace_panel.visible = false
@@ -461,6 +480,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				game_menu.open()
 		KEY_HOME:
 			camera.fit_bounds()
+		KEY_F1:
+			help_overlay.visible = not help_overlay.visible
 		_:
 			if SHORTCUTS.has(event.keycode):
 				open_panel(SHORTCUTS[event.keycode])
@@ -532,6 +553,7 @@ func _run_automation() -> void:
 			_open_peace(int(wars[0]["id"]))
 	top_bar.refresh()
 	log_panel.refresh()
+	alerts.refresh()
 	_update_badges()
 	if Game.is_blocked():
 		event_popup._show_next()
