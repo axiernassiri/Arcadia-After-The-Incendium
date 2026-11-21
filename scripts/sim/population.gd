@@ -132,12 +132,25 @@ func core_cost(tag: String, pid: int) -> int:
 	return maxi(5, int(round(6.0 * g.total_dev(pid) * maxf(0.2, mult))))
 
 
+const CORE_MONTHS := 24
+
+
+func coring_left(pid: int) -> int:
+	## Months until the province becomes a core, or -1 if no one is coring it.
+	var c: Dictionary = g.provinces[pid].get("coring", {})
+	if c.is_empty():
+		return -1
+	return maxi(0, ceili((int(c["done"]) - g.day_index) / 30.0))
+
+
 func can_core(tag: String, pid: int) -> String:
 	var p: Dictionary = g.provinces[pid]
 	if p["owner"] != tag:
 		return "Not your province."
 	if p["cores"].has(tag):
 		return "Already a core."
+	if not p.get("coring", {}).is_empty():
+		return "Being made a core: %d month(s) left." % coring_left(pid)
 	if p["controller"] != tag:
 		return "The province is occupied."
 	var c = core_cost(tag, pid)
@@ -147,13 +160,34 @@ func can_core(tag: String, pid: int) -> String:
 
 
 func make_core(tag: String, pid: int) -> bool:
+	## Pay the power now; the province becomes a core after CORE_MONTHS (like EU4's coring).
 	if can_core(tag, pid) != "":
 		return false
 	g.nations[tag]["power"][0] -= core_cost(tag, pid)
-	g.provinces[pid]["cores"][tag] = true
+	g.provinces[pid]["coring"] = {"tag": tag, "start": g.day_index, "done": g.day_index + CORE_MONTHS * 30}
+	if tag == g.player_tag:
+		g.post("Started making %s a core: %d months." % [g.provinces[pid]["name"], CORE_MONTHS])
 	g.province_changed.emit(pid)
 	g.touch(tag)
 	return true
+
+
+func monthly_cores() -> void:
+	for pid in g.provinces:
+		var p: Dictionary = g.provinces[pid]
+		var c: Dictionary = p.get("coring", {})
+		if c.is_empty():
+			continue
+		if p["owner"] != c["tag"]:
+			p["coring"] = {}
+			continue
+		if g.day_index >= int(c["done"]):
+			p["coring"] = {}
+			p["cores"][c["tag"]] = true
+			if c["tag"] == g.player_tag:
+				g.post("%s is now a core of %s." % [p["name"], g.nation_name(c["tag"])])
+			g.province_changed.emit(pid)
+			g.touch(c["tag"])
 
 
 func overextension(tag: String) -> float:

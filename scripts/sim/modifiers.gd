@@ -152,6 +152,9 @@ func _build(tag: String) -> void:
 		src.append(["Low legitimacy (%d)" % int(leg), {"unrest": (50.0 - leg) / 20.0, "tax_mod": -(50.0 - leg) / 250.0}])
 	elif leg >= 90.0:
 		src.append(["High legitimacy (%d)" % int(leg), {"unrest": -1.0}])
+	# Skyfall, while it keeps to the sky
+	if tag == "SKY" and not g.owns_mainland(tag):
+		src.append(["Isolation of Eden (no land on the Arcadian continent)", {"dev_cost_mod": -0.25, "tax_mod": 0.10, "production_mod": 0.10}])
 	# stability
 	var st: int = int(n["stability"])
 	if st != 0:

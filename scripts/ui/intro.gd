@@ -4,6 +4,7 @@ extends Control
 signal finished
 
 const UI = preload("res://scripts/ui/ui_util.gd")
+const Tokens = preload("res://ui/style/tokens.gd")
 
 var _beat = 0
 var _card: VBoxContainer
@@ -11,6 +12,17 @@ var _year: Label
 var _heading: Label
 var _text: Label
 var _progress: Label
+var _glow: TextureRect
+var _t := 0.0
+
+
+func _process(delta: float) -> void:
+	if not visible or _glow == null:
+		return
+	_t += delta
+	_glow.pivot_offset = _glow.size / 2.0
+	_glow.rotation = _t * 0.02
+	_glow.modulate.a = 0.09 + 0.04 * sin(_t * 0.9)
 
 
 func _ready() -> void:
@@ -20,10 +32,24 @@ func _ready() -> void:
 	bg.color = Color(0.04, 0.035, 0.04)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
-	var glow = ColorRect.new()  # a dim ember glow behind the text
-	glow.color = Color(0.35, 0.12, 0.05, 0.18)
-	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var glow = TextureRect.new()  # the burning world: a slow-pulsing ember sun behind the text
+	glow.texture = load("res://assets/ui/emblem.png")
+	glow.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	glow.custom_minimum_size = Vector2(720, 720)
+	glow.position = -glow.custom_minimum_size / 2.0
+	glow.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	glow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	glow.modulate = Color(1.0, 0.45, 0.2, 0.10)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(glow)
+	_glow = glow
+	var vig = TextureRect.new()
+	vig.texture = load("res://assets/ui/vignette.png")
+	vig.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vig.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vig.stretch_mode = TextureRect.STRETCH_SCALE
+	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(vig)
 	var centre = CenterContainer.new()
 	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(centre)
@@ -38,20 +64,25 @@ func play() -> void:
 	visible = true
 	UI.clear(_card)
 	var cs: Dictionary = Game.cutscene
-	var title = UI.label(cs.get("title", "The Incendium").to_upper(), 40, Color(0.95, 0.45, 0.25))
+	var title = UI.heading(cs.get("title", "The Incendium").to_upper(), 42)
+	title.add_theme_color_override("font_color", Color(0.98, 0.52, 0.28))
+	title.add_theme_constant_override("outline_size", 8)
+	title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.6))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card.add_child(title)
 	var by = UI.label(cs.get("narrator", ""), 14, UI.TEXT_DIM)
 	by.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card.add_child(by)
-	_card.add_child(HSeparator.new())
-	_year = UI.label("", 30, UI.GOLD)
+	_card.add_child(UI.divider())
+	_year = UI.heading("", 30)
 	_year.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card.add_child(_year)
-	_heading = UI.label("", 22, UI.TEXT)
+	_heading = UI.heading("", 20)
+	_heading.add_theme_color_override("font_color", Tokens.TEXT)
 	_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card.add_child(_heading)
-	_text = UI.label("", 18, UI.TEXT, 760)
+	_text = UI.label("", 19, UI.TEXT, 760)
+	_text.add_theme_font_override("font", Tokens.font("body"))
 	_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_text.custom_minimum_size.y = 120
 	_card.add_child(_text)
@@ -61,8 +92,13 @@ func play() -> void:
 	var buttons = HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 12)
-	buttons.add_child(UI.button("Skip intro", _finish, "Esc"))
-	buttons.add_child(UI.button("Continue", next_beat, "Space or Enter"))
+	var skip = UI.button("Skip intro", _finish, "Esc")
+	skip.theme_type_variation = "FlatButton"
+	buttons.add_child(skip)
+	var cont = UI.button("Continue", next_beat, "Space or Enter")
+	cont.custom_minimum_size = Vector2(180, 40)
+	cont.add_theme_font_override("font", Tokens.font("title"))
+	buttons.add_child(cont)
 	_card.add_child(buttons)
 	_beat = 0
 	_show_beat()

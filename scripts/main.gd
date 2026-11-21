@@ -4,13 +4,14 @@ extends Node
 ##
 ## Automation flags (after `--` on the command line), used by tests and screenshots:
 ##   --nation=TAG          start immediately as that nation (skips the menus)
-##   --select-screen       open on the nation select screen    --menu   stay on the main menu
+##   --select-screen       open on the nation select screen    --menu   stay on the main menu    --intro  the cutscene
 ##   --days=N              advance N days after starting (events answered with option 1)
 ##   --until-doomsday      advance until the Black Moon rises
 ##   --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"
 ##   --select="Province"   select a province     --panel=economy|trade|tech|ideas|government|court|military|diplomacy|peoples|missions
 ##   --country=TAG         open a nation's diplomacy view      --war=TAG  declare war on TAG first
-##   --army                select the player's first army      --peace  open the peace screen for the first war
+##   --army                select the player's first army    --entities  spawn entities at the portal and select them
+##   --tab=cores           pick the Production panel's tab      --peace  open the peace screen for the first war
 ##   --keep-event          leave the last pending event on screen
 ##   --soak=SECONDS        play at full speed, clicking through every panel, then quit (UI stress test)
 ##   --screenshot=path.png save a screenshot after a few frames and quit
@@ -69,11 +70,13 @@ func _ready() -> void:
 	map.set_camera_zoom(camera.zoom.x)
 
 	hud = CanvasLayer.new()
+	hud.layer = 2   # above the map overlay (names, counters) on layer 1
 	add_child(hud)
 	root_ui = Control.new()
 	root_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_ui.theme = UI.build_theme()
+	root_ui.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS   # icons are rasterised at 2x
 	hud.add_child(root_ui)
 	top_bar = _add("res://scripts/ui/top_bar.gd")
 	tab_bar = _add("res://scripts/ui/tab_bar.gd")
@@ -90,7 +93,7 @@ func _ready() -> void:
 	nation_select = _add("res://scripts/ui/nation_select.gd")
 	event_popup = _add("res://scripts/ui/event_popup.gd")
 	hover_label = UI.label("", 13, UI.TEXT)
-	hover_label.add_theme_stylebox_override("normal", UI.box(UI.BG_DARK, UI.BORDER, 4, 6))
+	hover_label.add_theme_stylebox_override("normal", UI.tex_box("tooltip.png", 6, 10, 6, true))
 	hover_label.visible = false
 	hover_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_ui.add_child(hover_label)
@@ -139,6 +142,9 @@ func _ready() -> void:
 	if args.has("nation"):
 		start_game(args["nation"])
 		_run_automation()
+	elif args.has("intro"):
+		_set_state("intro")
+		intro.play()
 	elif args.has("select-screen"):
 		_open_select()
 	if args.has("soak"):
@@ -330,8 +336,13 @@ func _on_right_click(id: int) -> void:
 		return
 	if map.selected_army >= 0 and Game.armies.has(map.selected_army) and Game.armies[map.selected_army]["owner"] == Game.player_tag:
 		if not Game.mil.move_army(map.selected_army, id):
-			Game.post("%s can't reach %s (no path, no military access, or not enough transports)." % [
-				Game.armies[map.selected_army]["name"], Game.provinces[id]["name"]])
+			var sel_army: Dictionary = Game.armies[map.selected_army]
+			if Game.mil.zoc_blocked(sel_army, id):
+				Game.post("%s can't march past an enemy fort to reach %s: besiege the fort first, or go around (zone of control)." % [
+					sel_army["name"], Game.provinces[id]["name"]])
+			else:
+				Game.post("%s can't reach %s (no path, no military access, or not enough transports)." % [
+					sel_army["name"], Game.provinces[id]["name"]])
 		army_panel.mark_dirty()
 		return
 	if map.selected_fleet >= 0 and Game.fleets.has(map.selected_fleet) and Game.fleets[map.selected_fleet]["owner"] == Game.player_tag:
@@ -543,6 +554,15 @@ func _run_automation() -> void:
 		open_panel(args["panel"])
 	if args.has("country"):
 		_open_country(args["country"])
+	if args.has("tab"):
+		var pp = panels.get("production")
+		if pp:
+			pp.mode = args["tab"]
+			pp.mark_dirty()
+	if args.has("entities"):
+		var ent: Dictionary = Game.mil.spawn_entities(Game.portal_id(), 8)
+		if not ent.is_empty():
+			_select_army(int(ent["id"]))
 	if args.has("army"):
 		var mine: Array = Game.mil.armies_of(Game.player_tag)
 		if mine.size() > 0:

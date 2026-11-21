@@ -18,12 +18,12 @@ var _list_scroll: ScrollContainer
 
 
 func _ready() -> void:
-	add_theme_stylebox_override("panel", UI.box(UI.BG_DARK, UI.BORDER, 8, 14))
+	add_theme_stylebox_override("panel", UI.tex_box("panel.png", 12, 18, 16, true))
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var v = VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	add_child(v)
-	v.add_child(UI.label("CHOOSE YOUR NATION", 24, UI.GOLD))
+	v.add_child(UI.heading("Choose your Nation", 24))
 	v.add_child(UI.label("1 January 4289. The Arcadian Era begins. Click a nation below or on the map.", 13, UI.TEXT_DIM, LIST_WIDTH + WIDTH))
 	var cols = HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 12)
@@ -51,6 +51,7 @@ func _ready() -> void:
 	var start = UI.button("Start the game", func(): nation_chosen.emit(selected))
 	start.custom_minimum_size = Vector2(200, 40)
 	start.add_theme_font_size_override("font_size", 17)
+	start.add_theme_font_override("font", load("res://ui/style/tokens.gd").font("title"))
 	buttons.add_child(start)
 	v.add_child(buttons)
 	visible = false
@@ -118,7 +119,7 @@ func _build_detail() -> void:
 	var n: Dictionary = Game.nations[selected]
 	var w = WIDTH - 50
 	_detail.add_child(UI.swatch(n["colour"], Vector2(w, 5)))
-	_detail.add_child(UI.label(n["name"], 20, UI.GOLD))
+	_detail.add_child(UI.heading(n["name"], 20))
 	var gov: Dictionary = Game.governments.get(n["government"], {})
 	_detail.add_child(UI.label("%s (%s)" % [gov.get("name", ""), gov.get("rank", "")], 13, UI.TEXT_DIM))
 	_detail.add_child(UI.label(n["blurb"], 13, UI.TEXT, w))

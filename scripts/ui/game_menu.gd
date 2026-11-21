@@ -23,7 +23,7 @@ func _ready() -> void:
 	centre.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(centre)
 	var panel = PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UI.box(UI.BG_DARK, UI.GOLD, 8, 18))
+	panel.add_theme_stylebox_override("panel", UI.tex_box("panel.png", 12, 26, 22, true))
 	centre.add_child(panel)
 	_box = VBoxContainer.new()
 	_box.custom_minimum_size.x = 420
@@ -40,7 +40,7 @@ func open() -> void:
 
 func refresh(msg: String = "") -> void:
 	UI.clear(_box)
-	_box.add_child(UI.label("Menu", 24, UI.GOLD))
+	_box.add_child(UI.heading("Menu", 24))
 	_box.add_child(_big("Resume", func(): visible = false; resume.emit()))
 	_box.add_child(HSeparator.new())
 	_box.add_child(UI.label("Save game", 15, UI.GOLD))

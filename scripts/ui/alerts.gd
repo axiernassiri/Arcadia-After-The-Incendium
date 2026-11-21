@@ -7,13 +7,17 @@ signal go_to_province(id: int)
 signal open_peace(war_id: int)
 
 const UI = preload("res://scripts/ui/ui_util.gd")
+const Icons = preload("res://ui/style/icons.gd")
+const ICONS := {"Tech": "gear", "Ideas": "book", "Idea": "book", "Reform": "column", "Mission": "flag", "Advisor": "person",
+	"Enforce": "seal", "Allies": "envelope", "Deficit": "coins", "Loans": "scroll", "Legit.": "legitimacy", "Stab.": "stability",
+	"Limit": "swords", "Men": "manpower", "Weary": "shield_broken", "Rebels": "flame", "Portal": "portal", "Decision": "scroll", "Core": "crown"}
 
 var _dirty = true
 var _since = 0.0
 
 
 func _ready() -> void:
-	add_theme_constant_override("separation", 4)
+	add_theme_constant_override("separation", 6)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	Game.month_ticked.connect(func(): _dirty = true)
 	Game.nation_changed.connect(func(t): if t == Game.player_tag: _dirty = true)
@@ -54,6 +58,16 @@ func compute() -> Array:
 			if Game.prog.can_enact(tag, next_tier, r["id"]) == "":
 				out.append(["Reform", "You can enact a new government reform.", UI.GOOD, func(): open_panel.emit("government")])
 				break
+	for d in Game.decisions_for(tag):
+		if Game.can_take_decision(tag, d["id"]) == "":
+			out.append(["Decision", "You can take the decision: %s." % d["name"], UI.GOOD, func(): open_panel.emit("government")])
+			break
+	var coreable := 0
+	for pid in Game.owned(tag):
+		if Game.pop.can_core(tag, pid) == "":
+			coreable += 1
+	if coreable > 0:
+		out.append(["Core", "%d province(s) can be made cores. Uncored land pays little and causes overextension (Production > Cores)." % coreable, UI.GOOD, func(): open_panel.emit("production")])
 	var ready := 0
 	for m in Game.missions_for(tag):
 		if Game.mission_state(tag, m) == "ready":
@@ -117,12 +131,26 @@ func refresh() -> void:
 	UI.clear(self)
 	for a in compute():
 		var b := Button.new()
-		b.text = a[0]
-		b.tooltip_text = a[1]
-		b.add_theme_font_size_override("font_size", 12)
-		b.add_theme_color_override("font_color", a[2])
-		b.add_theme_stylebox_override("normal", UI.box(UI.BG_DARK, a[2], 10, 4))
-		b.add_theme_stylebox_override("hover", UI.box(UI.BG_CARD, a[2], 10, 4))
+		b.icon = Icons.tex(ICONS.get(a[0], "warning"), 20)
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.add_theme_constant_override("icon_max_width", 20)
+		b.custom_minimum_size = Vector2(38, 38)
+		b.focus_mode = Control.FOCUS_NONE
+		b.tooltip_text = "%s\n%s" % [a[0], a[1]]
+		var col: Color = a[2]
+		for st in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_hover_pressed_color"]:
+			b.add_theme_color_override(st, col.lightened(0.15) if st != "icon_normal_color" else col)
+		var normal = UI.box(Color(0.05, 0.055, 0.07, 0.94), col.darkened(0.25), 19, 6)
+		normal.set_border_width_all(2)
+		normal.shadow_color = Color(0, 0, 0, 0.45)
+		normal.shadow_size = 3
+		var hover = normal.duplicate()
+		hover.border_color = col
+		hover.bg_color = Color(col, 0.18).blend(Color(0.05, 0.055, 0.07, 0.94))
+		b.add_theme_stylebox_override("normal", normal)
+		b.add_theme_stylebox_override("hover", hover)
+		b.add_theme_stylebox_override("pressed", hover)
+		b.add_theme_stylebox_override("hover_pressed", hover)
 		b.pressed.connect(a[3])
 		add_child(b)
 	reset_size()

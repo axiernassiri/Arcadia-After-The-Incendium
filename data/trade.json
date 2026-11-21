@@ -7,7 +7,7 @@
     "Eurome":              {"downstream": ["Midrea", "Bay of Pigs"], "text": "Grain and wine from the farms."},
     "Western Archipelago": {"downstream": ["Bay of Pigs"], "text": "Ore, gems and salt from the mines."},
     "Southern Sea":        {"downstream": ["Eurome"], "text": "Pearls and fish from the Southern Isles."},
-    "Skyfall":             {"downstream": ["Arcadian Sea"], "text": "Core Energy and holy relics, down the Holy Waterfall."}
+    "Skyfall":             {"downstream": ["Arcadian Sea"], "value_mult": 1.75, "base_value": 1.0, "text": "Core Energy and holy relics, down the Holy Waterfall. The richest node in Arcadia for its size: goods here are worth 75% more, and the Waterfall Exchange adds 1 sanctum of trade every month."}
   },
   "home_bonus": 0.10,
   "collect_away_penalty": 0.5,

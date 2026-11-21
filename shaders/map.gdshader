@@ -13,6 +13,9 @@ uniform int hovered_id = -1;
 uniform float border_width = 1.0;
 uniform float doomsday = 0.0;
 uniform float stripe_scale = 7.0;
+uniform float zoom = 1.0;
+uniform sampler2D paper_tex : repeat_enable, filter_linear_mipmap;
+uniform float paper_strength = 0.10;
 
 int id_at(vec2 uv) {
 	vec4 c = texture(index_tex, uv);
@@ -36,6 +39,8 @@ void fragment() {
 	int n2 = id_at(UV + vec2(0.0, t.y));
 	int n3 = id_at(UV - vec2(0.0, t.y));
 	bool edge = (n0 != id) || (n1 != id) || (n2 != id) || (n3 != id);
+	vec2 px_pos = UV * map_size;
+	float paper = texture(paper_tex, px_pos / 384.0).r;
 
 	if (id > 0) {
 		vec4 fill = texelFetch(palette_tex, ivec2(id, 0), 0);
@@ -48,11 +53,16 @@ void fragment() {
 				col = mix(col, stripe.rgb * shade, stripe.a);
 			}
 		}
-		if (edge) {
-			float own = owner_of(id);
-			bool nation_edge = abs(owner_of(n0) - own) > 0.001 || abs(owner_of(n1) - own) > 0.001
-				|| abs(owner_of(n2) - own) > 0.001 || abs(owner_of(n3) - own) > 0.001;
-			col *= nation_edge ? 0.30 : 0.72;
+		// nation borders are drawn twice as wide as province borders, and darker
+		float own = owner_of(id);
+		vec2 t2 = t * 2.0;
+		bool nation_edge = abs(owner_of(id_at(UV + vec2(t2.x, 0.0))) - own) > 0.001 || abs(owner_of(id_at(UV - vec2(t2.x, 0.0))) - own) > 0.001
+			|| abs(owner_of(id_at(UV + vec2(0.0, t2.y))) - own) > 0.001 || abs(owner_of(id_at(UV - vec2(0.0, t2.y))) - own) > 0.001;
+		col *= mix(1.0 - paper_strength, 1.0 + paper_strength * 0.6, paper);
+		if (nation_edge) {
+			col *= 0.34;
+		} else if (edge) {
+			col *= mix(0.72, 0.82, clamp((1.6 - zoom) / 1.2, 0.0, 1.0)); // province borders soften when zoomed out
 		}
 		if (id == hovered_id) {
 			col = mix(col, vec3(1.0), 0.16);
@@ -61,8 +71,13 @@ void fragment() {
 			float pulse = 0.5 + 0.5 * sin(TIME * 4.0);
 			col = edge ? vec3(1.0, 0.96, 0.75) : mix(col, vec3(1.0, 0.97, 0.85), 0.22 + 0.10 * pulse);
 		}
-	} else if (edge) {
-		col *= 0.55; // coastline
+	} else {
+		// open water / open sky: grain plus a slow shimmer
+		float wave = texture(paper_tex, px_pos / 520.0 + vec2(TIME * 0.004, TIME * 0.0025)).r;
+		col *= mix(0.93, 1.05, wave * 0.6 + paper * 0.4);
+		if (edge) {
+			col *= 0.55; // coastline
+		}
 	}
 
 	if (doomsday > 0.0) {

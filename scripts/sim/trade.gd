@@ -102,6 +102,7 @@ func monthly() -> void:
 		var local = 0.0
 		for pid in g.node_provinces.get(k, []):
 			local += g.eco.goods_value(pid) / 12.0
+		local = local * float(nodes[k].get("value_mult", 1.0)) + float(nodes[k].get("base_value", 0.0))
 		var value: float = local + float(incoming[k])
 		var power = {}
 		var total = 0.0

@@ -19,7 +19,7 @@ func _person(label: String, p: Dictionary, names: Array) -> void:
 		return
 	var age = "ageless" if p.get("ageless", false) else "age %d" % int(p.get("age", 0))
 	v.add_child(UI.label(label, 12, UI.TEXT_DIM))
-	v.add_child(UI.row([UI.label("%s %s" % [p.get("name", "?"), p.get("dynasty", "")], 16, UI.GOLD), UI.spacer(), UI.label(age, 12, UI.TEXT_DIM)]))
+	v.add_child(UI.row([UI.heading("%s %s" % [p.get("name", "?"), p.get("dynasty", "")], 16), UI.spacer(), UI.label(age, 12, UI.TEXT_DIM)]))
 	if p.get("regency", false):
 		v.add_child(UI.label("A regency council rules until an heir comes of age. Weak stats.", 12, UI.BAD, panel_width - 60))
 	var row = HBoxContainer.new()
@@ -35,7 +35,7 @@ func build() -> void:
 	var tag = Game.player_tag
 	var n: Dictionary = Game.nations[tag]
 	var names: Array = n["power_names"]
-	add(UI.row([UI.swatch(n["colour"], Vector2(20, 20)), UI.label(n["name"], 18, UI.GOLD)]))
+	add(UI.row([UI.swatch(n["colour"], Vector2(20, 20)), UI.heading(n["name"], 18)]))
 	text("%s %s. Capital: %s." % [Game.prog.government(tag).get("name", ""), n["ruler"].get("dynasty", ""),
 		Game.provinces[Game.capital_of(tag)]["name"] if Game.capital_of(tag) >= 0 else "none"], 12, UI.TEXT_DIM)
 	_person("Ruler", n["ruler"], names)

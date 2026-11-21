@@ -4,6 +4,9 @@ extends PanelContainer
 signal open_panel(name: String)
 
 const UI = preload("res://scripts/ui/ui_util.gd")
+const ICONS := {"court": "crown", "government": "column", "economy": "coins", "production": "hammer", "trade": "trade",
+	"tech": "gear", "ideas": "book", "military": "swords", "diplomacy": "envelope", "peoples": "manpower",
+	"missions": "flag", "help": "help"}
 const TABS := [
 	["court", "Court", "Ruler, heir, stability and modifiers (C)"],
 	["government", "Government", "Government reforms (G)"],
@@ -23,21 +26,28 @@ var _buttons = {}
 
 
 func _ready() -> void:
-	add_theme_stylebox_override("panel", UI.box(UI.BG_DARK, UI.BORDER, 6, 6))
+	theme_type_variation = "BarPanel"
 	var v = VBoxContainer.new()
-	v.add_theme_constant_override("separation", 4)
+	v.add_theme_constant_override("separation", 2)
 	add_child(v)
 	for t in TABS:
-		var b = UI.button(t[1], func(): open_panel.emit(t[0]), t[2])
-		b.custom_minimum_size = Vector2(104, 30)
+		if t[0] == "help":
+			var sep = HSeparator.new()
+			sep.add_theme_constant_override("separation", 6)
+			v.add_child(sep)
+		var b = UI.icon_button(ICONS.get(t[0], "help"), t[1], func(): open_panel.emit(t[0]), t[2], 18)
+		b.theme_type_variation = "FlatButton"
+		b.toggle_mode = true
+		b.custom_minimum_size = Vector2(132, 30)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_constant_override("h_separation", 9)
 		_buttons[t[0]] = b
 		v.add_child(b)
 
 
 func set_active(name: String) -> void:
 	for k in _buttons:
-		_buttons[k].add_theme_color_override("font_color", UI.GOLD if k == name else UI.TEXT)
+		_buttons[k].set_pressed_no_signal(k == name)
 
 
 func set_badge(name: String, text: String) -> void:

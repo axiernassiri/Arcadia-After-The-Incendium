@@ -106,13 +106,13 @@ func build() -> void:
 		var aut = Game.eco.autonomy(province)
 		var drift = Game.eco.autonomy_drift(owner, province)
 		add(UI.row([UI.tip_label("Autonomy %d%%" % int(aut), "Autonomy cuts this province's tax, production, manpower and trade power by %d%%, but lowers unrest.\nUncored provinces never go below 50%%.%s" % [int(aut),
-			"\nIn the early Arcadian era (until %d) provinces drift away from the centre: +%.2f a month." % [Game.eco.EARLY_ERA_END, drift] if drift > 0.0 else ""], 14,
+			"\nProvinces drift away from the centre: +%.2f a month, until the realm takes the Centralise the Realm decision (from %d)." % [drift, Game.eco.EARLY_ERA_END] if drift > 0.0 else ""], 14,
 			UI.BAD if aut >= 50.0 else UI.TEXT), UI.bar(aut, 100.0, 100.0, UI.BAD, 8.0)]))
 		if mine:
-			add(UI.row([UI.action("Lower -25%% (%d %s)" % [Game.eco.lower_autonomy_cost(province), n["power_names"][0]], Game.eco.can_change_autonomy(tag, province, true),
-				func(): Game.eco.change_autonomy(tag, province, true), "More income from this province, but more unrest. Once every 5 years."),
+			add(UI.row([UI.action("Lower -25%", Game.eco.can_change_autonomy(tag, province, true),
+				func(): Game.eco.change_autonomy(tag, province, true), "Free. More income from this province, but +4 unrest for a year. Each province once every 5 years."),
 				UI.action("Raise +25%", Game.eco.can_change_autonomy(tag, province, false),
-				func(): Game.eco.change_autonomy(tag, province, false), "Calms unrest and gives a little power, but the province pays less.")]))
+				func(): Game.eco.change_autonomy(tag, province, false), "Free. Calms unrest (-3 for a year), but the province pays less. Each province once every 5 years.")]))
 		if "mine_site" in p["flags"]:
 			add(UI.kv("Sanctum mine site", ("mine: +%.1f a month" % Game.eco.mine_income(province)) if p["buildings"].has("mine") else "no mine yet",
 				"Sanctum ore lies under this province. Build a mine to dig it out.", UI.GOOD if p["buildings"].has("mine") else UI.INFO))
@@ -131,8 +131,13 @@ func build() -> void:
 					func(): Game.pop.harsh_treatment(tag, province)))
 	if mine:
 		if not p["cores"].has(tag):
-			add(UI.action("Make core (%d %s)" % [Game.pop.core_cost(tag, province), n["power_names"][0]], Game.pop.can_core(tag, province),
-				func(): Game.pop.make_core(tag, province), "Uncored provinces pay a third of their taxes and cause overextension."))
+			var left: int = Game.pop.coring_left(province)
+			if left >= 0:
+				add(UI.row([UI.label("Becoming a core: %d month(s) left" % left, 12, UI.INFO),
+					UI.bar(float(Game.pop.CORE_MONTHS - left), float(Game.pop.CORE_MONTHS), 120.0, UI.INFO)]))
+			else:
+				add(UI.action("Make core (%d %s, %d months)" % [Game.pop.core_cost(tag, province), n["power_names"][0], Game.pop.CORE_MONTHS], Game.pop.can_core(tag, province),
+					func(): Game.pop.make_core(tag, province), "Uncored provinces pay a third of their taxes and cause overextension. Pay now; it becomes a core after %d months." % Game.pop.CORE_MONTHS))
 		if p["culture"] != n["culture"]:
 			add(UI.action("Convert culture (%d %s)" % [Game.pop.culture_convert_cost(tag, province), n["power_names"][1]],
 				Game.pop.can_convert_culture(tag, province), func(): Game.pop.convert_culture(tag, province)))

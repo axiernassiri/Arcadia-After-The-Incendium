@@ -52,7 +52,7 @@
       ],
       "treasury": 80,
       "manpower": 9000,
-      "stability": 1,
+      "stability": 0,
       "tech": [
         1,
         1,
@@ -150,7 +150,7 @@
       ],
       "treasury": 70,
       "manpower": 6000,
-      "stability": 2,
+      "stability": 0,
       "tech": [
         1,
         1,
@@ -236,7 +236,7 @@
       ],
       "treasury": 20,
       "manpower": 2500,
-      "stability": 1,
+      "stability": 0,
       "tech": [
         1,
         1,
@@ -383,7 +383,7 @@
       ],
       "treasury": 70,
       "manpower": 2500,
-      "stability": 1,
+      "stability": 0,
       "tech": [
         1,
         2,
@@ -459,7 +459,7 @@
       ],
       "treasury": 50,
       "manpower": 5000,
-      "stability": 1,
+      "stability": 0,
       "tech": [
         1,
         1,
@@ -600,7 +600,7 @@
       ],
       "treasury": 45,
       "manpower": 2500,
-      "stability": 1,
+      "stability": 0,
       "tech": [
         2,
         1,
@@ -868,7 +868,7 @@
       ],
       "treasury": 25,
       "manpower": 3000,
-      "stability": 1,
+      "stability": 0,
       "tech": [
         1,
         1,

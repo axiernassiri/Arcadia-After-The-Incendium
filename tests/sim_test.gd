@@ -315,6 +315,126 @@ func _initialize() -> void:
 			occupied += 1
 	check(occupied == 0, "no province is left occupied after the peace")
 
+	# ---------------------------------------------------------------- blueprint 3: war rules, coring, autonomy, decisions
+	game.new_game("MEN")
+	men = game.nations["MEN"]
+	var stab_ok = true
+	for t in game.nations:
+		if int(game.nations[t]["stability"]) != 0:
+			stab_ok = false
+	check(stab_ok, "every nation starts at 0 stability")
+	check(game.prog.reform_gain("MEN") < 1.0, "reforms come slowly (%.2f progress a month)" % game.prog.reform_gain("MEN"))
+	# sieges: a level-1 fort holds a lone army for months
+	var fort_pid = -1
+	for id in game.owned("SNT"):
+		if game.provinces[id]["buildings"].has("fort"):
+			fort_pid = id
+			break
+	var besiegers: Dictionary = game.mil.spawn_army("MEN", fort_pid, 3, 0, 0)
+	var siege_days = 100.0 / game.mil.siege_rate([besiegers], fort_pid)
+	check(siege_days >= 80.0, "a fort holds 3 regiments without artillery for about %d days" % int(siege_days))
+	var with_art: Dictionary = game.mil.spawn_army("MEN", fort_pid, 3, 0, 4)
+	check(100.0 / game.mil.siege_rate([with_art], fort_pid) < siege_days, "artillery speeds sieges up")
+	game.armies.erase(besiegers["id"])
+	game.armies.erase(with_art["id"])
+	# zone of control
+	var zw: Dictionary = game.dip.declare_war("MEN", "SNT")
+	check(game.mil.in_zoc("MEN", fort_pid), "a hostile fort's own province is in its zone of control")
+	var cache = {}
+	var zoc_count = 0
+	for nb in game.provinces[fort_pid]["connections"]:
+		if game.provinces[fort_pid]["connections"][nb] == "land" and game.mil.in_zoc("MEN", nb, cache):
+			zoc_count += 1
+	check(zoc_count > 0, "the fort controls %d neighbouring provinces" % zoc_count)
+	# find a move the zone forbids: from a controlled province to somewhere far from the return province
+	var blocked_move = false
+	var fort_ok = true
+	for z in game.provinces[fort_pid]["connections"]:
+		if not game.mil.in_zoc("MEN", z, cache) or game.mil.hostile_fort("MEN", z):
+			continue
+		for r in game.provinces[z]["connections"]:
+			if game.mil.in_zoc("MEN", r, cache):
+				continue
+			if not game.mil.zoc_step_ok("MEN", z, fort_pid, r, r, cache):
+				fort_ok = false
+			for y in game.provinces[z]["connections"]:
+				if y != r and not game.mil.zoc_step_ok("MEN", z, y, r, r, cache):
+					blocked_move = true
+	check(fort_ok, "an army in a zone of control may always march on the fort")
+	check(blocked_move, "a zone of control forbids marching past the fort")
+	# EU4 stack wipes and overruns
+	var here: int = game.owned("SNT")[0]
+	var big: Dictionary = game.mil.spawn_army("MEN", here, 20, 0, 0)
+	var tiny: Dictionary = game.mil.spawn_army("SNT", here, 1, 0, 0)
+	days(1)
+	check(not game.armies.has(tiny["id"]), "an army ten times bigger overruns the small one without a battle")
+	var mp_before: int = int(game.nations["SNT"]["manpower"])
+	var a1: Dictionary = game.mil.spawn_army("MEN", here, 6, 0, 0)
+	var a2: Dictionary = game.mil.spawn_army("SNT", here, 2, 0, 0)
+	game.mil._end_battle({"pid": here, "att": [a1["id"]], "def": [a2["id"]], "day": 6, "losses": [0.0, 0.0]}, [a1["id"]], [a2["id"]])
+	check(not game.armies.has(a2["id"]), "routed in the first 12 days while outnumbered 2:1: stack-wiped")
+	check(int(game.nations["SNT"]["manpower"]) > mp_before, "half the wiped army's men return to the manpower pool")
+	var a3: Dictionary = game.mil.spawn_army("SNT", here, 2, 0, 0)
+	game.mil._end_battle({"pid": here, "att": [a1["id"]], "def": [a3["id"]], "day": 20, "losses": [0.0, 0.0]}, [a1["id"]], [a3["id"]])
+	check(game.armies.has(a3["id"]) and game.armies[a3["id"]]["retreating"], "routed after a long fight: the army retreats instead")
+	for x in [big, a1, a3]:
+		game.armies.erase(x["id"])
+	# occupied land next to its owner's fort reverts after a month
+	var nb_free = -1
+	for nb in game.provinces[fort_pid]["connections"]:
+		var qp: Dictionary = game.provinces[nb]
+		if game.provinces[fort_pid]["connections"][nb] == "land" and qp["owner"] == "SNT" and not qp["buildings"].has("fort"):
+			nb_free = nb
+			break
+	if nb_free >= 0:
+		game.provinces[nb_free]["controller"] = "MEN"
+		days(32)
+		check(game.provinces[nb_free]["controller"] == "SNT", "occupied %s went back to Snowtusk: its fort still holds" % game.provinces[nb_free]["name"])
+	game.dip.enforce_peace(zw, "MEN", "SNT", [{"type": "white"}])
+	# coring takes time
+	var target = -1
+	for id in game.owned("SNT"):
+		target = id
+		break
+	game.set_province_owner(target, "MEN")
+	men["power"] = [999, 999, 999]
+	check(game.pop.make_core("MEN", target) and not game.provinces[target]["cores"].has("MEN"), "coring starts but takes time")
+	check(game.pop.can_core("MEN", target).begins_with("Being made a core"), "a province being cored says how long is left")
+	days(30 * game.pop.CORE_MONTHS + 35)
+	check(game.provinces[target]["cores"].has("MEN"), "after %d months it is a core" % game.pop.CORE_MONTHS)
+	# autonomy: free to change, five-year cooldown, drift until the decision
+	var auto_p = -1
+	for id in game.owned("MEN"):
+		if id != game.capital_of("MEN") and game.provinces[id]["cores"].has("MEN") and game.eco.autonomy(id) >= 25.0:
+			auto_p = id
+			break
+	if auto_p < 0:
+		auto_p = game.owned("MEN")[1]
+		game.provinces[auto_p]["autonomy"] = 40.0
+	var adm_before: int = int(men["power"][0])
+	check(game.eco.change_autonomy("MEN", auto_p, true) and int(men["power"][0]) == adm_before, "lowering autonomy is free")
+	check(game.eco.can_change_autonomy("MEN", auto_p, false) != "", "but the province can't be changed again soon")
+	check(game.eco.autonomy_drift("MEN", auto_p) > 0.0 and game.eco.autonomy_drift("MEN", auto_p) < 0.2, "autonomy drifts slowly (%.2f a month)" % game.eco.autonomy_drift("MEN", auto_p))
+	check(game.can_take_decision("MEN", "centralise_realm") != "", "Centralise the Realm isn't available in the first 50 years")
+	var real_year: int = game.year
+	game.year = 4340
+	men["stability"] = 1
+	men["power"] = [999, 999, 999]
+	check(game.take_decision("MEN", "centralise_realm"), "after 50 years Menslosia can Centralise the Realm")
+	check(game.eco.autonomy_drift("MEN", auto_p) == 0.0, "and autonomy stops drifting")
+	game.year = real_year
+	# Skyfall
+	check(game.mods.nat("SKY", "dev_cost_mod") <= -0.25, "Skyfall develops cheaply while it keeps to the sky")
+	game.trade.monthly()
+	var sky_raw = 0.0
+	for id in game.node_provinces.get("Skyfall", []):
+		sky_raw += game.eco.goods_value(id) / 12.0
+	check(float(game.trade.state["Skyfall"]["local"]) > sky_raw * 1.5, "the Skyfall trade node is worth more (%.2f vs %.2f)" % [float(game.trade.state["Skyfall"]["local"]), sky_raw])
+	check(game.owner_colour("ENT") != Color(), "entities have a colour (their army window no longer crashes)")
+	var ent_army: Dictionary = game.mil.spawn_entities(game.portal_id(), 3)
+	check(game.mil.edge_days(ent_army, pid("Holy Waterfall of Eden"), pid("Equator Isle")) < 0.0, "entities can't climb down the waterfall to the mainland")
+	game.armies.erase(ent_army["id"])
+
 	# ---------------------------------------------------------------- a long AI game
 	game.new_game("SKY")
 	game.nations["SKY"]["ai"] = true

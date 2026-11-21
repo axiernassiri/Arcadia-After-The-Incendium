@@ -60,6 +60,7 @@ var tech_ahead_debuff := {}
 var tech_debuff_years := 10
 var end_year := 4789
 var advisor_data := {}
+var decision_data: Array = []
 var idea_data := {}
 var building_data := {}
 var unit_data := {}
@@ -142,6 +143,7 @@ func load_data() -> void:
 	goods = _read_json("res://data/goods.json").get("goods", {})
 	terrain_data = _read_json("res://data/terrain.json").get("terrain", {})
 	peoples = _read_json("res://data/peoples.json")
+	decision_data = _read_json("res://data/decisions.json").get("decisions", [])
 	var gov: Dictionary = _read_json("res://data/governments.json")
 	governments = gov.get("governments", {})
 	reform_cost_per_tier = int(gov.get("cost_per_tier", 40))
@@ -242,7 +244,7 @@ func _make_nation(tag: String, d: Dictionary) -> Dictionary:
 		"ruler": ruler, "heir": heir, "ruler_names": d.get("ruler_names", []),
 		"power": [50, 50, 50], "power_names": d.get("power_names", ["Admin", "Diplo", "Military"]),
 		"treasury": float(d.get("treasury", 100)), "manpower": int(d.get("manpower", 10000)), "max_manpower": 0,
-		"stability": int(d.get("stability", 0)), "war_exhaustion": 0.0, "army_tradition": 10.0,
+		"stability": 0, "war_exhaustion": 0.0, "army_tradition": 10.0,
 		"tech": tech, "flags": flags, "relations": {}, "claims": {}, "subjects": [], "overlord": "",
 		"explored": {}, "missions_done": {}, "ai": true, "alive": true, "blurb": d.get("blurb", ""),
 		"known_layers": d.get("known_layers", []), "known_extra": d.get("known_extra", []),
@@ -437,6 +439,7 @@ func set_province_owner(pid: int, tag: String) -> void:
 	p["construction"] = {}
 	p["conversion"] = {}
 	p["colony"] = {}
+	p["coring"] = {}
 	_owned_cache.clear()
 	if old != "" and nations.has(old):
 		if nations[old]["capital_id"] == pid:
@@ -504,6 +507,114 @@ func nation_dev(tag: String) -> int:
 	for pid in owned(tag):
 		t += total_dev(pid)
 	return t
+
+
+# ---------------------------------------------------------------- decisions
+
+func decision(id: String) -> Dictionary:
+	for d in decision_data:
+		if d["id"] == id:
+			return d
+	return {}
+
+
+func decisions_for(tag: String) -> Array:
+	## Decisions this nation can see (their 'potential' conditions hold).
+	var out: Array = []
+	if not nations.has(tag):
+		return out
+	for d in decision_data:
+		var ok = true
+		for c in d.get("potential", []):
+			if not check_condition(c, tag):
+				ok = false
+				break
+		if ok:
+			out.append(d)
+	return out
+
+
+func decision_cost_text(tag: String, d: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	var pw: Array = d.get("cost", {}).get("power", [0, 0, 0])
+	for i in 3:
+		if int(pw[i]) > 0:
+			parts.append("%d %s" % [int(pw[i]), nations[tag]["power_names"][i]])
+	if int(d.get("cost", {}).get("treasury", 0)) > 0:
+		parts.append("%d sanctum" % int(d["cost"]["treasury"]))
+	return ", ".join(parts)
+
+
+func can_take_decision(tag: String, id: String) -> String:
+	var d: Dictionary = decision(id)
+	if d.is_empty() or not decisions_for(tag).has(d):
+		return "Not available."
+	for c in d.get("allow", []):
+		if not check_condition(c, tag):
+			return "Needs: %s." % describe_condition(c)
+	var n: Dictionary = nations[tag]
+	var pw: Array = d.get("cost", {}).get("power", [0, 0, 0])
+	for i in 3:
+		if int(n["power"][i]) < int(pw[i]):
+			return "Needs %d %s power." % [int(pw[i]), n["power_names"][i]]
+	if float(n["treasury"]) < float(d.get("cost", {}).get("treasury", 0)):
+		return "Needs %d sanctum." % int(d["cost"]["treasury"])
+	return ""
+
+
+func take_decision(tag: String, id: String) -> bool:
+	if can_take_decision(tag, id) != "":
+		return false
+	var d: Dictionary = decision(id)
+	var n: Dictionary = nations[tag]
+	var pw: Array = d.get("cost", {}).get("power", [0, 0, 0])
+	for i in 3:
+		n["power"][i] = int(n["power"][i]) - int(pw[i])
+	n["treasury"] = float(n["treasury"]) - float(d.get("cost", {}).get("treasury", 0))
+	apply_effects(d.get("effects", []), tag)
+	if tag == player_tag:
+		post("Decision taken: %s." % d["name"])
+	touch(tag)
+	nation_changed.emit(tag)
+	return true
+
+
+var _mainland := {}
+
+
+func is_mainland(pid: int) -> bool:
+	## The Arcadian continent: every province joined by land to Mentos. Offshore islands
+	## (the archipelagos, Equator Isle) and Skyfall are not part of it.
+	if _mainland.is_empty():
+		var start := int(province_ids_by_name.get("Mentos", -1))
+		if start < 0:
+			return false
+		_mainland[start] = true
+		var todo: Array = [start]
+		while not todo.is_empty():
+			var c: int = todo.pop_back()
+			for nb in provinces[c]["connections"]:
+				if provinces[c]["connections"][nb] == "land" and not _mainland.has(nb):
+					_mainland[nb] = true
+					todo.append(nb)
+	return _mainland.has(pid)
+
+
+func owns_mainland(tag: String) -> bool:
+	for pid in owned(tag):
+		if is_mainland(pid):
+			return true
+	return false
+
+
+func owner_colour(tag: String) -> Color:
+	## Colour for any owner of armies or land, including rebels and the entities (which are not nations).
+	match tag:
+		"REB":
+			return Color(0.2, 0.2, 0.22)
+		"ENT":
+			return Color(0.42, 0.12, 0.7)
+	return nations[tag]["colour"] if nations.has(tag) else Color(0.4, 0.4, 0.4)
 
 
 func nation_name(tag: String) -> String:
@@ -653,6 +764,7 @@ func monthly_tick() -> void:
 		court.monthly(tag)
 	pop.monthly()
 	eco.monthly_autonomy()
+	pop.monthly_cores()
 	mil.monthly()
 	dip.monthly()
 	eco.monthly_colonies()

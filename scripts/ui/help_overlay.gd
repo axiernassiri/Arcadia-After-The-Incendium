@@ -17,12 +17,12 @@ signal closed
 
 
 func _ready() -> void:
-	add_theme_stylebox_override("panel", UI.box(UI.BG_DARK, UI.GOLD, 8, 16))
+	add_theme_stylebox_override("panel", UI.tex_box("panel.png", 12, 24, 20, true))
 	custom_minimum_size = Vector2(720, 0)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	add_child(v)
-	v.add_child(UI.row([UI.label("How to play Arcadia", 22, UI.GOLD), UI.spacer(), UI.button("Close (F1)", func(): visible = false; closed.emit())]))
+	v.add_child(UI.row([UI.heading("How to play Arcadia", 22), UI.spacer(), UI.button("Close (F1)", func(): visible = false; closed.emit())]))
 	for s in SECTIONS:
 		v.add_child(UI.heading(s[0], 15))
 		v.add_child(UI.label(s[1], 13, UI.TEXT, 690))

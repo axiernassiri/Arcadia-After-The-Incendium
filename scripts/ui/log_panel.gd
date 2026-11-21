@@ -10,7 +10,8 @@ var _dirty = true
 
 func _ready() -> void:
 	custom_minimum_size.x = 600
-	add_theme_stylebox_override("panel", UI.box(Color(0.07, 0.08, 0.1, 0.78), Color(0.4, 0.36, 0.26, 0.6), 6, 8))
+	theme_type_variation = "InkPanel"
+	self_modulate = Color(1, 1, 1, 0.88)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	tooltip_text = "Click to show more or fewer messages."
 	gui_input.connect(func(e): if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:

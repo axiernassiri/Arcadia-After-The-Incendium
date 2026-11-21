@@ -242,7 +242,7 @@ func reform_name(tag: String, rid: String) -> String:
 
 
 func reform_gain(tag: String) -> float:
-	return 0.6 + g.nation_dev(tag) / 300.0
+	return 0.3 + g.nation_dev(tag) / 600.0
 
 
 func monthly(tag: String) -> void:

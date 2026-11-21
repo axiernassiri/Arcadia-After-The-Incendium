@@ -26,6 +26,9 @@ func monthly(tag: String) -> void:
 	var war = g.dip.at_war_any(tag)
 	n["maintenance"]["land"] = 1.0 if war or _has_rebels(tag) else 0.6
 	n["maintenance"]["naval"] = 1.0 if war else 0.5
+	for d in g.decisions_for(tag):
+		if d.get("ai", false) and g.can_take_decision(tag, d["id"]) == "":
+			g.take_decision(tag, d["id"])
 	_spend_power(tag)
 	_reforms(tag)
 	_finances(tag)
@@ -434,6 +437,9 @@ func _army_orders(tag: String, a: Dictionary) -> void:
 		if cap >= 0 and cap != here:
 			g.mil.move_army(a["id"], cap)
 		return
+	var options: Array = []   # [score, pid]: fall back down the list when a fort's zone of control blocks the way
+	if best_target >= 0:
+		options.append([best_score, best_target])
 	for pid in dist:
 		if not g.mil.controller_hostile(a, pid):
 			continue
@@ -445,8 +451,9 @@ func _army_orders(tag: String, a: Dictionary) -> void:
 			s += 12.0   # liberate our own land first
 		if g.capital_of(g.provinces[pid]["owner"]) == pid:
 			s += 6.0
-		if s > best_score:
-			best_score = s
-			best_target = pid
-	if best_target >= 0 and best_target != here:
-		g.mil.move_army(a["id"], best_target)
+		options.append([s, pid])
+	options.sort_custom(func(x, y): return float(x[0]) > float(y[0]))
+	for i in mini(options.size(), 6):
+		var t: int = int(options[i][1])
+		if t == here or g.mil.move_army(a["id"], t):
+			return

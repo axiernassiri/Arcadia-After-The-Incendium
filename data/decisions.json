@@ -1,0 +1,17 @@
+{
+  "_note": "Decisions, like EU4's: a nation sees a decision while every 'potential' condition holds, and can take it once every 'allow' condition holds. 'cost' is paid when it is taken: power is [adm, dip, mil], treasury is sanctum. Effects use the same types as events. ai: true lets the AI take it.",
+  "decisions": [
+    {
+      "id": "centralise_realm",
+      "name": "Centralise the Realm",
+      "icon": "column",
+      "text": "Half a century after the Incendium the roads are rebuilt and the old governors' families have grown fat on their own fiefs. Summon them to the capital, take back their charters, and let the realm be governed from one seat again. Provinces stop drifting toward autonomy for good.",
+      "potential": [{"type": "not_flag", "name": "centralised"}],
+      "allow": [{"type": "year_at_least", "value": 4339}, {"type": "stability_at_least", "at_least": 0}],
+      "cost": {"power": [150, 0, 0]},
+      "effects": [{"type": "set_flag", "name": "centralised"}, {"type": "add_autonomy", "amount": -10},
+        {"type": "add_modifier", "id": "centralised_realm", "name": "Centralised Realm", "modifiers": {"unrest": 1}, "months": 60}],
+      "ai": true
+    }
+  ]
+}

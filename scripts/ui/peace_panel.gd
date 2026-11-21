@@ -37,7 +37,7 @@ func build() -> void:
 		return
 	var me = Game.player_tag
 	var ws: float = Game.dip.score_for(w, me)
-	add(UI.label(w["name"], 16, UI.GOLD))
+	add(UI.heading(w["name"], 16))
 	add(UI.row([UI.label("Your war score %+d" % int(ws), 15, UI.GOOD if ws >= 0 else UI.BAD), UI.bar(ws + 100.0, 200.0, 200.0, UI.GOOD if ws >= 0 else UI.BAD)]))
 	var side: String = Game.dip.war_side(w, me)
 	var other = "defenders" if side == "attackers" else "attackers"

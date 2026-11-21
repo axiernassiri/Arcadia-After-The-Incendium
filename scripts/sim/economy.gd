@@ -9,7 +9,9 @@ const COLONY_COST := 80.0
 const COLONY_UPKEEP := 1.5
 const TAX_PER_DEV := 0.75          # sanctum a year per tax development
 const GOODS_PER_DEV := 0.15        # goods a year per production development
-const EARLY_ERA_END := 4339        # until then provinces drift toward autonomy
+const EARLY_ERA_END := 4339        # from then on the "Centralise the Realm" decision can end autonomy drift
+const AUTONOMY_DRIFT := 0.12       # autonomy points a month while drift lasts
+const AUTONOMY_COOLDOWN_DAYS := 5 * 365
 const AUTONOMY_DRIFT_CAP := 60.0
 const MISSIONARY_UPKEEP := 0.5
 
@@ -512,10 +514,10 @@ func min_autonomy(tag: String, pid: int) -> float:
 
 func autonomy_drift(tag: String, pid: int) -> float:
 	## Autonomy points a month: in the early Arcadian era, provinces slowly slip from the centre.
-	if g.year >= EARLY_ERA_END or g.capital_of(tag) == pid:
+	if not g.nations.has(tag) or g.nations[tag]["flags"].has("centralised") or g.capital_of(tag) == pid:
 		return 0.0
 	var mult = 1.0 + g.mods.nat(tag, "autonomy_gain") + g.mods.loc(pid, "local_autonomy_gain")
-	return maxf(0.0, 0.25 * mult)
+	return maxf(0.0, AUTONOMY_DRIFT * mult)
 
 
 func monthly_autonomy() -> void:
@@ -531,22 +533,20 @@ func monthly_autonomy() -> void:
 		p["autonomy"] = maxf(a, min_autonomy(tag, pid))
 
 
-func lower_autonomy_cost(pid: int) -> int:
-	return 2 * g.total_dev(pid)
+func lower_autonomy_cost(_pid: int) -> int:
+	return 0   # free, but each province can only be changed once every five years
 
 
 func can_change_autonomy(tag: String, pid: int, down: bool) -> String:
 	var p: Dictionary = g.provinces[pid]
 	if p["owner"] != tag:
 		return "Not your province."
-	for m in p["modifiers"]:
-		if m.get("id", "") == "autonomy_changed":
-			return "Autonomy was changed recently."
+	var wait: int = int(p.get("autonomy_cd_until", -1)) - g.day_index
+	if wait > 0:
+		return "Autonomy was changed recently: wait %d more month(s)." % ceili(wait / 30.0)
 	if down:
 		if autonomy(pid) - 25.0 < min_autonomy(tag, pid) - 0.01:
 			return "Can't go lower (uncored provinces stay at 50%)."
-		if int(g.nations[tag]["power"][0]) < lower_autonomy_cost(pid):
-			return "Needs %d %s power." % [lower_autonomy_cost(pid), g.nations[tag]["power_names"][0]]
 	elif autonomy(pid) >= 100.0:
 		return "Already fully autonomous."
 	return ""
@@ -556,8 +556,8 @@ func change_autonomy(tag: String, pid: int, down: bool) -> bool:
 	if can_change_autonomy(tag, pid, down) != "":
 		return false
 	var p: Dictionary = g.provinces[pid]
+	p["autonomy_cd_until"] = g.day_index + AUTONOMY_COOLDOWN_DAYS
 	if down:
-		g.nations[tag]["power"][0] -= lower_autonomy_cost(pid)
 		p["autonomy"] = maxf(min_autonomy(tag, pid), autonomy(pid) - 25.0)
 		g.add_province_modifier(pid, "autonomy_changed", "Autonomy lowered", {"local_unrest": 4}, 12)
 	else:

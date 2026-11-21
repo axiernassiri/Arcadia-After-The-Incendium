@@ -1,6 +1,6 @@
 {
   "_note": "Government types and their reform tiers, like EU4's government reforms. type: monarchy (heirs inherit), republic (elects a new ruler every term_years), horde, tribe, or theocracy (the order picks a new leader when one dies). Reform progress builds up each month; enacting a reform costs progress (cost_per_tier x tier number). Modifier keys are listed in README.",
-  "cost_per_tier": 60,
+  "cost_per_tier": 75,
   "governments": {
     "holy_pig_monarchy": {
       "name": "Holy Pig Monarchy", "type": "monarchy", "rank": "Empire", "text": "The Pig Lord rules the Holy Empire from Mentos.",

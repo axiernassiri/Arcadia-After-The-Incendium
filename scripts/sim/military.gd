@@ -4,7 +4,12 @@ extends RefCounted
 
 const BASE_MORALE := 2.5
 const REGIMENT := 1000.0
-const SIEGE_UNFORTIFIED_DAYS := 12.0
+const SIEGE_UNFORTIFIED_DAYS := 30.0
+const SIEGE_DAYS_PER_LEVEL := 100.0   # a level-1 fort with no artillery holds about this long
+const WIPE_PHASE_DAYS := 12           # two fire and two shock phases: routing before this can mean a stack wipe
+const WIPE_RATIO := 2.0               # ...if the winner outnumbers the loser 2:1 (EU4)
+const OVERRUN_RATIO := 10.0           # 10:1 or more: no battle, the small army is simply destroyed
+const ZOC_REVERT_DAYS := 30           # occupied land next to its owner's fort reverts after a month
 const REBEL_HOLD_DAYS := 180
 
 var g: Node
@@ -568,6 +573,8 @@ func edge_days(a: Dictionary, from: int, to: int) -> float:
 				return -1.0
 			return base * 1.5
 		"waterfall":
+			if tag == "ENT":
+				return -1.0   # the things from the portal stay in Skyfall
 			return 14.0
 		"air":
 			var flies: bool = tag == "ENT" or (not special(tag) and g.nations[tag]["ethnicity"] in ["Human", "Angel"])
@@ -575,37 +582,176 @@ func edge_days(a: Dictionary, from: int, to: int) -> float:
 	return base
 
 
-func find_path(a: Dictionary, dest: int) -> Array:
-	## Dijkstra by days. Returns the provinces to walk through (excluding the start), or [] if none.
+# ---------------------------------------------------------------- zone of control (EU4)
+# A fort controls its own province and the land provinces next to it (not across sea, sky or the
+# waterfall). A fort on its owner's own soil only covers land that isn't yours; a captured fort covers
+# everything around it. An army inside a hostile zone may only: go back where it came from, march on
+# a hostile fort, or move to its "return province" (the last province outside any zone it left), next
+# to it, or next to a province outside the zone that is next to it. Checked when the order is given.
+# Rebels and entities ignore zones of control.
+
+func hostile_fort(tag: String, pid: int) -> bool:
+	var p: Dictionary = g.provinces[pid]
+	if not p["buildings"].has("fort") or p["owner"] == "":
+		return false
+	var ctrl: String = p["controller"]
+	if ctrl == tag or special(ctrl) or not g.nations.has(ctrl):
+		return false
+	return g.dip.at_war(tag, ctrl)
+
+
+func in_zoc(tag: String, pid: int, cache = null) -> bool:
+	if cache != null and cache.has(pid):
+		return cache[pid]
+	var out = false
+	if not special(tag) and g.nations.has(tag):
+		if hostile_fort(tag, pid):
+			out = true
+		else:
+			var p: Dictionary = g.provinces[pid]
+			for nb in p["connections"]:
+				if p["connections"][nb] != "land" or not hostile_fort(tag, nb):
+					continue
+				var f: Dictionary = g.provinces[nb]
+				if f["controller"] != f["owner"] or (p["owner"] != tag and not g.dip.allied(tag, p["owner"])):
+					out = true
+					break
+	if cache != null:
+		cache[pid] = out
+	return out
+
+
+func _adjacent(x: int, y: int) -> bool:
+	return x >= 0 and y >= 0 and g.provinces[x]["connections"].has(y)
+
+
+func zoc_step_ok(tag: String, cur: int, nxt: int, ret: int, prev: int, cache: Dictionary) -> bool:
+	if not in_zoc(tag, cur, cache):
+		return true
+	if nxt == prev:
+		return true
+	if hostile_fort(tag, nxt):
+		return not hostile_fort(tag, cur) or nxt == ret or _adjacent(ret, nxt)
+	if ret < 0:
+		return not in_zoc(tag, nxt, cache)
+	if nxt == ret or _adjacent(ret, nxt):
+		return true
+	for m in g.provinces[nxt]["connections"]:
+		if _adjacent(ret, m) and not in_zoc(tag, m, cache):
+			return true
+	return false
+
+
+func find_path(a: Dictionary, dest: int, use_zoc: bool = true) -> Array:
+	## Fastest route by days (excluding the start), or [] if none. Respects zones of control.
 	var start: int = int(a["location"])
 	if start == dest:
 		return []
+	var tag: String = a["owner"]
+	if not use_zoc or special(tag) or g.dip.wars_of(tag).is_empty():
+		return _plain_path(a, dest)
+	# Dijkstra over (province, return province): the return province changes what's allowed.
+	var cache = {}
+	var r0 = int(a.get("zoc_return", -1))
+	var k0 = Vector2i(start, r0)
+	var dist = {k0: 0.0}
+	var back = {}
+	var heap: Array = [[0.0, k0]]
+	var found = Vector2i(-1, -1)
+	while not heap.is_empty():
+		var top: Array = _heap_pop(heap)
+		var key: Vector2i = top[1]
+		if float(top[0]) > float(dist.get(key, INF)):
+			continue
+		var cur = key.x
+		if cur == dest:
+			found = key
+			break
+		var ret = key.y
+		var prev = int(a.get("zoc_prev", -1)) if key == k0 else (back[key].x if back.has(key) else -1)
+		var next_ret = ret if in_zoc(tag, cur, cache) else cur
+		for nb in g.provinces[cur]["connections"]:
+			var d = edge_days(a, cur, nb)
+			if d < 0.0 or not zoc_step_ok(tag, cur, nb, ret, prev, cache):
+				continue
+			var nk = Vector2i(nb, next_ret)
+			var nd: float = float(dist[key]) + d
+			if nd < float(dist.get(nk, INF)):
+				dist[nk] = nd
+				back[nk] = key
+				_heap_push(heap, [nd, nk])
+	if found.x < 0:
+		return []
+	var path: Array = []
+	var c = found
+	while c != k0:
+		path.push_front(c.x)
+		c = back[c]
+	return path
+
+
+func zoc_blocked(a: Dictionary, dest: int) -> bool:
+	## True when a route exists but zones of control forbid it (for the player's message).
+	return find_path(a, dest).is_empty() and not _plain_path(a, dest).is_empty()
+
+
+static func _heap_push(h: Array, item: Array) -> void:
+	h.append(item)
+	var i = h.size() - 1
+	while i > 0:
+		var p = (i - 1) / 2
+		if float(h[p][0]) <= float(h[i][0]):
+			break
+		var t = h[p]
+		h[p] = h[i]
+		h[i] = t
+		i = p
+
+
+static func _heap_pop(h: Array) -> Array:
+	var top: Array = h[0]
+	var last: Array = h.pop_back()
+	if h.size() > 0:
+		h[0] = last
+		var i = 0
+		while true:
+			var l = i * 2 + 1
+			var r = l + 1
+			var m = i
+			if l < h.size() and float(h[l][0]) < float(h[m][0]):
+				m = l
+			if r < h.size() and float(h[r][0]) < float(h[m][0]):
+				m = r
+			if m == i:
+				break
+			var t = h[m]
+			h[m] = h[i]
+			h[i] = t
+			i = m
+	return top
+
+
+func _plain_path(a: Dictionary, dest: int) -> Array:
+	var start: int = int(a["location"])
 	var dist = {start: 0.0}
 	var prev = {}
-	var open = [start]
-	var done = {}
-	while not open.is_empty():
-		var best = 0
-		for i in open.size():
-			if float(dist[open[i]]) < float(dist[open[best]]):
-				best = i
-		var cur: int = open[best]
-		open.remove_at(best)
+	var heap: Array = [[0.0, start]]
+	while not heap.is_empty():
+		var top: Array = _heap_pop(heap)
+		var cur: int = top[1]
+		if float(top[0]) > float(dist.get(cur, INF)):
+			continue
 		if cur == dest:
 			break
-		done[cur] = true
 		for nb in g.provinces[cur]["connections"]:
-			if done.has(nb):
-				continue
 			var d = edge_days(a, cur, nb)
 			if d < 0.0:
 				continue
 			var nd: float = float(dist[cur]) + d
-			if not dist.has(nb) or nd < float(dist[nb]):
+			if nd < float(dist.get(nb, INF)):
 				dist[nb] = nd
 				prev[nb] = cur
-				if not open.has(nb):
-					open.append(nb)
+				_heap_push(heap, [nd, nb])
 	if not prev.has(dest):
 		return []
 	var path: Array = []
@@ -703,6 +849,10 @@ func daily() -> void:
 		a["progress"] = float(a["progress"]) + 1.0
 		if float(a["progress"]) >= float(a["hop_days"]):
 			var nxt: int = int(a["path"].pop_front())
+			var left: int = int(a["location"])
+			a["zoc_prev"] = left
+			if not in_zoc(a["owner"], left):
+				a["zoc_return"] = left
 			a["location"] = nxt
 			a["progress"] = 0.0
 			changed = true
@@ -732,6 +882,7 @@ func daily() -> void:
 	_fight_battles()
 	_naval_battles()
 	_sieges()
+	_zoc_reversion()
 	if g.day % 5 == 0:
 		_rebel_ai()
 	if changed:
@@ -764,6 +915,22 @@ func _start_battles() -> void:
 		if side_b.is_empty():
 			continue
 		seen[pid] = true
+		# overrun: a side ten times bigger doesn't need a battle
+		var men_a = 0.0
+		var men_b = 0.0
+		for x in side_a:
+			men_a += army_men(x)
+		for x in side_b:
+			men_b += army_men(x)
+		if men_a >= men_b * OVERRUN_RATIO or men_b >= men_a * OVERRUN_RATIO:
+			var big = side_a if men_a > men_b else side_b
+			var small = side_b if men_a > men_b else side_a
+			for x in small:
+				if g.player_tag in [x["owner"], big[0]["owner"]]:
+					g.post("%s was overrun at %s by a force ten times its size." % [x["name"], g.provinces[pid]["name"]])
+				_wipe(x)
+			g.armies_changed.emit()
+			continue
 		# the defender is whoever controls the province, otherwise whoever stood still
 		var att = side_b
 		var def = side_a
@@ -922,17 +1089,15 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 	for i in winners:
 		if g.armies.has(i):
 			g.armies[i]["in_battle"] = false
-	var wiped = lose_men * 6.0 < win_men or lose_men < 300.0
+	# EU4: a side that routs before two fire and two shock phases are over, outnumbered 2:1, is wiped out
+	var wiped = (int(b["day"]) <= WIPE_PHASE_DAYS and win_men >= lose_men * WIPE_RATIO) or lose_men < 100.0
 	for i in losers:
 		if not g.armies.has(i):
 			continue
 		var a: Dictionary = g.armies[i]
 		a["in_battle"] = false
 		if wiped:
-			var l = army_leader(a)
-			if not l.is_empty():
-				g.nations[a["owner"]]["leaders"].erase(l)
-			g.armies.erase(i)
+			_wipe(a)
 		else:
 			_retreat(a)
 	# leaders can fall
@@ -969,6 +1134,17 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 	g.armies_changed.emit()
 
 
+func _wipe(a: Dictionary) -> void:
+	## Destroy an army. Half its surviving men make it home to the manpower pool (EU4).
+	var tag: String = a["owner"]
+	var l = army_leader(a)
+	if not special(tag) and g.nations.has(tag):
+		if not l.is_empty():
+			g.nations[tag]["leaders"].erase(l)
+		g.nations[tag]["manpower"] = int(g.nations[tag]["manpower"]) + int(army_men(a) * 0.5)
+	g.armies.erase(a["id"])
+
+
 func _retreat(a: Dictionary) -> void:
 	var tag: String = a["owner"]
 	var start: int = int(a["location"])
@@ -1002,7 +1178,7 @@ func _retreat(a: Dictionary) -> void:
 	if best < 0:
 		g.armies.erase(a["id"])
 		return
-	a["path"] = find_path(a, best)
+	a["path"] = find_path(a, best, false)   # a beaten army flees by any road
 	if a["path"].is_empty():
 		a["path"] = [best]
 	a["retreating"] = true
@@ -1126,6 +1302,8 @@ func _fleet_retreat(f: Dictionary) -> void:
 # ---------------------------------------------------------------- sieges
 
 func siege_rate(ids: Array, pid: int) -> float:
+	## Progress (out of 100) a day. Forts hold about 100 days per level; artillery (up to five
+	## per fort level), a general's siege pips, siege ability and a blockade speed it up.
 	var fort = g.eco.fort_level(pid)
 	var men = 0.0
 	var art = 0
@@ -1136,7 +1314,7 @@ func siege_rate(ids: Array, pid: int) -> float:
 		tag = a["owner"]
 		siege_pips = maxi(siege_pips, leader_pips(a, "siege"))
 		for r in a["regiments"]:
-			if r["type"] == "art":
+			if unit_category(r["type"]) == "art":
 				art += 1
 	if fort <= 0:
 		return 100.0 / SIEGE_UNFORTIFIED_DAYS if men >= 1000.0 else 0.0
@@ -1148,7 +1326,9 @@ func siege_rate(ids: Array, pid: int) -> float:
 	if owner != "":
 		defence = g.mods.nat(owner, "fort_defense")
 	var blockade = 1.0 if is_blockaded(pid) else 0.0
-	return (1.0 + art * 0.8 + siege_pips * 0.6 + ability * 10.0 + blockade) / (fort * (1.0 + defence)) * 2.0
+	var speed = 1.0 + 0.12 * mini(art, fort * 5) + 0.10 * siege_pips + ability * 2.0 + 0.25 * blockade
+	var days = SIEGE_DAYS_PER_LEVEL * fort * (1.0 + defence) / speed
+	return 100.0 / maxf(days, 10.0)
 
 
 func _sieges() -> void:
@@ -1172,7 +1352,8 @@ func _sieges() -> void:
 		var tag: String = group[0]["owner"]
 		if p["siege"].get("tag", "") != tag:
 			p["siege"] = {"tag": tag, "progress": 0.0}
-		p["siege"]["progress"] = float(p["siege"]["progress"]) + siege_rate(group, pid)
+		# a siege has good and bad days (disease, sorties, a breach)
+		p["siege"]["progress"] = float(p["siege"]["progress"]) + siege_rate(group, pid) * g.rng.randf_range(0.4, 1.6)
 		if float(p["siege"]["progress"]) >= 100.0:
 			p["siege"] = {}
 			var new_ctrl = tag
@@ -1185,6 +1366,42 @@ func _sieges() -> void:
 			var who = g.nation_name(tag) if not special(tag) else group[0]["name"]
 			if g.player_tag in [p["owner"], tag, old]:
 				g.post("%s %s %s." % [who, "liberated" if new_ctrl == p["owner"] else "occupied", p["name"]])
+			g.province_changed.emit(pid)
+			g.dip.update_war_scores()
+
+
+func _zoc_reversion() -> void:
+	## EU4: occupied land without a fort, next to a fort its owner still holds, goes back to the owner
+	## about a month after the last occupying army leaves, unless that fort is under siege.
+	for pid in g.provinces:
+		var p: Dictionary = g.provinces[pid]
+		var owner: String = p["owner"]
+		var ctrl: String = p["controller"]
+		if owner == "" or ctrl == owner or special(ctrl) or p["buildings"].has("fort"):
+			p.erase("zoc_days")
+			continue
+		var guarded = false
+		for nb in p["connections"]:
+			if p["connections"][nb] != "land":
+				continue
+			var f: Dictionary = g.provinces[nb]
+			if f["buildings"].has("fort") and (f["controller"] == owner or g.dip.allied(owner, f["controller"])) and f["siege"].is_empty():
+				guarded = true
+				break
+		var held = false
+		for a in armies_at(pid):
+			if a["owner"] == ctrl or (g.nations.has(ctrl) and g.dip.allied(ctrl, a["owner"])):
+				held = true
+				break
+		if not guarded or held:
+			p.erase("zoc_days")
+			continue
+		p["zoc_days"] = int(p.get("zoc_days", 0)) + 1
+		if int(p["zoc_days"]) >= ZOC_REVERT_DAYS:
+			p.erase("zoc_days")
+			p["controller"] = owner
+			if g.player_tag in [owner, ctrl]:
+				g.post("%s returned to %s: the fort next door still holds." % [p["name"], g.nation_name(owner)])
 			g.province_changed.emit(pid)
 			g.dip.update_war_scores()
 
@@ -1237,6 +1454,8 @@ func _entity_ai(a: Dictionary) -> void:
 		for c in frontier:
 			for nb in g.provinces[c]["connections"]:
 				if dist.has(nb):
+					continue
+				if g.provinces[nb]["layer"] != "sky":
 					continue
 				dist[nb] = step + 1
 				nxt.append(nb)

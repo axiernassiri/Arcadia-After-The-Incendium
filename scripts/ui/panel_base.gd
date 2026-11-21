@@ -7,6 +7,7 @@ extends PanelContainer
 signal closed
 
 const UI = preload("res://scripts/ui/ui_util.gd")
+const Tokens = preload("res://ui/style/tokens.gd")
 const MIN_INTERVAL := 0.25
 
 var title = "Panel"
@@ -24,14 +25,19 @@ func _ready() -> void:
 	custom_minimum_size.x = panel_width
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var outer = VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 6)
+	outer.add_theme_constant_override("separation", Tokens.SP_1)
 	add_child(outer)
 	_header = HBoxContainer.new()
-	_title_label = UI.label(title, 20, UI.GOLD)
+	_title_label = UI.heading(title, Tokens.SIZE_TITLE)
 	_title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_header.add_child(_title_label)
-	_header.add_child(UI.button("x", close, "Close (Esc)"))
+	var x = UI.icon_button("close", "", close, "Close (Esc)", 14)
+	x.theme_type_variation = "FlatButton"
+	x.custom_minimum_size = Vector2(28, 28)
+	x.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_header.add_child(x)
 	outer.add_child(_header)
+	outer.add_child(UI.divider())
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.custom_minimum_size = Vector2(panel_width - 20.0, 0)
@@ -41,8 +47,26 @@ func _ready() -> void:
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.add_child(body)
 	visible = false
-	visibility_changed.connect(func(): if visible: mark_dirty())
+	visibility_changed.connect(_on_visibility)
 	setup()
+
+
+var _tween: Tween
+
+
+func _on_visibility() -> void:
+	if not visible:
+		return
+	mark_dirty()
+	# a short fade and settle, so windows don't pop in
+	if _tween:
+		_tween.kill()
+	pivot_offset = Vector2(0, 0)
+	modulate.a = 0.0
+	scale = Vector2(0.985, 0.985)
+	_tween = create_tween().set_parallel().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(self, "modulate:a", 1.0, Tokens.DUR_NORMAL)
+	_tween.tween_property(self, "scale", Vector2.ONE, Tokens.DUR_NORMAL)
 
 
 func setup() -> void:
@@ -106,5 +130,12 @@ func text(t: String, size: int = 13, colour: Color = UI.TEXT) -> Label:
 
 func section(t: String) -> void:
 	if body.get_child_count() > 0:
-		body.add_child(HSeparator.new())
+		var gap = Control.new()
+		gap.custom_minimum_size.y = Tokens.SP_1
+		body.add_child(gap)
 	body.add_child(UI.heading(t, 15))
+	var line = ColorRect.new()
+	line.color = Color(UI.BORDER, 0.35)
+	line.custom_minimum_size.y = 1
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(line)

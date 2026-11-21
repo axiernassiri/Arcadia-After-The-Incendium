@@ -53,8 +53,10 @@ func _build_army() -> void:
 	var tag: String = a["owner"]
 	var mine: bool = tag == Game.player_tag
 	set_title(a["name"])
-	var owner_col: Color = Color(0.3, 0.3, 0.3) if tag == "REB" else Game.nations[tag]["colour"]
+	var owner_col: Color = Game.owner_colour(tag)
 	add(UI.row([UI.swatch(owner_col), UI.label(Game.nation_name(tag), 14, UI.GOLD)]))
+	if tag == "ENT":
+		text("Things from beyond the Doomsday Portal. They answer to no one, fight anyone in Skyfall except the Order of the Black Moon, and slowly fade away (2% of their number a month).", 12, UI.DOOM)
 	if tag == "REB":
 		var rb: Dictionary = a["rebel"]
 		text("%s rising against %s from %s." % [Game.peoples.get("rebels", {}).get(rb.get("type", ""), {}).get("name", "Rebels"),
@@ -132,7 +134,7 @@ func _build_fleet() -> void:
 		return
 	var tag: String = f["owner"]
 	set_title(f["name"])
-	add(UI.row([UI.swatch(Game.nations[tag]["colour"]), UI.label(Game.nation_name(tag), 14, UI.GOLD)]))
+	add(UI.row([UI.swatch(Game.owner_colour(tag)), UI.label(Game.nation_name(tag), 14, UI.GOLD)]))
 	var where = "At %s" % Game.provinces[int(f["location"])]["name"]
 	if not f["path"].is_empty():
 		where += ", sailing to %s" % Game.provinces[int(f["path"][f["path"].size() - 1])]["name"]

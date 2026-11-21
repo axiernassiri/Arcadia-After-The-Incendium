@@ -30,7 +30,7 @@ func build() -> void:
 	var me = Game.player_tag
 	var o: Dictionary = Game.nations[tag]
 	set_title(o["short"])
-	add(UI.row([UI.swatch(o["colour"], Vector2(22, 22)), UI.label(o["name"], 18, UI.GOLD)]))
+	add(UI.row([UI.swatch(o["colour"], Vector2(22, 22)), UI.heading(o["name"], 18)]))
 	if not o["alive"]:
 		text("This nation no longer exists.", 13, UI.BAD)
 		return

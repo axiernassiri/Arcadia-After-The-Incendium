@@ -9,6 +9,8 @@ signal army_clicked(id: int)
 signal fleet_clicked(id: int)
 signal layer_changed(layer: String)
 
+const Tokens = preload("res://ui/style/tokens.gd")
+const Icons = preload("res://ui/style/icons.gd")
 const LAYERS := ["ground", "sky"]
 const PALETTE_WIDTH := 1024
 const MODES := ["political", "development", "goods", "trade", "region", "culture", "religion", "ethnicity",
@@ -37,8 +39,11 @@ var _sprites := {}          # layer -> Sprite2D
 var _index_images := {}     # layer -> Image (for picking)
 var _palette_img: Image
 var _palette_tex: ImageTexture
+var _overlay: CanvasLayer
 var _labels: Node2D
 var _units: Node2D
+var _xf := Transform2D()
+var _screen := Rect2()
 var _region_colours := {}
 var _node_colours := {}
 var _hits: Array = []       # [{rect: Rect2, kind, id}] in map coords
@@ -65,18 +70,31 @@ func _ready() -> void:
 		mat.set_shader_parameter("terrain_tex", terrain_tex)
 		mat.set_shader_parameter("palette_tex", _palette_tex)
 		mat.set_shader_parameter("map_size", map_size)
+		mat.set_shader_parameter("paper_tex", load("res://assets/ui/map_paper.png"))
 		s.material = mat
 		s.visible = (l == layer)
 		add_child(s)
 		_sprites[l] = s
+	_overlay = CanvasLayer.new()
+	_overlay.layer = 1
+	add_child(_overlay)
+	var vignette = TextureRect.new()
+	vignette.texture = load("res://assets/ui/vignette.png")
+	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vignette.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	vignette.stretch_mode = TextureRect.STRETCH_SCALE
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vignette.modulate = Color(1, 1, 1, 0.55)
+	vignette.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_overlay.add_child(vignette)
 	_labels = Node2D.new()
-	_labels.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_labels.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_labels.draw.connect(_draw_labels)
-	add_child(_labels)
+	_overlay.add_child(_labels)
 	_units = Node2D.new()
-	_units.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_units.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_units.draw.connect(_draw_units)
-	add_child(_units)
+	_overlay.add_child(_units)
 	_build_colour_tables()
 	Game.province_changed.connect(func(_id): _queue_refresh())
 	Game.game_started.connect(func(): _build_colour_tables(); refresh())
@@ -125,6 +143,15 @@ func _do_refresh() -> void:
 func _process(_delta: float) -> void:
 	var mat: ShaderMaterial = _sprites[layer].material
 	mat.set_shader_parameter("border_width", clampf(1.0 / camera_zoom, 0.35, 1.5))
+	mat.set_shader_parameter("zoom", camera_zoom)
+	# the overlay is drawn in screen pixels, so it must follow the camera
+	var xf := get_viewport().get_canvas_transform() * get_global_transform()
+	var scr := get_viewport().get_visible_rect()
+	if xf != _xf or scr != _screen:
+		_xf = xf
+		_screen = scr
+		_labels.queue_redraw()
+		_units.queue_redraw()
 
 
 # ---------------------------------------------------------------- colours
@@ -282,7 +309,7 @@ func province_at(global_pos: Vector2) -> int:
 
 
 func _unit_at(global_pos: Vector2) -> Dictionary:
-	var local := to_local(global_pos)
+	var local := _xf * to_local(global_pos)   # hit boxes are in screen pixels
 	for i in range(_hits.size() - 1, -1, -1):
 		if (_hits[i]["rect"] as Rect2).has_point(local):
 			return _hits[i]
@@ -331,10 +358,41 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 # ---------------------------------------------------------------- labels and markers
+# Everything below is drawn on a screen-space layer (_overlay), not on the map itself: positions are
+# converted with the camera transform and rounded to whole pixels, and fonts are drawn at whole-pixel
+# sizes. Drawing them in map space and shrinking the font by the zoom (the old way) rasterised tiny
+# glyphs and then magnified them, which is why names and army boxes looked soft when zoomed in.
+
+func _sp(p: Vector2) -> Vector2:
+	return (_xf * p).round()
+
+
+func _on_screen(p: Vector2, margin: float = 80.0) -> bool:
+	return _screen.grow(margin).has_point(p)
+
+
+func _text(ci: CanvasItem, font: Font, centre: Vector2, text: String, size: int, col: Color, outline: int = 3,
+		outline_col: Color = Color(0.03, 0.03, 0.04, 0.85)) -> void:
+	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	var pos := Vector2(round(centre.x - w / 2.0), round(centre.y + size * 0.35))
+	if outline > 0:
+		ci.draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, outline, outline_col)
+	ci.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+
+
+func _icon(ci: CanvasItem, name: String, centre: Vector2, px: int, tint: Color, shadow: bool = true) -> void:
+	var t: Texture2D = Icons.tex(name, px)
+	var r := Rect2((centre - Vector2(px, px) / 2.0).round(), Vector2(px, px))
+	if shadow:
+		ci.draw_texture_rect(t, Rect2(r.position + Vector2(1, 1), r.size), false, Color(0, 0, 0, 0.7))
+	ci.draw_texture_rect(t, r, false, tint)
+
 
 func _draw_labels() -> void:
-	var font: Font = ThemeDB.fallback_font
-	var s := 1.0 / camera_zoom   # keeps text a constant size on screen
+	var font: Font = Tokens.font("map_label")
+	var nation_font: Font = Tokens.font("map_nation")
+	var z := camera_zoom
+	var show_names := z >= 1.6 or layer == "sky"
 	if mode in ["political", "diplomacy"]:
 		for tag in Game.nations:
 			if not Game.nations[tag]["alive"]:
@@ -347,64 +405,65 @@ func _draw_labels() -> void:
 					sum += p["centre"] * p["area"]
 					weight += p["area"]
 			if weight > 9000:
-				var text: String = Game.nations[tag]["short"].to_upper()
-				var size := int(clampf(sqrt(weight) / 8.0, 16, 84))
-				var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-				var pos: Vector2 = sum / weight + Vector2(-w / 2.0, size * 0.35)
-				_labels.draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, 6, Color(0, 0, 0, 0.35))
-				_labels.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(1, 1, 1, 0.55))
-	var show_names := camera_zoom >= 1.6 or layer == "sky"
+				var size := int(clampf(sqrt(weight) / 8.0 * z, 0.0, 76.0))
+				if size < 13:
+					continue
+				var c := _sp(sum / weight)
+				if not _on_screen(c, 400.0):
+					continue
+				var alpha := 0.62 if not show_names else 0.30
+				_text(_labels, nation_font, c, Game.nations[tag]["short"].to_upper(), size, Color(1, 0.98, 0.92, alpha),
+					maxi(2, size / 9), Color(0.05, 0.04, 0.03, alpha * 0.7))
 	if Game.doomsday_active:
-		var mc := Vector2(map_size.x - 160, 150)
+		var mc := _sp(Vector2(map_size.x - 160, 150))
+		var r := 78.0 * z
 		for i in 6:
-			_labels.draw_circle(mc, 80.0 + i * 12.0, Color(0.55, 0.2, 0.85, 0.10))
-		_labels.draw_circle(mc, 78.0, Color(0.02, 0.0, 0.04))
-		_draw_text(font, mc + Vector2(0, 120), "THE BLACK MOON", int(maxf(14.0, 18 * s)), Color(0.85, 0.6, 1.0))
+			_labels.draw_circle(mc, r + (2.0 + i * 12.0) * z, Color(0.55, 0.2, 0.85, 0.10))
+		_labels.draw_circle(mc, r, Color(0.02, 0.0, 0.04))
+		_text(_labels, Tokens.font("title"), mc + Vector2(0, r + 26), "THE BLACK MOON", 18, Color(0.85, 0.6, 1.0))
 	if mode == "trade":
 		var seats: Dictionary = Game.map_meta.get("ground", {}).get("trade_seats", {})
 		for k in seats:
 			if (k == "Skyfall") != (layer == "sky"):
 				continue
-			var c := Vector2(float(seats[k][0]), float(seats[k][1]))
-			_draw_star(c, 12.0 * s, Color(1, 0.9, 0.3))
-			_draw_text(font, c + Vector2(0, 22 * s), k, int(maxf(9.0, 13 * s)), Color(1, 0.95, 0.7))
+			var c := _sp(Vector2(float(seats[k][0]), float(seats[k][1])))
+			_icon(_labels, "star", c, 22, Tokens.GOLD)
+			_text(_labels, Tokens.font("title"), c + Vector2(0, 22), k, 14, Tokens.GOLD_HI)
+	var name_size := 13 if z < 2.4 else (14 if z < 3.6 else 16)
 	for id in Game.provinces:
 		var p: Dictionary = Game.provinces[id]
 		if p["layer"] != layer:
 			continue
-		var c: Vector2 = p["centre"]
-		if not explored(id):
-			_draw_text(font, c, "?", int(16 * s), Color(1, 1, 1, 0.5))
+		var c := _sp(p["centre"])
+		if not _on_screen(c):
 			continue
-		var marker_r := 5.0 * s
+		if not explored(id):
+			_text(_labels, font, c, "?", 16, Color(1, 1, 1, 0.45), 2)
+			continue
+		var top := c + Vector2(0, -15)
+		var ix := 0.0
+		var marks: Array = []
 		if "capital" in p["flags"] and p["owner"] != "" and Game.capital_of(p["owner"]) == id:
-			_draw_star(c + Vector2(0, -10 * s), marker_r * 1.4, Color(1, 0.9, 0.4))
+			marks.append(["star", Tokens.GOLD])
 		if "doomsday_portal" in p["flags"]:
-			var col := Color(0.75, 0.3, 1.0) if not Game.doomsday_active else Color(1, 0.2, 0.3)
-			_labels.draw_circle(c + Vector2(0, -12 * s), marker_r * 1.6, col)
-			_labels.draw_circle(c + Vector2(0, -12 * s), marker_r * 0.8, Color(0.05, 0.0, 0.1))
+			marks.append(["portal", Color(0.8, 0.45, 1.0) if not Game.doomsday_active else Color(1, 0.3, 0.35)])
 		if "waterfall_top" in p["flags"] or "waterfall_base" in p["flags"]:
-			var w0 := c + Vector2(-4 * s, -18 * s)
-			_labels.draw_line(w0, w0 + Vector2(0, 12 * s), Color(0.6, 0.85, 1.0), 2.5 * s)
-			_labels.draw_line(w0 + Vector2(4 * s, 0), w0 + Vector2(4 * s, 12 * s), Color(0.6, 0.85, 1.0), 2.5 * s)
+			marks.append(["waterfall", Color(0.65, 0.88, 1.0)])
 		if p["buildings"].has("fort"):
-			var fr := Rect2(c + Vector2(8 * s, -16 * s), Vector2(8 * s, 8 * s))
-			_labels.draw_rect(fr, Color(0.75, 0.75, 0.8))
-			_labels.draw_rect(fr, Color(0, 0, 0, 0.8), false, 1.0 * s)
+			marks.append(["fort", Color(0.86, 0.86, 0.9)])
+		ix = -(marks.size() - 1) * 8.0
+		for m in marks:
+			_icon(_labels, m[0], top + Vector2(ix, 0), 15, m[1])
+			ix += 16.0
 		if show_names or id == selected:
-			_draw_text(font, c + Vector2(0, 6 * s), p["name"], int(maxf(7.0, 11.0 * s)), Color(1, 1, 1, 0.95))
+			_text(_labels, font, c + Vector2(0, 5), p["name"], name_size, Color(1, 0.98, 0.94, 0.97), 3)
 		if not p["siege"].is_empty():
-			var bw := 30.0 * s
-			var bp := c + Vector2(-bw / 2.0, 14 * s)
-			_labels.draw_rect(Rect2(bp, Vector2(bw, 4 * s)), Color(0, 0, 0, 0.8))
-			_labels.draw_rect(Rect2(bp, Vector2(bw * clampf(float(p["siege"]["progress"]) / 100.0, 0.0, 1.0), 4 * s)), Color(1, 0.8, 0.2))
-
-
-func _draw_text(font: Font, centre: Vector2, text: String, size: int, col: Color) -> void:
-	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-	var pos := centre + Vector2(-w / 2.0, size * 0.35)
-	_labels.draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, maxi(2, size / 4), Color(0, 0, 0, 0.75))
-	_labels.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+			var bw := 36.0
+			var bp := (c + Vector2(-bw / 2.0, 16)).round()
+			var prog := clampf(float(p["siege"]["progress"]) / 100.0, 0.0, 1.0)
+			_labels.draw_rect(Rect2(bp - Vector2(1, 1), Vector2(bw + 2, 7)), Color(0.02, 0.02, 0.03, 0.9))
+			_labels.draw_rect(Rect2(bp, Vector2(round(bw * prog), 5)), Tokens.WARN)
+			_icon(_labels, "fort", bp + Vector2(-9, 2), 13, Tokens.WARN)
 
 
 func _draw_star(c: Vector2, r: float, col: Color, target: CanvasItem = null) -> void:
@@ -415,7 +474,7 @@ func _draw_star(c: Vector2, r: float, col: Color, target: CanvasItem = null) -> 
 		pts.append(c + Vector2(cos(a), sin(a)) * (r if i % 2 == 0 else r * 0.45))
 	ci.draw_colored_polygon(pts, col)
 	pts.append(pts[0])
-	ci.draw_polyline(pts, Color(0, 0, 0, 0.6), 1.0)
+	ci.draw_polyline(pts, Color(0, 0, 0, 0.6), 1.0, true)
 
 
 func _unit_pos(loc: int, path: Array, progress: float, hop: float) -> Vector2:
@@ -428,20 +487,74 @@ func _unit_pos(loc: int, path: Array, progress: float, hop: float) -> Vector2:
 	return a.lerp(b, clampf(progress / hop, 0.0, 1.0))
 
 
+func _counter(ci: CanvasItem, centre: Vector2, icon_name: String, text: String, col: Color, morale: float, sel: bool,
+		hostile: bool) -> Rect2:
+	## An EU4-style unit counter: dark icon cell, nation-coloured strength, morale bar underneath.
+	var font: Font = Tokens.font("map_label")
+	var fs := 13
+	var tw := ceilf(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	var h := 20.0
+	var icon_w := 20.0
+	var w := icon_w + tw + 12.0
+	var r := Rect2((centre - Vector2(w, h) / 2.0).round(), Vector2(w, h))
+	var shadow := StyleBoxFlat.new()
+	shadow.bg_color = Color(0, 0, 0, 0)
+	shadow.shadow_color = Color(Tokens.GOLD_HI, 0.55) if sel else Color(0, 0, 0, 0.55)
+	shadow.shadow_size = 6 if sel else 3
+	shadow.shadow_offset = Vector2(0, 0) if sel else Vector2(1, 2)
+	shadow.set_corner_radius_all(4)
+	ci.draw_style_box(shadow, r)
+	var body := StyleBoxFlat.new()
+	body.bg_color = col
+	body.set_corner_radius_all(4)
+	body.border_color = Tokens.GOLD_HI if sel else (Color(1.0, 0.35, 0.3) if hostile else Tokens.INK)
+	body.set_border_width_all(2 if sel or hostile else 1)
+	ci.draw_style_box(body, r)
+	var cell := StyleBoxFlat.new()
+	cell.bg_color = Color(0.07, 0.075, 0.09)
+	cell.corner_radius_top_left = 3
+	cell.corner_radius_bottom_left = 3
+	var inset := 2.0 if sel or hostile else 1.0
+	ci.draw_style_box(cell, Rect2(r.position + Vector2(inset, inset), Vector2(icon_w - inset, h - inset * 2)))
+	_icon(ci, icon_name, r.position + Vector2(icon_w / 2.0 + 0.5, h / 2.0), 14, Tokens.TEXT, false)
+	# a light sheen on the coloured part so flat nation colours read as a token, not a sticker
+	ci.draw_rect(Rect2(r.position + Vector2(icon_w, inset), Vector2(w - icon_w - inset, 1)), Color(1, 1, 1, 0.22))
+	var tc := Color.WHITE if col.get_luminance() < 0.62 else Color(0.06, 0.06, 0.07)
+	var oc := Color(0, 0, 0, 0.55) if tc == Color.WHITE else Color(1, 1, 1, 0.35)
+	var tp := Vector2(r.position.x + icon_w + 6.0, r.position.y + 15.0)
+	ci.draw_string_outline(font, tp, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 2, oc)
+	ci.draw_string(font, tp, text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tc)
+	if morale >= 0.0:
+		var mb := Rect2(Vector2(r.position.x + 2, r.end.y + 1), Vector2(w - 4, 4))
+		ci.draw_rect(mb, Color(0.02, 0.02, 0.03, 0.9))
+		var mc := Color(0.45, 0.9, 0.4) if morale > 0.5 else (Tokens.WARN if morale > 0.25 else Tokens.BAD)
+		ci.draw_rect(Rect2(mb.position + Vector2(1, 1), Vector2(round((mb.size.x - 2) * morale), 2)), mc)
+	return r
+
+
+func _path_line(ci: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
+	if pts.size() < 2:
+		return
+	ci.draw_polyline(pts, Color(0, 0, 0, 0.6), 5.0, true)
+	ci.draw_polyline(pts, col, 2.5, true)
+	var end := pts[pts.size() - 1]
+	ci.draw_circle(end, 6.0, Color(0, 0, 0, 0.6))
+	ci.draw_circle(end, 4.5, col)
+
+
 func _draw_units() -> void:
 	_hits.clear()
-	var font: Font = ThemeDB.fallback_font
-	var s := clampf(1.0 / camera_zoom, 0.35, 2.0)
 	var stack := {}
 	# battles
 	for b in Game.battles:
 		var pid: int = int(b["pid"])
 		if Game.provinces[pid]["layer"] != layer or not explored(pid):
 			continue
-		var c: Vector2 = Game.provinces[pid]["centre"] + Vector2(0, -30 * s)
-		_units.draw_circle(c, 11 * s, Color(0.1, 0.0, 0.0, 0.85))
-		_units.draw_line(c + Vector2(-7, -7) * s, c + Vector2(7, 7) * s, Color(1, 0.3, 0.2), 3 * s)
-		_units.draw_line(c + Vector2(7, -7) * s, c + Vector2(-7, 7) * s, Color(1, 0.3, 0.2), 3 * s)
+		var c := _sp(Game.provinces[pid]["centre"]) + Vector2(0, -66)
+		_units.draw_circle(c, 14.0, Color(0, 0, 0, 0.55))
+		_units.draw_circle(c, 12.0, Color(0.35, 0.05, 0.03))
+		_units.draw_arc(c, 12.0, 0, TAU, 32, Color(1, 0.45, 0.3), 1.5, true)
+		_icon(_units, "battle", c, 18, Color(1, 0.85, 0.7), false)
 	# armies
 	for id in Game.armies:
 		var a: Dictionary = Game.armies[id]
@@ -453,33 +566,29 @@ func _draw_units() -> void:
 		var base := _unit_pos(loc, a["path"], float(a["progress"]), float(a["hop_days"]))
 		var n: int = int(stack.get(loc, 0))
 		stack[loc] = n + 1
-		var pos := base + Vector2(0, -22 * s - n * 20 * s)
-		var col: Color = Color(0.15, 0.15, 0.15) if a["owner"] == "REB" else (Color(0.45, 0.1, 0.75) if a["owner"] == "ENT" else Game.nations[a["owner"]]["colour"])
+		var sbase := _sp(base)
+		var pos := sbase + Vector2(0, -40 - n * 27)
+		if not _on_screen(pos):
+			continue
+		var owner: String = a["owner"]
+		var col: Color = Game.owner_colour(owner)
 		var men := 0.0
+		var cav := 0
 		for r in a["regiments"]:
 			men += float(r["men"])
-		var text := "%.1fk" % (men / 1000.0)
-		var fs := int(maxf(7.0, 11.0 * s))
-		var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var rect := Rect2(pos - Vector2(tw / 2.0 + 6 * s, 8 * s), Vector2(tw + 12 * s, 16 * s))
+			if Game.mil.unit_category(String(r["type"])) == "cav":
+				cav += 1
+		var icon_name := "flame" if owner == "REB" else ("portal" if owner == "ENT" else ("horseshoe" if cav * 2 > a["regiments"].size() else "helmet"))
 		var sel: bool = int(id) == selected_army
 		if sel and not a["path"].is_empty():
-			var pts := PackedVector2Array([base])
+			var pts := PackedVector2Array([sbase])
 			for step in a["path"]:
 				if Game.provinces[int(step)]["layer"] == layer:
-					pts.append(Game.provinces[int(step)]["centre"])
-			if pts.size() > 1:
-				_units.draw_polyline(pts, Color(1, 1, 1, 0.85), 2.5 * s)
-				_units.draw_circle(pts[pts.size() - 1], 5 * s, Color(1, 1, 1, 0.9))
-		_units.draw_rect(rect.grow(2 * s), Color(1, 1, 0.6) if sel else Color(0, 0, 0, 0.85))
-		_units.draw_rect(rect, col.darkened(0.15))
-		var morale := _army_morale(a)
-		_units.draw_rect(Rect2(rect.position + Vector2(0, rect.size.y - 3 * s), Vector2(rect.size.x * morale, 3 * s)), Color(0.4, 1.0, 0.4))
-		var tc := Color.WHITE if col.get_luminance() < 0.6 else Color.BLACK
-		_units.draw_string(font, Vector2(rect.position.x + 6 * s, rect.position.y + 12 * s), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, tc)
-		if a["owner"] == "REB":
-			_units.draw_rect(rect, Color(1, 0.2, 0.2), false, 1.5 * s)
-		_hits.append({"rect": rect.grow(3 * s), "kind": "army", "id": int(id)})
+					pts.append(_sp(Game.provinces[int(step)]["centre"]))
+			_path_line(_units, pts, Color(1, 0.97, 0.88))
+		var hostile := owner in ["REB", "ENT"] or (Game.player_tag != "" and Game.dip.at_war(Game.player_tag, owner))
+		var rect := _counter(_units, pos, icon_name, "%.1fk" % (men / 1000.0), col, _army_morale(a), sel, hostile)
+		_hits.append({"rect": rect.grow(3), "kind": "army", "id": int(id)})
 	# fleets
 	for id in Game.fleets:
 		var f: Dictionary = Game.fleets[id]
@@ -489,24 +598,21 @@ func _draw_units() -> void:
 		if not explored(loc) and f["owner"] != Game.player_tag:
 			continue
 		var base := _unit_pos(loc, f["path"], float(f["progress"]), float(f["hop_days"]))
-		var pos := base + Vector2(24 * s, 14 * s)
-		var col: Color = Game.nations[f["owner"]]["colour"]
+		var sbase := _sp(base)
+		var n: int = int(stack.get(loc, 0))
+		stack[loc] = n + 1
+		var pos := sbase + Vector2(0, -40 - n * 27)
+		if not _on_screen(pos):
+			continue
 		var sel: bool = int(id) == selected_fleet
-		var hull := PackedVector2Array([pos + Vector2(-12, -2) * s, pos + Vector2(12, -2) * s, pos + Vector2(8, 6) * s, pos + Vector2(-8, 6) * s])
-		var sail := PackedVector2Array([pos + Vector2(-1, -14) * s, pos + Vector2(-1, -3) * s, pos + Vector2(8, -3) * s])
 		if sel and not f["path"].is_empty():
-			var pts := PackedVector2Array([base])
+			var pts := PackedVector2Array([sbase])
 			for step in f["path"]:
-				pts.append(Game.provinces[int(step)]["centre"])
-			_units.draw_polyline(pts, Color(0.6, 0.85, 1.0, 0.9), 2.5 * s)
-		_units.draw_colored_polygon(hull, col.darkened(0.2))
-		_units.draw_colored_polygon(sail, Color(0.95, 0.95, 0.9))
-		hull.append(hull[0])
-		_units.draw_polyline(hull, Color(1, 1, 0.6) if sel else Color(0, 0, 0, 0.9), 1.5 * s)
-		var fs := int(maxf(7.0, 10.0 * s))
-		_units.draw_string_outline(font, pos + Vector2(13, 4) * s, str(f["ships"].size()), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 3, Color.BLACK)
-		_units.draw_string(font, pos + Vector2(13, 4) * s, str(f["ships"].size()), HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color.WHITE)
-		_hits.append({"rect": Rect2(pos - Vector2(13, 15) * s, Vector2(34, 22) * s), "kind": "fleet", "id": int(id)})
+				pts.append(_sp(Game.provinces[int(step)]["centre"]))
+			_path_line(_units, pts, Color(0.65, 0.88, 1.0))
+		var hostile := Game.player_tag != "" and Game.dip.at_war(Game.player_tag, f["owner"])
+		var rect := _counter(_units, pos, "ship", str(f["ships"].size()), Game.nations[f["owner"]]["colour"], -1.0, sel, hostile)
+		_hits.append({"rect": rect.grow(3), "kind": "fleet", "id": int(id)})
 
 
 func _army_morale(a: Dictionary) -> float:
