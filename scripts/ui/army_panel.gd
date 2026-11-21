@@ -2,9 +2,11 @@ extends "res://scripts/ui/panel_base.gd"
 ## The selected army or fleet: regiments, morale, general, orders.
 
 signal deselected
+signal group_changed(ids: Array)   # ask main.gd to change the selection (e.g. one army out of a group)
 
 var army = -1
 var fleet = -1
+var group: Array = []   # several of your armies selected at once (shift-click or shift-drag)
 
 
 func setup() -> void:
@@ -16,6 +18,7 @@ func setup() -> void:
 
 
 func show_army(id: int) -> void:
+	group = []
 	army = id
 	fleet = -1
 	visible = id >= 0
@@ -24,6 +27,7 @@ func show_army(id: int) -> void:
 
 
 func show_fleet(id: int) -> void:
+	group = []
 	fleet = id
 	army = -1
 	visible = id >= 0
@@ -32,6 +36,7 @@ func show_fleet(id: int) -> void:
 
 
 func close() -> void:
+	group = []
 	army = -1
 	fleet = -1
 	super.close()
@@ -39,7 +44,10 @@ func close() -> void:
 
 
 func build() -> void:
-	if army >= 0:
+	group = group.filter(func(x): return Game.armies.has(x))
+	if group.size() > 1:
+		_build_group()
+	elif army >= 0:
 		_build_army()
 	elif fleet >= 0:
 		_build_fleet()
@@ -159,3 +167,53 @@ func _build_fleet() -> void:
 	row.add_child(UI.action("Stop", "" if not f["path"].is_empty() else "Not moving.", func(): f["path"] = []; Game.armies_changed.emit()))
 	row.add_child(UI.button("Disband", func(): Game.mil.disband_fleet(fleet); close()))
 	add(row)
+
+
+func show_group(ids: Array) -> void:
+	group = ids.duplicate()
+	army = int(ids[0]) if ids.size() > 0 else -1
+	fleet = -1
+	visible = ids.size() > 0
+	if visible:
+		refresh_now()
+
+
+func _build_group() -> void:
+	## Several armies selected: totals, one row each, and orders for all of them (EU4's multi-select).
+	set_title("%d armies selected" % group.size())
+	var men := 0.0
+	var regs := 0
+	var where := {}
+	var fighting := false
+	for id in group:
+		var a: Dictionary = Game.armies[id]
+		men += Game.mil.army_men(a)
+		regs += a["regiments"].size()
+		where[int(a["location"])] = true
+		fighting = fighting or a["in_battle"]
+	text("%d regiments, %.1fk men. Right-click a province to send them all there." % [regs, men / 1000.0], 13)
+	section("Armies")
+	for id in group:
+		var a: Dictionary = Game.armies[id]
+		var loc: String = Game.provinces[int(a["location"])]["name"]
+		var b = UI.button("%s: %.1fk at %s" % [a["name"], Game.mil.army_men(a) / 1000.0, loc], func(): group_changed.emit([id]),
+			"Select only this army")
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.custom_minimum_size.x = panel_width - 40
+		add(b)
+	section("Orders")
+	var why := ""
+	if where.size() > 1:
+		why = "They must all stand in the same province to merge."
+	elif fighting:
+		why = "Not while one of them is in battle."
+	var ids: Array = group.duplicate()
+	var merge = UI.action("Merge all", why, func():
+		Game.mil.merge_armies(ids)
+		group_changed.emit([ids[0]]), "Join every selected army into one.")
+	var stop = UI.button("Stop all", func():
+		for id in ids:
+			if Game.armies.has(id) and not Game.armies[id]["retreating"]:
+				Game.armies[id]["path"] = []
+		Game.armies_changed.emit(), "Cancel every march order.")
+	add(UI.row([merge, stop]))

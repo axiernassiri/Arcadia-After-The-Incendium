@@ -251,7 +251,7 @@ func bankruptcy(tag: String) -> void:
 	n["stability"] = maxi(-3, int(n["stability"]) - 3)
 	g.add_nation_modifier(tag, "bankruptcy", "Bankruptcy", {"tax_mod": -0.25, "production_mod": -0.25,
 		"land_morale": -0.25, "unrest": 2}, 60)
-	g.post("%s has gone BANKRUPT. All loans are cancelled, but the realm is in chaos for five years." % n["short"])
+	g.post("%s has gone BANKRUPT. All loans are cancelled, but the realm is in chaos for five years." % n["short"], [tag], "Bankruptcy")
 
 
 # ---------------------------------------------------------------- development
@@ -484,7 +484,7 @@ func monthly_colonies() -> void:
 			p["culture"] = n["culture"]
 			p["religion"] = n["religion"]
 			p["ethnicity"] = n["ethnicity"]
-			g.post("%s: the colony of %s is now a full province." % [n["short"], p["name"]])
+			g.post("%s: the colony of %s is now a full province." % [n["short"], p["name"]], [tag])
 		g.province_changed.emit(pid)
 
 
@@ -559,7 +559,7 @@ func change_autonomy(tag: String, pid: int, down: bool) -> bool:
 	p["autonomy_cd_until"] = g.day_index + AUTONOMY_COOLDOWN_DAYS
 	if down:
 		p["autonomy"] = maxf(min_autonomy(tag, pid), autonomy(pid) - 25.0)
-		g.add_province_modifier(pid, "autonomy_changed", "Autonomy lowered", {"local_unrest": 4}, 12)
+		g.add_province_modifier(pid, "autonomy_changed", "Autonomy lowered", {"local_unrest": 5}, 12)
 	else:
 		p["autonomy"] = minf(100.0, autonomy(pid) + 25.0)
 		g.add_province_modifier(pid, "autonomy_changed", "Autonomy granted", {"local_unrest": -3}, 12)

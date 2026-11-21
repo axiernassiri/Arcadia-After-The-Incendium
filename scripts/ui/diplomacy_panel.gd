@@ -56,6 +56,7 @@ func build() -> void:
 						"Allies don't join on their own. They decide by what they think of you, the enemy and their own situation, and want sanctum in return.\n" + "\n".join(lines))]))
 		v.add_child(UI.action("Negotiate peace", "" if lead or true else "", func(): peace_requested.emit(int(w["id"]))))
 		add(c)
+	_threats(tag)
 	section("Nations")
 	var tags: Array = []
 	for t in Game.nations:
@@ -107,3 +108,31 @@ func _names(tags: Array) -> String:
 	for t in tags:
 		out.append(Game.nation_name(t))
 	return ", ".join(out)
+
+
+func _threats(tag: String) -> void:
+	## Aggressive expansion and coalitions, like EU4's "Threat" view.
+	var wary: Array = []
+	for t in Game.nations:
+		if t != tag and Game.nations[t]["alive"]:
+			var ae: float = Game.dip.aggressive_expansion(t, tag)
+			if ae >= 10.0:
+				wary.append([t, ae])
+	var coal: Array = Game.dip.coalition_against(tag)
+	if wary.is_empty() and coal.is_empty():
+		return
+	wary.sort_custom(func(a, b): return float(a[1]) > float(b[1]))
+	section("Aggressive expansion")
+	text("Taking land makes others wary. At %d a nation joins a coalition against you; it fades by %.1f a month." % [
+		int(Game.dip.COALITION_JOIN), Game.dip.AE_DECAY], 12, UI.TEXT_DIM)
+	if coal.size() > 0:
+		var st: Array = Game.dip.coalition_strength(tag)
+		var names: PackedStringArray = []
+		for t in coal:
+			names.append(Game.nations[t]["short"])
+		text("Coalition against you (%d): %s. Their armies %d, yours %d." % [coal.size(), ", ".join(names), int(st[0]), int(st[1])], 13, UI.BAD)
+	for x in wary.slice(0, 8):
+		var t: String = x[0]
+		var ae: float = x[1]
+		var col: Color = UI.BAD if ae >= Game.dip.COALITION_JOIN else (UI.WARN if ae >= Game.dip.COALITION_LEAVE else UI.TEXT)
+		add(UI.row([UI.label(Game.nation_name(t), 13), UI.spacer(), UI.bar(ae, 100.0, 120.0, col), UI.label("%d" % int(ae), 13, col)]))

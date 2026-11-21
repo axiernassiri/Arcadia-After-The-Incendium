@@ -33,7 +33,9 @@ func build() -> void:
 
 	var slots: int = Game.prog.idea_slots(tag)
 	section("Idea groups (%d of %d slots)" % [n["idea_groups"].size(), slots])
-	text("Idea cost: %d power. More slots come with administrative technology." % Game.prog.idea_cost(tag), 12, UI.TEXT_DIM)
+	var il = text("Idea cost: %d power. More slots come with administrative technology." % Game.prog.idea_cost(tag), 12, UI.TEXT_DIM)
+	il.tooltip_text = "Idea cost:\n" + Game.mods.breakdown(tag, ["idea_cost_mod"])
+	il.mouse_filter = Control.MOUSE_FILTER_PASS
 	for ig in n["idea_groups"]:
 		var grp: Dictionary = Game.idea_data["groups"][ig["id"]]
 		var i_pow: int = Game.TRACKS.find(grp["type"])

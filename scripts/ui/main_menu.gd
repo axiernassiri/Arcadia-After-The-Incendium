@@ -3,6 +3,7 @@ extends Control
 
 signal new_game_pressed
 signal load_pressed(slot: String)
+signal settings_pressed
 
 const UI = preload("res://scripts/ui/ui_util.gd")
 const Tokens = preload("res://ui/style/tokens.gd")
@@ -118,6 +119,7 @@ func refresh() -> void:
 		row.add_child(UI.button("Delete", func(): Game.delete_save(s["file"]); refresh()))
 		_saves_box.add_child(row)
 	_box.add_child(_saves_box)
+	_box.add_child(_big("Settings", func(): settings_pressed.emit()))
 	_box.add_child(_big("Quit", func(): get_tree().quit()))
 
 

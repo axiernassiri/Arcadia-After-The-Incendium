@@ -69,6 +69,11 @@ func fit_height(viewport_h: float) -> void:
 func open() -> void:
 	visible = true
 	refresh()
+	# show the preselected nation on the map too; wait a frame so this window has its size and the
+	# camera can centre the capital in the part of the screen it leaves free
+	await get_tree().process_frame
+	if visible:
+		nation_focused.emit(selected)
 
 
 func pick(tag: String) -> void:

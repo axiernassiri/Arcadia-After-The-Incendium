@@ -7,6 +7,8 @@ signal zoom_changed(z: float)
 const MIN_ZOOM := 0.4
 const MAX_ZOOM := 6.0
 const KEY_PAN_SPEED := 900.0
+const EDGE := 6.0   # px from the window edge that starts edge-scrolling (when enabled in Settings)
+const Settings = preload("res://scripts/settings.gd")
 
 var bounds := Rect2(0, 0, 2000, 1092)
 var focus := Vector2.INF       # where fit_bounds centres the view
@@ -38,6 +40,12 @@ func _process(delta: float) -> void:
 		dir.y -= 1
 	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
 		dir.y += 1
+	if dir == Vector2.ZERO and Settings.get_value("edge_scroll") and DisplayServer.window_is_focused() and not _pressing:
+		var m := get_viewport().get_mouse_position()
+		var vs := get_viewport_rect().size
+		if Rect2(Vector2.ZERO, vs).has_point(m):
+			dir.x = -1.0 if m.x < EDGE else (1.0 if m.x > vs.x - EDGE else 0.0)
+			dir.y = -1.0 if m.y < EDGE else (1.0 if m.y > vs.y - EDGE else 0.0)
 	if dir != Vector2.ZERO and not (get_viewport().gui_get_focus_owner() is LineEdit):
 		position += dir.normalized() * KEY_PAN_SPEED * delta / zoom.x
 		_clamp()
@@ -52,7 +60,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
 			_zoom_at(1.0 / 1.15, event.position)
 		elif event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
-			if event.pressed:
+			if event.pressed and event.shift_pressed and event.button_index == MOUSE_BUTTON_LEFT:
+				_pressing = false   # shift + left-drag draws a selection box (map_view.gd), not a pan
+			elif event.pressed:
 				_pressing = true
 				_dragging = false
 				_press_pos = event.position

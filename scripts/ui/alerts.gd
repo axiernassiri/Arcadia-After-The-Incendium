@@ -119,6 +119,10 @@ func compute() -> Array:
 			worst = pid
 	if worst >= 0 and worst_p >= 50.0:
 		out.append(["Rebels", "Rebels in %s are %d%% organised." % [Game.provinces[worst]["name"], int(worst_p)], UI.BAD, func(): go_to_province.emit(worst)])
+	var coal: Array = Game.dip.coalition_against(tag)
+	if coal.size() > 0:
+		var st: Array = Game.dip.coalition_strength(tag)
+		out.append(["Coalition", "%d nations have formed a coalition against you (army strength %d against your %d). With %d or more they declare war after a year. Let your aggressive expansion fade." % [coal.size(), int(st[0]), int(st[1]), Game.dip.COALITION_MIN_MEMBERS], UI.BAD, func(): open_panel.emit("diplomacy")])
 	var portal: int = Game.portal_id()
 	if portal >= 0 and Game.provinces[portal]["controller"] == "ENT":
 		out.append(["Portal", "Entities from beyond hold the Doomsday Portal and raid Skyfall.", UI.DOOM, func(): go_to_province.emit(portal)])

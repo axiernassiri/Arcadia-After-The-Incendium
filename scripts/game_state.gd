@@ -11,6 +11,7 @@ signal province_changed(id: int)
 signal nation_changed(tag: String)
 signal event_fired(instance: Dictionary)
 signal message_posted(text: String)
+signal major_news(title: String, text: String)   # things worth pausing for (see post())
 signal doomsday_changed(active: bool)
 signal game_started
 signal armies_changed
@@ -35,6 +36,7 @@ const Population = preload("res://scripts/sim/population.gd")
 const Military = preload("res://scripts/sim/military.gd")
 const Diplomacy = preload("res://scripts/sim/diplomacy.gd")
 const AI = preload("res://scripts/sim/ai.gd")
+const Sea = preload("res://scripts/sim/sea.gd")
 
 # calendar
 var year := START_YEAR
@@ -88,6 +90,7 @@ var pending_events: Array = []   # player events waiting for a choice (pause the
 var scheduled: Array = []        # [{due, id, tag}]
 var fired_once := {}             # "event_id|tag" -> true
 var log_lines: Array = []
+var world_lines: Array = []      # news that doesn't touch the player (the log's "World news" view)
 
 var rng := RandomNumberGenerator.new()
 var _accum := 0.0
@@ -103,6 +106,7 @@ var court: Court
 var pop: Population
 var mil: Military
 var dip: Diplomacy
+var sea: Sea
 var ai: AI
 
 
@@ -189,6 +193,8 @@ func load_data() -> void:
 			conn[int(n)] = "sea" if p.get("layer", "ground") == "ground" else "air"
 		for n in p.get("links", []):
 			conn[int(n)] = "waterfall"
+		for n in p.get("straits", []):
+			conn[int(n)] = "strait"   # walkable when the enemy doesn't hold the sea (EU4 straits)
 		var c: Array = gm.get("centre", [0, 0])
 		var owner: String = p["owner"] if p.get("owner") != null else ""
 		var cores := {}
@@ -210,6 +216,10 @@ func load_data() -> void:
 		if not node_provinces.has(tn):
 			node_provinces[tn] = []
 		node_provinces[tn].append(id)
+	_mainland.clear()
+	if sea == null:
+		sea = Sea.new(self)
+	sea.build()
 
 	nations.clear()
 	var defs: Dictionary = nation_defs.get("nations", {})
@@ -279,6 +289,7 @@ func setup_world(seed_value: int = 4289) -> void:
 	scheduled.clear()
 	fired_once.clear()
 	log_lines.clear()
+	world_lines.clear()
 	_doomsday_damage.clear()
 	player_tag = ""
 	var defs: Dictionary = nation_defs.get("nations", {})
@@ -470,7 +481,7 @@ func kill_nation(tag: String) -> void:
 		nations[other]["subjects"].erase(tag)
 	n["subjects"].clear()
 	n["overlord"] = ""
-	post("%s is no more." % n["name"])
+	post("%s is no more." % n["name"], [tag], "", true)
 	if tag == player_tag:
 		fire_dynamic_event({"id": "game_over", "title": "The End of %s" % n["name"],
 			"text": "Our last province has fallen. You can keep watching the world, or load a save from the menu.",
@@ -911,6 +922,7 @@ func start_doomsday() -> void:
 	if portal >= 0 and rng.randf() < chance:
 		var regs := mini(18, 6 + doomsday_count)
 		mil.spawn_entities(portal, regs)
+		global_flags["entities_came"] = true
 		post("ENTITIES POUR THROUGH THE PORTAL: %d regiments of things from beyond are loose in Skyfall!" % regs)
 		for tag in affected:
 			fire_event("entity_invasion", tag)
@@ -981,15 +993,46 @@ func _check_date_events() -> void:
 		var e: Dictionary = events[eid]
 		if e.get("trigger", {}).get("date", "") == key:
 			for tag in nations:
+				if e.get("once", false) and fired_once.has(eid + "|" + tag):
+					continue
 				if _event_applies(e, tag) and check_conditions(e.get("trigger", {}).get("conditions", []), tag):
 					fire_event(eid, tag)
+
+
+func in_year_window(trig: Dictionary) -> bool:
+	## "years": [from, to] limits an event to those years (inclusive). Either end can be 0 for open.
+	if not trig.has("years"):
+		return true
+	var yw: Array = trig["years"]
+	return (int(yw[0]) <= 0 or year >= int(yw[0])) and (int(yw[1]) <= 0 or year <= int(yw[1]))
+
+
+func event_mtth(e: Dictionary, tag: String) -> float:
+	## Mean time to happen in months (EU4): the base, multiplied by every modifier whose conditions hold.
+	var trig: Dictionary = e.get("trigger", {})
+	var m := float(trig.get("mtth_months", 0.0))
+	for mm in trig.get("mtth_modifiers", []):
+		if check_conditions(mm.get("conditions", []), tag):
+			m *= float(mm.get("factor", 1.0))
+	return maxf(m, 0.5)
+
+
+func event_monthly_chance(e: Dictionary, tag: String) -> float:
+	var trig: Dictionary = e.get("trigger", {})
+	if trig.has("monthly_chance"):
+		return float(trig["monthly_chance"])
+	if trig.has("mtth_months"):
+		return 1.0 - exp(-1.0 / event_mtth(e, tag))
+	return 0.0
 
 
 func _check_monthly_events() -> void:
 	for eid in events:
 		var e: Dictionary = events[eid]
 		var trig: Dictionary = e.get("trigger", {})
-		if not trig.has("monthly_chance"):
+		if not trig.has("monthly_chance") and not trig.has("mtth_months"):
+			continue
+		if not in_year_window(trig):
 			continue
 		for tag in nations:
 			if not _event_applies(e, tag):
@@ -998,7 +1041,7 @@ func _check_monthly_events() -> void:
 				continue
 			if not check_conditions(trig.get("conditions", []), tag):
 				continue
-			if rng.randf() < float(trig["monthly_chance"]):
+			if rng.randf() < event_monthly_chance(e, tag):
 				fire_event(eid, tag)
 
 
@@ -1152,7 +1195,7 @@ func apply_effects(effects: Array, tag: String) -> void:
 			"fire_event":
 				scheduled.append({"due": day_index + int(e.get("delay_days", 0)), "id": e["id"], "tag": t})
 			"message":
-				post(e.get("text", ""))
+				post(e.get("text", ""), [t])
 			"add_modifier":
 				add_nation_modifier(t, e.get("id", e.get("name", "mod")), e.get("name", "Modifier"), e.get("modifiers", {}), int(e.get("months", -1)))
 			"add_war_exhaustion":
@@ -1313,6 +1356,15 @@ func check_condition(c: Dictionary, tag: String) -> bool:
 			return not nations.has(c["tag"]) or not nations[c["tag"]]["alive"]
 		"subjects_at_least":
 			return n["subjects"].size() >= int(c["at_least"])
+		"subdued":
+			## conquered (gone) or made our subject
+			var st: String = c["tag"]
+			return not nations.has(st) or not nations[st]["alive"] or nations[st]["overlord"] == tag
+		"province_has_building":
+			var pb := int(province_ids_by_name.get(c["province"], -1))
+			return pb >= 0 and provinces[pb]["owner"] == tag and provinces[pb]["buildings"].has(c["building"])
+		"owns_mainland":
+			return owns_mainland(tag)
 		"allied_with":
 			return nations.has(c["tag"]) and dip.rel(tag, c["tag"])["alliance"]
 		"opinion_at_least":
@@ -1393,6 +1445,9 @@ func describe_condition(c: Dictionary) -> String:
 		"at_war": return "Be at war"
 		"nation_dead": return "%s no longer exists" % nation_name(c["tag"])
 		"subjects_at_least": return "%d vassal(s)" % int(c["at_least"])
+		"subdued": return "%s conquered or made your subject" % nation_name(c["tag"])
+		"province_has_building": return "A %s in %s" % [building_data.get(c["building"], {}).get("name", c["building"]).to_lower(), c["province"]]
+		"owns_mainland": return "Land on the Arcadian continent"
 		"allied_with": return "Allied with %s" % nation_name(c["tag"])
 		"opinion_at_least": return "%s's opinion of you at %d" % [nation_name(c["tag"]), int(c["at_least"])]
 		"in_skyfall": return "Have land or armies in Skyfall"
@@ -1441,7 +1496,7 @@ func claim_mission(tag: String, mission_id: String) -> bool:
 			nations[tag]["missions_done"][mission_id] = true
 			apply_effects(m.get("rewards", []), tag)
 			if tag == player_tag or nations[tag]["government"] != "boar_tribe":
-				post("%s completes the mission: %s." % [nations[tag]["short"], m["title"]])
+				post("%s completes the mission: %s." % [nations[tag]["short"], m["title"]], [tag])
 			touch(tag)
 			return true
 	return false
@@ -1456,12 +1511,12 @@ func _state() -> Dictionary:
 		"doomsday_damage": _doomsday_damage, "nations": nations, "provinces": provinces, "armies": armies,
 		"fleets": fleets, "battles": battles, "wars": wars, "recruit_queue": recruit_queue, "next_id": next_id,
 		"global_flags": global_flags, "pending_events": pending_events, "scheduled": scheduled,
-		"fired_once": fired_once, "log_lines": log_lines, "rng_state": rng.state, "rng_seed": rng.seed,
+		"fired_once": fired_once, "log_lines": log_lines, "world_lines": world_lines, "rng_state": rng.state, "rng_seed": rng.seed,
 		"market": eco.market, "history": eco.history, "trade_state": trade.state, "trade_income": trade.income,
 	}
 
 
-func save_game(slot: String) -> String:
+func save_game(slot: String, quiet: bool = false) -> String:
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var path := "%s/%s.save" % [SAVE_DIR, slot.validate_filename()]
 	var f := FileAccess.open(path, FileAccess.WRITE)
@@ -1472,7 +1527,8 @@ func save_game(slot: String) -> String:
 	f.store_var(meta)
 	f.store_var(_state())
 	f.close()
-	post("Game saved: %s." % slot)
+	if not quiet:
+		post("Game saved: %s." % slot)
 	return ""
 
 
@@ -1532,6 +1588,7 @@ func load_game(slot: String) -> String:
 	scheduled = s["scheduled"]
 	fired_once = s["fired_once"]
 	log_lines = s["log_lines"]
+	world_lines = s.get("world_lines", [])
 	rng.seed = s["rng_seed"]
 	rng.state = s["rng_state"]
 	eco.market = s["market"]
@@ -1553,11 +1610,32 @@ func load_game(slot: String) -> String:
 
 # ---------------------------------------------------------------- misc
 
-func post(text: String) -> void:
+func post(text: String, tags: Array = [], major: String = "", near: bool = false) -> void:
+	## Log a message. `tags` are the nations it is about: if none of them matter to the player
+	## (themselves, allies, subjects, overlord, enemies, neighbours), it goes to the world news
+	## instead of the main log, like EU4's message filters. `major` (a short title) asks the UI to
+	## pause and show a popup when the news names the player directly. Neighbours only count when
+	## `near` is set (wars, vassals, annexations), so AI alliances next door stay in the world news.
+	if not tags.is_empty() and not concerns_player(tags, near):
+		world_lines.append(text)
+		if world_lines.size() > 80:
+			world_lines.pop_front()
+		return
 	log_lines.append(text)
 	if log_lines.size() > 80:
 		log_lines.pop_front()
 	message_posted.emit(text)
+	if major != "" and started and (tags.is_empty() or player_tag in tags):
+		major_news.emit(major, text)
+
+
+func concerns_player(tags: Array, near: bool = false) -> bool:
+	if player_tag == "" or not nations.has(player_tag) or player_tag in tags:
+		return true
+	for t in tags:
+		if nations.has(t) and (dip.allied(player_tag, t) or dip.at_war(player_tag, t) or (near and dip.borders(player_tag, t))):
+			return true
+	return false
 
 
 func player() -> Dictionary:

@@ -309,7 +309,7 @@ func act(action: String, from: String, to: String) -> String:
 		"alliance":
 			if to == g.player_tag or ai_accepts("alliance", from, to):
 				set_both(from, to, "alliance", true)
-				g.post("%s and %s are now allies." % [g.nation_name(from), nm])
+				g.post("%s and %s are now allies." % [g.nation_name(from), nm], [from, to])
 				g.touch(from)
 				return "%s accepted the alliance." % nm
 			add_opinion(to, from, -5.0, "Rejected proposal", 1.0)
@@ -322,7 +322,7 @@ func act(action: String, from: String, to: String) -> String:
 		"marriage":
 			if to == g.player_tag or ai_accepts("marriage", from, to):
 				set_both(from, to, "marriage", true)
-				g.post("A royal marriage between %s and %s." % [g.nation_name(from), nm])
+				g.post("A royal marriage between %s and %s." % [g.nation_name(from), nm], [from, to])
 				g.touch(from)
 				return "%s accepted the royal marriage." % nm
 			return "%s declined the royal marriage." % nm
@@ -377,7 +377,7 @@ func make_vassal(overlord: String, vassal: String) -> void:
 	if not g.nations[overlord]["subjects"].has(vassal):
 		g.nations[overlord]["subjects"].append(vassal)
 	set_both(overlord, vassal, "alliance", false)
-	g.post("%s is now a vassal of %s." % [g.nation_name(vassal), g.nation_name(overlord)])
+	g.post("%s is now a vassal of %s." % [g.nation_name(vassal), g.nation_name(overlord)], [vassal, overlord], "", true)
 	g.touch(overlord)
 	g.touch(vassal)
 
@@ -387,7 +387,7 @@ func annex(by: String, target: String) -> void:
 		g.set_province_owner(pid, by)
 		g.provinces[pid]["cores"][by] = true
 	g.kill_nation(target)
-	g.post("%s has been annexed by %s." % [g.nation_name(target), g.nation_name(by)])
+	g.post("%s has been annexed by %s." % [g.nation_name(target), g.nation_name(by)], [target, by], "", true)
 
 
 # ---------------------------------------------------------------- casus belli and war
@@ -418,7 +418,7 @@ func best_cb(a: String, b: String) -> Dictionary:
 
 
 func can_declare(a: String, b: String) -> String:
-	if a == b or not g.nations[b]["alive"]:
+	if a == b or not g.nations.has(b) or not g.nations[b]["alive"]:
 		return "Not possible."
 	if at_war(a, b):
 		return "Already at war."
@@ -451,7 +451,7 @@ func declare_war(a: String, b: String, cb: Dictionary = {}) -> Dictionary:
 	rel(b, a)["access"] = false
 	rel(a, b)["access"] = false
 	rebuild_pairs()
-	g.post("%s declares war on %s: %s." % [g.nation_name(a), g.nation_name(b), w["name"]])
+	g.post("%s declares war on %s: %s." % [g.nation_name(a), g.nation_name(b), w["name"]], [a, b], "War Declared" if b == g.player_tag else "", true)
 	# subjects and overlords join, allies are called
 	for s in g.nations[a]["subjects"]:
 		_join(w, s, "attackers")
@@ -477,6 +477,7 @@ func _war_title(cb: Dictionary, target: String) -> String:
 		"tribal_conquest": return "Conquest of %s" % g.nation_name(target)
 		"claim": return "Reconquest of %s" % g.nation_name(target)
 		"rivalry": return "Humiliation of %s" % g.nation_name(target)
+		"coalition": return "Coalition against %s" % g.nation_name(target)
 	return "War against %s" % g.nation_name(target)
 
 
@@ -575,7 +576,7 @@ func call_ally(w: Dictionary, caller: String, ally: String) -> String:
 	g.nations[ally]["treasury"] += float(q["price"])
 	_join(w, ally, war_side(w, caller))
 	add_opinion(ally, caller, 10.0, "Paid for our help", 0.5)
-	g.post("%s joins %s on the side of %s (paid %d sanctum)." % [g.nation_name(ally), w["name"], g.nation_name(caller), int(q["price"])])
+	g.post("%s joins %s on the side of %s (paid %d sanctum)." % [g.nation_name(ally), w["name"], g.nation_name(caller), int(q["price"])], [ally, caller])
 	g.war_changed.emit()
 	g.touch(caller)
 	return "%s joins the war." % g.nation_name(ally)
@@ -765,6 +766,8 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 	# who leaves the war is settled before any land moves: losing the last province ends a nation
 	var tside = war_side(w, target)
 	var leaving: Array = w[tside].duplicate() if w[tside][0] == target else [target]
+	var ae_dev := _ae_dev(demands, target)   # before any land moves
+	var ae_mult := _ae_cb_mult(w, demander)
 	var parts: PackedStringArray = []
 	for d in demands:
 		match d.get("type", ""):
@@ -790,7 +793,9 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 	for d in demands:
 		if d.get("type", "") == "annex":
 			annexing = true
-	g.post("Peace in %s: %s %s." % [w["name"], g.nation_name(target), "gives " + ", ".join(parts) if parts.size() > 0 else "makes a white peace"])
+	g.post("Peace in %s: %s %s." % [w["name"], g.nation_name(target), "gives " + ", ".join(parts) if parts.size() > 0 else "makes a white peace"], [demander, target], "Peace" if demander != g.player_tag else "")
+	if ae_dev > 0.0:
+		add_aggressive_expansion(demander, target, ae_dev, ae_mult)
 	# the target's side leaves the war (whole war ends if the target leads it)
 	if g.wars.has(w["id"]):
 		leaving = leaving.filter(func(t): return war_side(w, t) != "")
@@ -883,3 +888,157 @@ func monthly() -> void:
 		else:
 			n["war_exhaustion"] = minf(20.0, float(n["war_exhaustion"]) + 0.05)
 	update_war_scores()
+	update_coalitions()
+
+
+# ---------------------------------------------------------------- aggressive expansion and coalitions
+# EU4-style brakes on snowballing. Taking land in a peace deal gives every other nation an
+# "Aggressive expansion" opinion of the taker (stronger next door, and among those who share the
+# victim's faith or culture group). Enough of it and they band together into a coalition, which
+# declares war once it is big enough.
+
+const AE_NAME := "Aggressive expansion"
+const AE_PER_DEV := 1.6        # per point of development taken, before the casus belli and distance
+const AE_DECAY := 0.5          # a month
+const AE_FAR := 0.35           # nations that border neither side feel this much of it
+const COALITION_JOIN := 50.0   # AE at which a nation joins a coalition
+const COALITION_LEAVE := 25.0
+const COALITION_MIN_DEV := 60  # nobody forms a coalition against a small realm
+const COALITION_MIN_MEMBERS := 3
+const COALITION_MONTHS := 12   # how long a coalition holds together before it declares war
+
+
+func aggressive_expansion(of: String, toward: String) -> float:
+	## How much aggressive expansion `of` holds against `toward` (a positive number).
+	if not g.nations.has(of) or not g.nations.has(toward) or of == toward:
+		return 0.0
+	for m in rel(of, toward)["mods"]:
+		if m["name"] == AE_NAME:
+			return maxf(0.0, -float(m["value"]))
+	return 0.0
+
+
+func ae_amounts(taker: String, victim: String, dev: float, cb_mult: float) -> Dictionary:
+	## tag -> AE each other nation would get if `taker` took `dev` development from `victim`.
+	var out := {}
+	if dev <= 0.0:
+		return out
+	var vic: Dictionary = g.nations.get(victim, {})
+	for t in g.nations:
+		var n: Dictionary = g.nations[t]
+		if t == taker or t == victim or not n["alive"] or t in ["REB", "ENT"]:
+			continue
+		if n["overlord"] == taker:
+			continue
+		var f := 1.0 if (borders(t, taker) or borders(t, victim)) else AE_FAR
+		if not vic.is_empty():
+			if n["religion"] == vic["religion"]:
+				f *= 1.25
+			if g.pop.culture_group(n["culture"]) == g.pop.culture_group(vic["culture"]):
+				f *= 1.25
+		out[t] = dev * AE_PER_DEV * cb_mult * f
+	return out
+
+
+func ae_preview(w: Dictionary, demander: String, target: String, demands: Array) -> Array:
+	## [worst AE any nation would get, that nation] for a peace deal, for the peace screen.
+	var dev := _ae_dev(demands, target)
+	var amounts := ae_amounts(demander, target, dev, _ae_cb_mult(w, demander))
+	var worst := 0.0
+	var who := ""
+	for t in amounts:
+		if float(amounts[t]) > worst:
+			worst = float(amounts[t])
+			who = t
+	return [worst, who]
+
+
+func _ae_dev(demands: Array, target: String) -> float:
+	var dev := 0.0
+	for d in demands:
+		match d.get("type", ""):
+			"province": dev += float(g.total_dev(int(d["pid"])))
+			"annex": dev += float(g.nation_dev(target))
+			"vassalize": dev += float(g.nation_dev(target)) * 0.5
+	return dev
+
+
+func _ae_cb_mult(w: Dictionary, demander: String) -> float:
+	# a good casus belli (claims, tribal conquest) causes less outrage, like EU4's CB AE modifiers
+	if war_side(w, demander) != "attackers":
+		return 0.75
+	return clampf(float(w["cb"].get("mult", 1.0)) * 1.25, 0.6, 1.5)
+
+
+func add_aggressive_expansion(taker: String, victim: String, dev: float, cb_mult: float) -> void:
+	var amounts := ae_amounts(taker, victim, dev, cb_mult)
+	for t in amounts:
+		add_opinion(t, taker, -float(amounts[t]), AE_NAME, AE_DECAY)
+
+
+func coalition_against(tag: String) -> Array:
+	return g.nations.get(tag, {}).get("coalition", [])
+
+
+func update_coalitions() -> void:
+	## Monthly: nations join and leave coalitions, and a coalition that is big enough declares war.
+	for x in g.nations:
+		var n: Dictionary = g.nations[x]
+		if not n["alive"] or x in ["REB", "ENT"]:
+			if n.has("coalition"):
+				n["coalition"] = []
+			continue
+		var members: Array = n.get("coalition", []).duplicate()
+		var big: bool = g.nation_dev(x) >= COALITION_MIN_DEV
+		for t in g.nations:
+			if t == x or t in ["REB", "ENT"] or t == g.player_tag:
+				continue   # the player decides for themselves (EU4 lets you refuse to join)
+			var tn: Dictionary = g.nations[t]
+			var ae := aggressive_expansion(t, x)
+			var can_be: bool = big and tn["alive"] and tn["overlord"] != x and not rel(t, x)["alliance"] and tn["overlord"] == ""
+			if t in members:
+				if not can_be or ae < COALITION_LEAVE:
+					members.erase(t)
+					if x == g.player_tag:
+						g.post("%s has left the coalition against us." % g.nation_name(t), [t, x])
+			elif can_be and ae >= COALITION_JOIN:
+				members.append(t)
+				g.post("%s joins the coalition against %s." % [g.nation_name(t), g.nation_name(x)], [t, x], "Coalition" if x == g.player_tag else "")
+		n["coalition"] = members
+		if members.size() < COALITION_MIN_MEMBERS:
+			n.erase("coalition_since")
+			continue
+		if not n.has("coalition_since"):
+			n["coalition_since"] = g.day_index
+		if g.day_index - int(n["coalition_since"]) < COALITION_MONTHS * 30:
+			continue
+		_maybe_coalition_war(x, members)
+
+
+func coalition_strength(x: String) -> Array:
+	## [coalition army strength, target's own strength]
+	var theirs := 0.0
+	for t in coalition_against(x):
+		theirs += g.mil.nation_strength(t)
+	return [theirs, g.mil.nation_strength(x)]
+
+
+func _maybe_coalition_war(x: String, members: Array) -> void:
+	var free: Array = members.filter(func(t): return not at_war(t, x) and not truce(t, x) and not at_war_any(t))
+	if free.size() < COALITION_MIN_MEMBERS:
+		return
+	var st := coalition_strength(x)
+	if float(st[0]) < float(st[1]) * 0.8:
+		return
+	free.sort_custom(func(a, b): return g.nation_dev(a) > g.nation_dev(b))
+	var leader: String = free[0]
+	var w := declare_war(leader, x, {"id": "coalition", "name": "Coalition", "mult": 0.75})
+	if w.is_empty():
+		return
+	for t in free.slice(1):
+		_join(w, t, "attackers")
+	g.nations[x]["coalition_since"] = g.day_index   # no second war from the same coalition right away
+	g.post("A coalition of %d nations led by %s marches against %s!" % [free.size(), g.nation_name(leader), g.nation_name(x)],
+		[leader, x], "Coalition War" if x == g.player_tag else "", true)
+	rebuild_pairs()
+	g.war_changed.emit()

@@ -6,6 +6,8 @@ signal province_clicked(id: int)
 signal province_right_clicked(id: int)
 signal province_hovered(id: int)
 signal army_clicked(id: int)
+signal army_shift_clicked(id: int)   # shift-click: add to or remove from the selection
+signal box_selected(ids: Array)       # shift-drag: armies inside the box
 signal fleet_clicked(id: int)
 signal layer_changed(layer: String)
 
@@ -13,7 +15,7 @@ const Tokens = preload("res://ui/style/tokens.gd")
 const Icons = preload("res://ui/style/icons.gd")
 const LAYERS := ["ground", "sky"]
 const PALETTE_WIDTH := 1024
-const MODES := ["political", "development", "goods", "trade", "region", "culture", "religion", "ethnicity",
+const MODES := ["political", "development", "goods", "trade", "region", "culture", "religion", "ethnicity", "autonomy",
 	"unrest", "diplomacy", "terrain"]
 const TERRAIN_COLOURS := {
 	"grassland": Color(0.62, 0.72, 0.45), "farmland": Color(0.85, 0.78, 0.40), "forest": Color(0.30, 0.52, 0.30),
@@ -30,10 +32,14 @@ var mode := "political"
 var selected := -1
 var hovered := -1
 var selected_army := -1
+var group: Array = []          # every selected army (selected_army is the first)
+var _box_from := Vector2.INF   # screen position where a shift-drag selection box started
+var _box_to := Vector2.ZERO
 var selected_fleet := -1
 var map_size := Vector2(2000, 1092)
 var camera_zoom := 1.0
 var show_all := false        # nation picker: no fog
+var selected_node := ""      # trade map mode: the node being inspected
 
 var _sprites := {}          # layer -> Sprite2D
 var _index_images := {}     # layer -> Image (for picking)
@@ -96,6 +102,7 @@ func _ready() -> void:
 	_units.draw.connect(_draw_units)
 	_overlay.add_child(_units)
 	_build_colour_tables()
+	_set_clear_colour()
 	Game.province_changed.connect(func(_id): _queue_refresh())
 	Game.game_started.connect(func(): _build_colour_tables(); refresh())
 	Game.doomsday_changed.connect(_on_doomsday)
@@ -175,7 +182,17 @@ func province_colour(id: int) -> Color:
 		"goods":
 			return Color(Game.goods.get(p["goods"], {}).get("colour", "#777777"))
 		"trade":
-			return _node_colours.get(p["trade_node"], Color.GRAY)
+			var nc: Color = _node_colours.get(p["trade_node"], Color.GRAY)
+			if selected_node != "" and p["trade_node"] != selected_node:
+				return nc.darkened(0.55).lerp(Color(0.3, 0.3, 0.3), 0.4)
+			return nc
+		"autonomy":
+			if owner == "":
+				return Game.unowned_colour.darkened(0.3)
+			var aut := Game.eco.autonomy(id) / 100.0
+			if Game.provinces[id].get("coring", {}).size() > 0 or not p["cores"].has(owner):
+				aut = maxf(aut, 0.5)
+			return Color(0.22, 0.42, 0.85).lerp(Color(0.92, 0.88, 0.55), minf(aut * 2.0, 1.0)).lerp(Color(0.85, 0.3, 0.2), maxf(aut * 2.0 - 1.0, 0.0))
 		"region":
 			return _region_colours.get(p["region"], Color.GRAY)
 		"culture":
@@ -254,7 +271,20 @@ func refresh() -> void:
 
 func set_mode(m: String) -> void:
 	mode = m
+	if m != "trade":
+		selected_node = ""
 	refresh()
+
+
+func select_node(node: String) -> void:
+	selected_node = node
+	refresh()
+	_labels.queue_redraw()
+
+
+func _set_clear_colour() -> void:
+	## Past the map's edge, keep showing the open sea (or open sky) instead of a black void.
+	RenderingServer.set_default_clear_color(Color(0.118, 0.285, 0.505) if layer == "ground" else Color(0.56, 0.68, 0.88))
 
 
 func set_layer(l: String) -> void:
@@ -263,6 +293,7 @@ func set_layer(l: String) -> void:
 	layer = l
 	for k in _sprites:
 		_sprites[k].visible = (k == l)
+	_set_clear_colour()
 	if selected >= 0 and Game.provinces.has(selected) and Game.provinces[selected]["layer"] != l:
 		select(-1)
 	_labels.queue_redraw()
@@ -279,6 +310,14 @@ func select(id: int) -> void:
 
 func select_army(id: int) -> void:
 	selected_army = id
+	group = [id] if id >= 0 else []
+	selected_fleet = -1
+	_units.queue_redraw()
+
+
+func set_group(ids: Array) -> void:
+	group = ids.duplicate()
+	selected_army = int(ids[0]) if ids.size() > 0 else -1
 	selected_fleet = -1
 	_units.queue_redraw()
 
@@ -286,6 +325,7 @@ func select_army(id: int) -> void:
 func select_fleet(id: int) -> void:
 	selected_fleet = id
 	selected_army = -1
+	group = []
 	_units.queue_redraw()
 
 
@@ -320,8 +360,40 @@ func _ui_has_mouse() -> bool:
 	return get_viewport().gui_get_hovered_control() != null
 
 
+func _mouse_screen() -> Vector2:
+	return _xf * to_local(get_global_mouse_position())
+
+
+func _box_input(event: InputEvent) -> bool:
+	## Shift + left-drag draws a selection box; armies whose counters it touches get selected.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed and event.shift_pressed and not _ui_has_mouse():
+			_box_from = _mouse_screen()
+			_box_to = _box_from
+			return false   # a plain shift-click still reaches the click handler on release
+		if not event.pressed and _box_from != Vector2.INF:
+			var r := Rect2(_box_from, Vector2.ZERO).expand(_mouse_screen())
+			_box_from = Vector2.INF
+			_units.queue_redraw()
+			if r.size.length() < 8.0:
+				return false
+			var ids: Array = []
+			for h in _hits:
+				if h["kind"] == "army" and r.intersects(h["rect"]) and not ids.has(h["id"]):
+					ids.append(h["id"])
+			box_selected.emit(ids)
+			get_viewport().set_input_as_handled()
+			return true
+	elif event is InputEventMouseMotion and _box_from != Vector2.INF:
+		_box_to = _mouse_screen()
+		_units.queue_redraw()
+	return false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not Game.started and not show_all:
+		return
+	if _box_input(event):
 		return
 	if event is InputEventMouseMotion:
 		if _ui_has_mouse():
@@ -343,7 +415,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			var hit := _unit_at(pos)
 			if not hit.is_empty():
 				if hit["kind"] == "army":
-					army_clicked.emit(hit["id"])
+					if event.shift_pressed:
+						army_shift_clicked.emit(hit["id"])
+					else:
+						army_clicked.emit(hit["id"])
 				else:
 					fleet_clicked.emit(hit["id"])
 				get_viewport().set_input_as_handled()
@@ -394,6 +469,7 @@ func _draw_labels() -> void:
 	var z := camera_zoom
 	var show_names := z >= 1.6 or layer == "sky"
 	if mode in ["political", "diplomacy"]:
+		var markers := _marker_rects()
 		for tag in Game.nations:
 			if not Game.nations[tag]["alive"]:
 				continue
@@ -411,6 +487,7 @@ func _draw_labels() -> void:
 				var c := _sp(sum / weight)
 				if not _on_screen(c, 400.0):
 					continue
+				c = _clear_spot(c, nation_font, Game.nations[tag]["short"].to_upper(), size, markers)
 				var alpha := 0.62 if not show_names else 0.30
 				_text(_labels, nation_font, c, Game.nations[tag]["short"].to_upper(), size, Color(1, 0.98, 0.92, alpha),
 					maxi(2, size / 9), Color(0.05, 0.04, 0.03, alpha * 0.7))
@@ -422,13 +499,9 @@ func _draw_labels() -> void:
 		_labels.draw_circle(mc, r, Color(0.02, 0.0, 0.04))
 		_text(_labels, Tokens.font("title"), mc + Vector2(0, r + 26), "THE BLACK MOON", 18, Color(0.85, 0.6, 1.0))
 	if mode == "trade":
-		var seats: Dictionary = Game.map_meta.get("ground", {}).get("trade_seats", {})
-		for k in seats:
-			if (k == "Skyfall") != (layer == "sky"):
-				continue
-			var c := _sp(Vector2(float(seats[k][0]), float(seats[k][1])))
-			_icon(_labels, "star", c, 22, Tokens.GOLD)
-			_text(_labels, Tokens.font("title"), c + Vector2(0, 22), k, 14, Tokens.GOLD_HI)
+		_draw_trade(z)
+	if layer == "ground":
+		_draw_straits()
 	var name_size := 13 if z < 2.4 else (14 if z < 3.6 else 16)
 	for id in Game.provinces:
 		var p: Dictionary = Game.provinces[id]
@@ -464,6 +537,155 @@ func _draw_labels() -> void:
 			_labels.draw_rect(Rect2(bp - Vector2(1, 1), Vector2(bw + 2, 7)), Color(0.02, 0.02, 0.03, 0.9))
 			_labels.draw_rect(Rect2(bp, Vector2(round(bw * prog), 5)), Tokens.WARN)
 			_icon(_labels, "fort", bp + Vector2(-9, 2), 13, Tokens.WARN)
+
+
+func _marker_rects() -> Array:
+	## Screen rects of the capital/fort icons and army counters above province centres, which a
+	## nation's name should not be printed across.
+	var out: Array = []
+	var with_army := {}
+	for aid in Game.armies:
+		with_army[int(Game.armies[aid]["location"])] = true
+	for id in Game.provinces:
+		var p: Dictionary = Game.provinces[id]
+		if p["layer"] != layer or not explored(id):
+			continue
+		var c := _sp(p["centre"])
+		if id == selected:   # its name is drawn under the centre
+			out.append(Rect2(c + Vector2(-50, -4), Vector2(100, 20)))
+		if with_army.has(id):   # army counter (drawn 40px above the centre) plus the icons under it
+			out.append(Rect2(c + Vector2(-36, -54), Vector2(72, 48)))
+		elif p["buildings"].has("fort") or "capital" in p["flags"] or "doomsday_portal" in p["flags"]:
+			out.append(Rect2(c + Vector2(-26, -24), Vector2(52, 18)))
+	return out
+
+
+func _clear_spot(c: Vector2, font: Font, text: String, size: int, markers: Array) -> Vector2:
+	## Try the centre, then a little below and above it, and keep the first spot no marker overlaps.
+	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+	for dy in [0.0, 0.7, -0.7, 1.2, -1.2]:
+		var at: Vector2 = c + Vector2(0, round(dy * size))
+		var r := Rect2(at.x - w / 2.0, at.y - size * 0.4, w, size * 0.8)
+		var hit := false
+		for m in markers:
+			if r.intersects(m):
+				hit = true
+				break
+		if not hit:
+			return at
+	return c
+
+
+func _seat(node: String) -> Vector2:
+	var seats: Dictionary = Game.map_meta.get("ground", {}).get("trade_seats", {})
+	if not seats.has(node):
+		return Vector2.INF
+	return Vector2(float(seats[node][0]), float(seats[node][1]))
+
+
+func _arrow(a: Vector2, b: Vector2, width: float, col: Color) -> void:
+	## A curved flow arrow in screen space, EU4-style.
+	var d := b - a
+	if d.length() < 30.0:
+		return
+	var n := Vector2(-d.y, d.x).normalized() * d.length() * 0.06
+	var pts := PackedVector2Array()
+	for i in 21:
+		var t := float(i) / 20.0
+		var q := a.lerp(b, t) + n * 4.0 * t * (1.0 - t)
+		pts.append(q)
+	# stop short of the seat so the head doesn't hide the label
+	pts = pts.slice(2, pts.size() - 2)
+	_labels.draw_polyline(pts, Color(0, 0, 0, 0.55), width + 3.0, true)
+	_labels.draw_polyline(pts, col, width, true)
+	var tip := pts[pts.size() - 1]
+	var dir := (tip - pts[pts.size() - 3]).normalized()
+	var side := Vector2(-dir.y, dir.x)
+	var hw := width * 1.4 + 4.0
+	var head := PackedVector2Array([tip + dir * hw * 1.3, tip + side * hw, tip - side * hw])
+	_labels.draw_colored_polygon(head, Color(0, 0, 0, 0.55))
+	var head2 := PackedVector2Array([tip + dir * (hw * 1.3 - 2.0), tip + side * (hw - 2.0), tip - side * (hw - 2.0)])
+	_labels.draw_colored_polygon(head2, col)
+
+
+func _draw_trade(z: float) -> void:
+	var tag: String = Game.player_tag
+	var biggest := 0.1
+	for k in Game.trade.state:
+		biggest = maxf(biggest, float(Game.trade.state[k].get("outgoing", 0.0)))
+	# flows
+	for k in Game.trade.order:
+		var from := _seat(k)
+		var flow: float = float(Game.trade.state.get(k, {}).get("outgoing", 0.0))
+		for dn in Game.trade.nodes[k].get("downstream", []):
+			var to := _seat(dn)
+			if from == Vector2.INF or to == Vector2.INF:
+				continue
+			var w := 2.0 + 7.0 * clampf(flow / biggest, 0.0, 1.0)
+			var col := Color(1.0, 0.9, 0.55, 0.9) if selected_node in ["", k, dn] else Color(1.0, 0.9, 0.55, 0.3)
+			if k == "Skyfall":
+				# Skyfall's trade comes down the Holy Waterfall
+				if layer == "sky":
+					var top := _province_with_flag("waterfall_top")
+					if top >= 0:
+						_arrow(_sp(from), _sp(Game.provinces[top]["centre"]), w, col)
+						_text(_labels, Tokens.font("medium"), _sp(Game.provinces[top]["centre"]) + Vector2(0, 26), "down to %s" % dn, 12, Tokens.GOLD_HI)
+				else:
+					var base := _province_with_flag("waterfall_base")
+					if base >= 0:
+						_arrow(_sp(Game.provinces[base]["centre"]), _sp(to), w, col)
+				continue
+			if layer == "ground":
+				_arrow(_sp(from), _sp(to), w, col)
+	# seats
+	for k in Game.trade.nodes:
+		var c0 := _seat(k)
+		if c0 == Vector2.INF or (k == "Skyfall") != (layer == "sky"):
+			continue
+		var c := _sp(c0)
+		var s: Dictionary = Game.trade.state.get(k, {})
+		var share := Game.trade.share(tag, k) if tag != "" else 0.0
+		var sel = k == selected_node
+		_labels.draw_circle(c, 15.0, Color(0, 0, 0, 0.6))
+		_labels.draw_circle(c, 13.0, Color(0.12, 0.1, 0.06))
+		if share > 0.0:
+			_labels.draw_arc(c, 13.0, -PI / 2.0, -PI / 2.0 + TAU * share, 32, Tokens.GOOD, 3.0, true)
+		_labels.draw_arc(c, 15.0, 0, TAU, 32, Tokens.GOLD_HI if sel else Tokens.BORDER, 1.5, true)
+		var mine: String = Game.nations[tag]["merchants"].get(k, "") if tag != "" else ""
+		var icon := "coins" if (mine == "collect" or (tag != "" and k == Game.trade.home_node(tag))) else ("trade" if mine == "steer" else "star")
+		_icon(_labels, icon, c, 16, Tokens.GOLD_HI if mine != "" or k == Game.trade.home_node(tag) else Tokens.GOLD, false)
+		_text(_labels, Tokens.font("title"), c + Vector2(0, 28), k, 14, Tokens.GOLD_HI)
+		_text(_labels, Tokens.font("bold"), c + Vector2(0, 44), "%.1f  ·  you %d%%" % [float(s.get("value", 0.0)), int(share * 100)], 12, Tokens.TEXT)
+
+
+func _province_with_flag(flag: String) -> int:
+	for id in Game.provinces:
+		if flag in Game.provinces[id]["flags"]:
+			return id
+	return -1
+
+
+func _draw_straits() -> void:
+	for id in Game.provinces:
+		var p: Dictionary = Game.provinces[id]
+		for nb in p["connections"]:
+			if p["connections"][nb] != "strait" or nb < id:
+				continue
+			var a := _sp(p["centre"])
+			var b := _sp(Game.provinces[nb]["centre"])
+			if not (_on_screen(a) or _on_screen(b)):
+				continue
+			var blocked: bool = Game.player_tag != "" and Game.mil.strait_blocked(Game.player_tag, id, nb)
+			var col := Color(0.95, 0.35, 0.3, 0.9) if blocked else Color(1.0, 0.95, 0.8, 0.85)
+			var seg := 7.0
+			var total := a.distance_to(b)
+			var dir := (b - a) / maxf(total, 1.0)
+			var t := 14.0
+			while t < total - 14.0:
+				var e := minf(t + seg, total - 14.0)
+				_labels.draw_line(a + dir * t, a + dir * e, Color(0, 0, 0, 0.6), 4.5, true)
+				_labels.draw_line(a + dir * t, a + dir * e, col, 2.5, true)
+				t += seg * 2.0
 
 
 func _draw_star(c: Vector2, r: float, col: Color, target: CanvasItem = null) -> void:
@@ -579,7 +801,7 @@ func _draw_units() -> void:
 			if Game.mil.unit_category(String(r["type"])) == "cav":
 				cav += 1
 		var icon_name := "flame" if owner == "REB" else ("portal" if owner == "ENT" else ("horseshoe" if cav * 2 > a["regiments"].size() else "helmet"))
-		var sel: bool = int(id) == selected_army
+		var sel: bool = int(id) == selected_army or group.has(int(id))
 		if sel and not a["path"].is_empty():
 			var pts := PackedVector2Array([sbase])
 			for step in a["path"]:
@@ -597,22 +819,44 @@ func _draw_units() -> void:
 			continue
 		if not explored(loc) and f["owner"] != Game.player_tag:
 			continue
-		var base := _unit_pos(loc, f["path"], float(f["progress"]), float(f["hop_days"]))
+		# fleets sit on the water at their port and sail along sea lanes
+		var route_pts := PackedVector2Array()
+		var base: Vector2 = Game.sea.port_point(loc)
+		if not f["path"].is_empty():
+			var r: Dictionary = Game.sea.route(int(f.get("from", loc)), int(f["path"][0]))
+			if not r.is_empty():
+				route_pts = r["points"]
+				base = Game.sea.point_along(route_pts, float(f["progress"]) / maxf(float(f["hop_days"]), 1.0))
 		var sbase := _sp(base)
-		var n: int = int(stack.get(loc, 0))
-		stack[loc] = n + 1
-		var pos := sbase + Vector2(0, -40 - n * 27)
+		var skey := "sea%d" % loc if f["path"].is_empty() else "f%d" % int(id)
+		var n: int = int(stack.get(skey, 0))
+		stack[skey] = n + 1
+		var pos := sbase + Vector2(0, -14 - n * 27)
 		if not _on_screen(pos):
 			continue
 		var sel: bool = int(id) == selected_fleet
-		if sel and not f["path"].is_empty():
-			var pts := PackedVector2Array([sbase])
-			for step in f["path"]:
-				pts.append(_sp(Game.provinces[int(step)]["centre"]))
+		if sel and route_pts.size() > 1:
+			var pts := PackedVector2Array()
+			var frac := float(f["progress"]) / maxf(float(f["hop_days"]), 1.0)
+			pts.append(sbase)
+			# the rest of the route from where the fleet is now
+			var total := 0.0
+			for i in range(1, route_pts.size()):
+				total += route_pts[i - 1].distance_to(route_pts[i])
+			var run := 0.0
+			for i in range(1, route_pts.size()):
+				run += route_pts[i - 1].distance_to(route_pts[i])
+				if run / maxf(total, 1.0) > frac:
+					pts.append(_sp(route_pts[i]))
 			_path_line(_units, pts, Color(0.65, 0.88, 1.0))
 		var hostile := Game.player_tag != "" and Game.dip.at_war(Game.player_tag, f["owner"])
 		var rect := _counter(_units, pos, "ship", str(f["ships"].size()), Game.nations[f["owner"]]["colour"], -1.0, sel, hostile)
 		_hits.append({"rect": rect.grow(3), "kind": "fleet", "id": int(id)})
+	# the shift-drag selection box
+	if _box_from != Vector2.INF:
+		var br := Rect2(_box_from, Vector2.ZERO).expand(_box_to)
+		_units.draw_rect(br, Color(Tokens.GOLD_HI, 0.10))
+		_units.draw_rect(br, Color(Tokens.GOLD_HI, 0.85), false, 1.5)
 
 
 func _army_morale(a: Dictionary) -> float:

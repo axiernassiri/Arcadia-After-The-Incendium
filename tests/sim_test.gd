@@ -435,6 +435,136 @@ func _initialize() -> void:
 	check(game.mil.edge_days(ent_army, pid("Holy Waterfall of Eden"), pid("Equator Isle")) < 0.0, "entities can't climb down the waterfall to the mainland")
 	game.armies.erase(ent_army["id"])
 
+	# ---------------------------------------------------------------- blueprint 4: straits, sea lanes, events, missions
+	game.new_game("SYL")
+	var z4_curl: int = pid("Curl Isle")
+	var z4_elder: int = pid("Elderwood")
+	check(game.provinces[z4_curl]["connections"].get(z4_elder, "") == "strait", "Curl Isle and Elderwood are joined by a strait")
+	var z4_walker: Dictionary = game.mil.spawn_army("SYL", z4_elder, 2, 0, 0)
+	check(game.mil.edge_days(z4_walker, z4_elder, z4_curl) > 0.0, "an army can walk across the strait without ships")
+	var z4_sw: Dictionary = game.dip.declare_war("SYL", "BAY")
+	var z4_blockers: Dictionary = game.mil.spawn_fleet("BAY", z4_curl, {"heavy": 3})
+	check(game.mil.strait_blocked("SYL", z4_elder, z4_curl) and game.mil.edge_days(z4_walker, z4_elder, z4_curl) < 0.0, "an enemy z4_fleet holding the water blocks the strait")
+	var z4_mine_fleet: Dictionary = game.mil.spawn_fleet("SYL", z4_elder, {"heavy": 14})
+	check(not game.mil.strait_blocked("SYL", z4_elder, z4_curl), "a stronger fleet of our own reopens it")
+	for x in [z4_blockers, z4_mine_fleet]:
+		game.fleets.erase(x["id"])
+	game.armies.erase(z4_walker["id"])
+	game.dip.enforce_peace(z4_sw, "SYL", "BAY", [{"type": "white"}])
+	# fleets sail through water, never over land
+	var z4_coast: Array = []
+	for id in game.provinces:
+		if game.provinces[id]["coastal"] and game.provinces[id]["layer"] == "ground":
+			z4_coast.append(id)
+	var z4_a0: int = z4_coast[0]
+	var z4_b0: int = z4_coast[z4_coast.size() - 1]
+	var z4_r: Dictionary = game.sea.route(z4_a0, z4_b0)
+	var z4_dry = 0
+	if not z4_r.is_empty():
+		var z4_pts: PackedVector2Array = z4_r["points"]
+		for i in range(1, z4_pts.size()):
+			for k in 20:
+				var z4_q: Vector2 = z4_pts[i - 1].lerp(z4_pts[i], k / 20.0)
+				if not game.sea._is_water(game.sea._grid["ground"]["img"], z4_q):
+					z4_dry += 1
+	check(not z4_r.is_empty() and z4_dry == 0, "a fleet's route from %s to %s stays on the water (%d points)" % [game.provinces[z4_a0]["name"], game.provinces[z4_b0]["name"], z4_r.get("points", []).size()])
+	var z4_fleet: Dictionary = game.mil.fleets_of("SYL")[0] if game.mil.fleets_of("SYL").size() > 0 else game.mil.spawn_fleet("SYL", z4_elder, {"light": 1})
+	var z4_target_port: int = z4_coast[0] if int(z4_fleet["location"]) != z4_coast[0] else z4_coast[1]
+	check(game.mil.move_fleet(int(z4_fleet["id"]), z4_target_port) and float(z4_fleet["hop_days"]) >= 1.0, "a fleet sets sail (%d days)" % int(z4_fleet["hop_days"]))
+	# autonomy
+	var z4_ap: int = game.owned("SYL")[1]
+	game.provinces[z4_ap]["autonomy"] = 50.0
+	game.eco.change_autonomy("SYL", z4_ap, true)
+	check(game.mods.loc(z4_ap, "local_unrest") >= 5.0, "lowering autonomy raises unrest by 5")
+	# event timing
+	var z4_ev: Dictionary = game.events["men_pig_lord_jubilee"]
+	game.year = 4300
+	check(not game.in_year_window(z4_ev["trigger"]), "the Jubilee can't happen before 4314")
+	game.year = 4315
+	check(game.in_year_window(z4_ev["trigger"]), "but can in 4315")
+	var z4_drills: Dictionary = game.events["men_unity_drills"]
+	var z4_peace_chance: float = game.event_monthly_chance(z4_drills, "MEN")
+	check(z4_peace_chance > 0.0 and z4_peace_chance < 0.05, "mean time to happen gives a small monthly chance (%.3f)" % z4_peace_chance)
+	game.year = 4289
+	var z4_once_count = 0
+	for eid in game.events:
+		if game.events[eid].get("once", false):
+			z4_once_count += 1
+	check(z4_once_count >= 40, "%d events fire only once" % z4_once_count)
+	var z4_men_sky = 0
+	for eid in game.events:
+		if game.events[eid]["for"] in ["MEN", "SKY"]:
+			z4_men_sky += 1
+	check(z4_men_sky >= 70, "%d events for Menslosia and Skyfall" % z4_men_sky)
+	# missions fit the map: none is done at the start
+	for t in ["MEN", "SKY"]:
+		game.new_game(t)
+		var z4_done_at_start = 0
+		for m in game.missions_for(t):
+			if game.mission_state(t, m) in ["ready", "done"]:
+				z4_done_at_start += 1
+		check(z4_done_at_start == 0 and game.missions_for(t).size() >= 20, "%s has %d missions, none complete at the start" % [t, game.missions_for(t).size()])
+
+	# ---------------------------------------------------------------- message filters
+	game.new_game("MEN")
+	var mf_far: Array = []
+	for t in game.nations:
+		if t != "MEN" and game.nations[t]["alive"] and not game.concerns_player([t], true):
+			mf_far.append(t)
+	check(mf_far.size() >= 2, "some nations are far from Menslosia: %s" % [mf_far])
+	if mf_far.size() >= 2:
+		var mf_world: int = game.world_lines.size()
+		var mf_log: int = game.log_lines.size()
+		game.post("test: far-away news", [mf_far[0], mf_far[1]])
+		check(game.world_lines.size() == mf_world + 1 and game.log_lines.size() == mf_log, "news between far-off nations goes to the world news, not the log")
+	game.post("test: our news", ["MEN"])
+	check(game.log_lines.back() == "test: our news", "news about the player goes to the log")
+
+	# ---------------------------------------------------------------- aggressive expansion and coalitions
+	var ae_w: Dictionary = game.dip.declare_war("MEN", "SNT")
+	check(not ae_w.is_empty(), "Menslosia declares war on Snowtusk")
+	var ae_take: Array = game.owned("SNT").slice(0, 2)
+	var ae_demands: Array = []
+	for p in ae_take:
+		ae_demands.append({"type": "province", "pid": p})
+	var ae_prev: Array = game.dip.ae_preview(ae_w, "MEN", "SNT", ae_demands)
+	check(float(ae_prev[0]) > 0.0, "the peace screen previews aggressive expansion (up to %.0f with %s)" % [float(ae_prev[0]), ae_prev[1]])
+	game.dip.enforce_peace(ae_w, "MEN", "SNT", ae_demands)
+	var ae_near := ""
+	var ae_far := ""
+	for t in game.nations:
+		if t in ["MEN", "SNT"] or not game.nations[t]["alive"]:
+			continue
+		if ae_near == "" and game.dip.borders(t, "MEN"):
+			ae_near = t
+		if ae_far == "" and not game.dip.borders(t, "MEN") and not game.dip.borders(t, "SNT"):
+			ae_far = t
+	var ae_n: float = game.dip.aggressive_expansion(ae_near, "MEN")
+	var ae_f: float = game.dip.aggressive_expansion(ae_far, "MEN") if ae_far != "" else 0.0
+	check(ae_n > 0.0, "taking Snowtusk land gives %s %.1f aggressive expansion toward Menslosia" % [ae_near, ae_n])
+	check(ae_far == "" or ae_f < ae_n, "far-off %s minds less (%.1f)" % [ae_far, ae_f])
+	game.dip.monthly()
+	check(game.dip.aggressive_expansion(ae_near, "MEN") < ae_n, "aggressive expansion fades every month")
+	# push every non-allied nation over the edge and watch the coalition form
+	for t in game.nations:
+		if t != "MEN" and game.nations[t]["alive"] and not game.dip.rel(t, "MEN")["alliance"]:
+			game.dip.add_opinion(t, "MEN", -90.0, game.dip.AE_NAME, game.dip.AE_DECAY)
+	game.dip.update_coalitions()
+	var ae_coal: Array = game.dip.coalition_against("MEN")
+	check(ae_coal.size() >= 3, "a coalition of %d forms against Menslosia" % ae_coal.size())
+	check(not ae_coal.has("SKY"), "Menslosia's ally Skyfall stays out of it")
+	game.nations["MEN"]["coalition_since"] = game.day_index - 400
+	var ae_st: Array = game.dip.coalition_strength("MEN")
+	game.dip.update_coalitions()
+	var ae_cw := false
+	for wid in game.wars:
+		if game.wars[wid]["cb"].get("id", "") == "coalition" and "MEN" in game.wars[wid]["defenders"]:
+			ae_cw = game.wars[wid]["attackers"].size() >= 2
+	if float(ae_st[0]) >= float(ae_st[1]) * 0.8:
+		check(ae_cw, "after a year the coalition declares war (strength %d against %d)" % [int(ae_st[0]), int(ae_st[1])])
+	else:
+		check(not ae_cw, "a coalition weaker than its target waits (strength %d against %d)" % [int(ae_st[0]), int(ae_st[1])])
+
 	# ---------------------------------------------------------------- a long AI game
 	game.new_game("SKY")
 	game.nations["SKY"]["ai"] = true

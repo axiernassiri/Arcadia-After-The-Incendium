@@ -470,6 +470,9 @@ def build_sky(rng, first_id):
     return ids, provinces, terr
 
 
+STRAITS = [("Curl Isle", "Elderwood")]
+
+
 def neighbours(ids, provinces, sea_reach):
     """Shared-border neighbours, plus sea/air lanes between shapes within sea_reach pixels."""
     adj = {p["id"]: set() for p in provinces}
@@ -587,6 +590,12 @@ def main():
     base = next(p for p in allp if "waterfall_base" in p["flags"])
     top["links"] = [base["id"]]
     base["links"] = [top["id"]]
+    # straits (EU4): armies walk across unless the enemy holds the water
+    by_name = {p["name"]: p for p in allp}
+    for a, b in STRAITS:
+        if a in by_name and b in by_name:
+            by_name[a].setdefault("straits", []).append(by_name[b]["id"])
+            by_name[b].setdefault("straits", []).append(by_name[a]["id"])
 
     out = os.path.join(ROOT, "data", "provinces.json")
     if not os.path.exists(out) or "--force-provinces" in sys.argv:

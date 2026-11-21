@@ -10,15 +10,18 @@ extends Node
 ##   --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"
 ##   --select="Province"   select a province     --panel=economy|trade|tech|ideas|government|court|military|diplomacy|peoples|missions
 ##   --country=TAG         open a nation's diplomacy view      --war=TAG  declare war on TAG first
-##   --army                select the player's first army    --entities  spawn entities at the portal and select them
+##   --army                select the player's first army   --group  select all of them    --entities  spawn entities at the portal and select them
 ##   --tab=cores           pick the Production panel's tab      --peace  open the peace screen for the first war
 ##   --keep-event          leave the last pending event on screen
+##   --settings            open the settings window      --news  show a sample news popup
+##   --fleet-to="Province" --sail=N   send the first fleet there and sail N days   --node="Name"  open a trade node
 ##   --soak=SECONDS        play at full speed, clicking through every panel, then quit (UI stress test)
 ##   --screenshot=path.png save a screenshot after a few frames and quit
 
 const UI = preload("res://scripts/ui/ui_util.gd")
 const MapView = preload("res://scripts/map_view.gd")
 const MapCamera = preload("res://scripts/map_camera.gd")
+const Settings = preload("res://scripts/settings.gd")
 const PANELS := ["court", "government", "economy", "production", "trade", "tech", "ideas", "military", "diplomacy", "peoples", "missions"]
 const PANEL_SCRIPTS := {
 	"court": "res://scripts/ui/court_panel.gd", "government": "res://scripts/ui/government_panel.gd",
@@ -41,6 +44,7 @@ var open_name := ""
 var province_panel
 var army_panel
 var country_panel
+var trade_node_panel
 var peace_panel
 var event_popup
 var map_controls
@@ -51,6 +55,9 @@ var main_menu
 var intro
 var nation_select
 var game_menu
+var settings_panel
+var news_popup
+var outliner
 var hover_label: Label
 var state := "menu"
 var args := {}
@@ -59,6 +66,7 @@ var args := {}
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color(0.05, 0.07, 0.09))
 	_parse_args()
+	Settings.apply(get_tree())
 	Game.setup_world()
 	map = MapView.new()
 	add_child(map)
@@ -89,9 +97,17 @@ func _ready() -> void:
 	province_panel = _add("res://scripts/ui/province_panel.gd")
 	army_panel = _add("res://scripts/ui/army_panel.gd")
 	country_panel = _add("res://scripts/ui/country_panel.gd")
+	trade_node_panel = _add("res://scripts/ui/trade_node_panel.gd")
 	peace_panel = _add("res://scripts/ui/peace_panel.gd")
 	nation_select = _add("res://scripts/ui/nation_select.gd")
 	event_popup = _add("res://scripts/ui/event_popup.gd")
+	outliner = _add("res://scripts/ui/outliner.gd")
+	outliner.army_clicked.connect(func(id): _select_army(id); _focus_unit(id, true))
+	outliner.fleet_clicked.connect(func(id): _select_fleet(id); _focus_unit(id, false))
+	outliner.province_clicked.connect(focus_province)
+	outliner.war_clicked.connect(_open_peace)
+	news_popup = _add("res://scripts/ui/news_popup.gd")
+	news_popup.paused_changed.connect(func(): top_bar.refresh())
 	hover_label = UI.label("", 13, UI.TEXT)
 	hover_label.add_theme_stylebox_override("normal", UI.tex_box("tooltip.png", 6, 10, 6, true))
 	hover_label.visible = false
@@ -101,6 +117,9 @@ func _ready() -> void:
 	main_menu = _add("res://scripts/ui/main_menu.gd")
 	game_menu = _add("res://scripts/ui/game_menu.gd")
 	help_overlay = _add("res://scripts/ui/help_overlay.gd")
+	settings_panel = _add("res://scripts/ui/settings_panel.gd")
+	main_menu.settings_pressed.connect(settings_panel.open)
+	game_menu.settings_pressed.connect(settings_panel.open)
 	alerts.open_panel.connect(open_panel)
 	alerts.go_to_province.connect(focus_province)
 	alerts.open_peace.connect(_open_peace)
@@ -110,6 +129,9 @@ func _ready() -> void:
 	map.province_right_clicked.connect(_on_right_click)
 	map.province_hovered.connect(_on_province_hovered)
 	map.army_clicked.connect(_select_army)
+	map.army_shift_clicked.connect(_toggle_in_group)
+	map.box_selected.connect(_select_group)
+	army_panel.group_changed.connect(_select_group)
 	map.fleet_clicked.connect(_select_fleet)
 	map.layer_changed.connect(func(l): map_controls.set_state(map.mode, l))
 	province_panel.go_to_province.connect(focus_province)
@@ -122,7 +144,14 @@ func _ready() -> void:
 	panels["diplomacy"].country_selected.connect(_open_country)
 	panels["diplomacy"].peace_requested.connect(_open_peace)
 	country_panel.peace_requested.connect(_open_peace)
-	map_controls.mode_selected.connect(func(m): map.set_mode(m); map_controls.set_state(m, map.layer))
+	trade_node_panel.node_closed.connect(func(): map.select_node(""))
+	trade_node_panel.go_to_province.connect(focus_province)
+	panels["trade"].node_selected.connect(_open_trade_node)
+	map_controls.mode_selected.connect(func(m):
+		map.set_mode(m)
+		map_controls.set_state(m, map.layer)
+		if m != "trade":
+			trade_node_panel.visible = false)
 	map_controls.layer_selected.connect(map.set_layer)
 	top_bar.open_panel.connect(open_panel)
 	top_bar.menu_pressed.connect(func(): game_menu.open())
@@ -136,6 +165,7 @@ func _ready() -> void:
 	game_menu.main_menu.connect(_to_main_menu)
 	game_menu.loaded.connect(_after_load)
 	Game.month_ticked.connect(_update_badges)
+	Game.month_ticked.connect(_autosave)
 	Game.nation_changed.connect(func(_t): _update_badges())
 	_set_state("menu")
 
@@ -168,7 +198,7 @@ func _add(script_path: String) -> Control:
 func _set_state(s: String) -> void:
 	state = s
 	var in_game := s == "game"
-	for c in [top_bar, tab_bar, map_controls, log_panel, alerts]:
+	for c in [top_bar, tab_bar, map_controls, log_panel, alerts, outliner]:
 		c.visible = in_game
 	if not in_game:
 		help_overlay.visible = false
@@ -190,8 +220,8 @@ func _open_select() -> void:
 	map.set_layer("ground")
 	map.set_mode("political")
 	_set_state("select")
-	nation_select.open()
 	camera.fit_bounds()
+	nation_select.open()   # after fit_bounds, so it doesn't undo the focus on the first nation
 
 
 func _focus_nation(tag: String) -> void:
@@ -200,7 +230,9 @@ func _focus_nation(tag: String) -> void:
 		return
 	map.set_layer(Game.provinces[cap]["layer"])
 	map.select(cap)
-	camera.position = Game.provinces[cap]["centre"] + Vector2(-140.0 / camera.zoom.x, 0)
+	# centre the capital in the part of the screen the nation-select window doesn't cover
+	var covered: float = nation_select.position.x + nation_select.size.x if nation_select.visible else 0.0
+	camera.position = Game.provinces[cap]["centre"] + Vector2(-covered / 2.0 / camera.zoom.x, 0)
 
 
 func start_game(tag: String) -> void:
@@ -236,11 +268,27 @@ func _load(slot: String) -> void:
 
 
 func _after_load() -> void:
+	news_popup.clear()
 	_set_state("game")
 	_after_start()
 
 
+func _autosave() -> void:
+	## Monthly or yearly autosave into a few rotating slots ("Autosave 1".."Autosave N").
+	## Skipped during automation runs (tests, soak, screenshots) so they don't litter user://.
+	if state != "game" or not args.is_empty() or Game.player_tag == "":
+		return
+	var mode := String(Settings.get_value("autosave"))
+	if mode == "off" or (mode == "yearly" and Game.month != 1):
+		return
+	var n: int = Game.year * 12 + Game.month
+	if mode == "yearly":
+		n = Game.year
+	Game.save_game("Autosave %d" % (n % Settings.AUTOSAVE_SLOTS + 1), true)
+
+
 func _to_main_menu() -> void:
+	news_popup.clear()
 	Game.set_speed(0)
 	Game.started = false
 	Game.setup_world()
@@ -328,11 +376,32 @@ func _on_province_clicked(id: int) -> void:
 		return
 	map.select_army(-1)
 	army_panel.visible = false
+	if map.mode == "trade" and id > 0 and Game.provinces[id]["trade_node"] != "":
+		_open_trade_node(Game.provinces[id]["trade_node"])   # EU4: the trade map mode is about nodes
+		return
 	province_panel.show_province(id if id > 0 else -1)
+
+
+func _open_trade_node(node: String) -> void:
+	if map.mode != "trade":
+		map.set_mode("trade")
+		map_controls.set_state("trade", map.layer)
+	map.select_node(node)
+	province_panel.visible = false
+	trade_node_panel.show_node(node)
 
 
 func _on_right_click(id: int) -> void:
 	if state != "game":
+		return
+	if map.group.size() > 1:
+		var failed: PackedStringArray = []
+		for aid in map.group:
+			if Game.armies.has(aid) and Game.armies[aid]["owner"] == Game.player_tag and not Game.mil.move_army(aid, id):
+				failed.append(Game.armies[aid]["name"])
+		if failed.size() > 0:
+			Game.post("Can't reach %s: %s." % [Game.provinces[id]["name"], ", ".join(failed)])
+		army_panel.mark_dirty()
 		return
 	if map.selected_army >= 0 and Game.armies.has(map.selected_army) and Game.armies[map.selected_army]["owner"] == Game.player_tag:
 		if not Game.mil.move_army(map.selected_army, id):
@@ -362,11 +431,66 @@ func _select_army(id: int) -> void:
 	army_panel.show_army(id)
 
 
+func _toggle_in_group(id: int) -> void:
+	## Shift-click: add one of your armies to the selection, or take it out again.
+	if state != "game" or not Game.armies.has(id) or Game.armies[id]["owner"] != Game.player_tag:
+		_select_army(id)
+		return
+	var ids: Array = map.group.filter(func(x): return Game.armies.has(x) and Game.armies[x]["owner"] == Game.player_tag)
+	if ids.has(id):
+		ids.erase(id)
+	else:
+		ids.append(id)
+	_select_group(ids)
+
+
+func _select_group(ids: Array) -> void:
+	var mine: Array = ids.filter(func(x): return Game.armies.has(x) and Game.armies[x]["owner"] == Game.player_tag)
+	if mine.is_empty():
+		if ids.size() > 0:
+			_select_army(int(ids[0]))   # only foreign armies in the box: show the first
+		else:
+			army_panel.close()
+		return
+	if mine.size() == 1:
+		_select_army(int(mine[0]))
+		return
+	map.set_group(mine)
+	army_panel.show_group(mine)
+
+
 func _select_fleet(id: int) -> void:
 	if state != "game" or not Game.fleets.has(id):
 		return
 	map.select_fleet(id)
 	army_panel.show_fleet(id)
+
+
+func _hover_details(id: int) -> String:
+	## The extra line EU4 puts in its province tooltip: fort, armies here, siege, unrest, core status.
+	var p: Dictionary = Game.provinces[id]
+	var bits: PackedStringArray = []
+	if p["buildings"].has("fort"):
+		bits.append("Fort")
+	var men := {}
+	for a in Game.mil.armies_at(id):
+		var n := 0.0
+		for r in a["regiments"]:
+			n += float(r["men"])
+		men[a["owner"]] = float(men.get(a["owner"], 0.0)) + n
+	for o in men:
+		bits.append("%s army %.1fk" % [Game.nations[o]["short"] if Game.nations.has(o) else ("Rebels" if o == "REB" else "Entities"), men[o] / 1000.0])
+	if not p["siege"].is_empty():
+		bits.append("Siege %d%%" % int(p["siege"].get("progress", 0)))
+	if p["owner"] != "" and p["owner"] == Game.player_tag:
+		var u := float(p.get("unrest", 0.0))
+		if u > 0.0:
+			bits.append("Unrest %+.1f" % u)
+		if not p["cores"].has(p["owner"]):
+			bits.append("Not a core")
+		if float(p.get("autonomy", 0.0)) >= 1.0:
+			bits.append("Autonomy %d%%" % int(Game.eco.autonomy(id)))
+	return "  ·  ".join(bits)
 
 
 func _on_province_hovered(id: int) -> void:
@@ -384,10 +508,17 @@ func _on_province_hovered(id: int) -> void:
 			"culture": line2 = "%s culture (%s)" % [p["culture"], Game.pop.culture_group(p["culture"])]
 			"religion": line2 = p["religion"]
 			"ethnicity": line2 = p["ethnicity"]
-			"trade": line2 = "%s trade node" % p["trade_node"]
+			"trade": line2 = "%s trade node: %.1f value (click to open)" % [p["trade_node"], float(Game.trade.state.get(p["trade_node"], {}).get("value", 0.0))]
+			"autonomy":
+				if p["owner"] != "":
+					line2 = "Autonomy %d%%%s" % [int(Game.eco.autonomy(id)), "" if p["cores"].has(p["owner"]) else " (not a core)"]
 			"unrest": line2 = "Unrest %+.1f, rebels %d%%" % [float(p.get("unrest", 0.0)), int(p["rebel_progress"])]
 			"region": line2 = p["region"]
 		hover_label.text = "%s  ·  %s%s\n%s" % [p["name"], owner, extra, line2]
+		if state == "game":
+			var info := _hover_details(id)
+			if info != "":
+				hover_label.text += "\n" + info
 	else:
 		hover_label.text = "Unexplored"
 	hover_label.visible = true
@@ -446,21 +577,29 @@ func _layout() -> void:
 	map_controls.position = Vector2(8, vp.y - map_controls.size.y - 8)
 	log_panel.position = Vector2(clampf((vp.x - log_panel.size.x) / 2.0, map_controls.size.x + 16, vp.x), vp.y - log_panel.size.y - 8)
 	var left_x: float = tab_bar.size.x + 16.0
-	var avail_h: float = vp.y - top - 8.0
+	# left-hand windows stop above the map-mode controls so those stay clickable while a window is open
+	var avail_h: float = vp.y - top - map_controls.size.y - 16.0
 	for k in panels:
 		var p = panels[k]
-		p.max_height = maxf(200.0, avail_h - 60.0)
+		p.max_height = maxf(240.0, avail_h)
 		p.position = Vector2(left_x, top)
 	province_panel.max_height = maxf(200.0, vp.y - top - 90.0 - (army_panel.size.y + 10.0 if army_panel.visible else 0.0))
 	province_panel.position = Vector2(vp.x - province_panel.size.x - 8, top)
 	army_panel.position = Vector2(vp.x - army_panel.size.x - 8, vp.y - army_panel.size.y - 8)
 	country_panel.max_height = maxf(200.0, vp.y - top - 120.0)
 	country_panel.position = Vector2(vp.x - province_panel.size.x - country_panel.size.x - 20 if province_panel.visible else vp.x - country_panel.size.x - 8, top)
+	trade_node_panel.max_height = maxf(200.0, vp.y - top - 120.0)
+	trade_node_panel.position = Vector2(vp.x - trade_node_panel.size.x - 8, top)
 	peace_panel.max_height = maxf(200.0, vp.y - top - 120.0)
 	peace_panel.position = ((vp - peace_panel.size) / 2.0).round()
 	nation_select.fit_height(vp.y)
 	nation_select.position = Vector2(16, maxf(8.0, (vp.y - nation_select.size.y) / 2.0))
 	event_popup.position = ((vp - event_popup.size) / 2.0).round()
+	var right_busy: bool = province_panel.visible or country_panel.visible or trade_node_panel.visible or peace_panel.visible
+	outliner.visible = state == "game" and not right_busy
+	outliner.max_h = maxf(120.0, (army_panel.position.y if army_panel.visible else vp.y - 8.0) - top - 60.0)
+	outliner.position = Vector2(vp.x - outliner.size.x - 8, top)
+	news_popup.position = Vector2(round((vp.x - news_popup.size.x) / 2.0), top + 40.0)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -481,6 +620,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				help_overlay.visible = false
 			elif army_panel.visible:
 				army_panel.close()
+			elif trade_node_panel.visible:
+				trade_node_panel.close()
 			elif peace_panel.visible or country_panel.visible:
 				peace_panel.visible = false
 				country_panel.visible = false
@@ -522,7 +663,12 @@ func _answer_events(keep_last: bool) -> void:
 func _run_automation() -> void:
 	var keep := args.has("keep-event")
 	if args.has("war"):
-		Game.dip.declare_war(Game.player_tag, args["war"])
+		var why: String = Game.dip.can_declare(Game.player_tag, args["war"])
+		if why != "":
+			print("--war: ", why)
+			Game.post("Can't declare war: " + why)
+		else:
+			Game.dip.declare_war(Game.player_tag, args["war"])
 	var days := int(args.get("days", "0"))
 	for i in days:
 		_answer_events(false)
@@ -554,6 +700,17 @@ func _run_automation() -> void:
 		open_panel(args["panel"])
 	if args.has("country"):
 		_open_country(args["country"])
+	if args.has("fleet-to"):
+		var fl: Array = Game.mil.fleets_of(Game.player_tag)
+		if fl.size() > 0:
+			Game.mil.move_fleet(int(fl[0]["id"]), int(Game.province_ids_by_name.get(args["fleet-to"], -1)))
+			for i in int(args.get("sail", "0")):
+				while Game.is_blocked():
+					Game.resolve_event(Game.pending_events[0], 0)
+				Game.advance_day()
+			_select_fleet(int(fl[0]["id"]))
+	if args.has("node"):
+		_open_trade_node(args["node"])
 	if args.has("tab"):
 		var pp = panels.get("production")
 		if pp:
@@ -563,6 +720,15 @@ func _run_automation() -> void:
 		var ent: Dictionary = Game.mil.spawn_entities(Game.portal_id(), 8)
 		if not ent.is_empty():
 			_select_army(int(ent["id"]))
+	if args.has("settings"):
+		settings_panel.open()
+	if args.has("news"):
+		Game.major_news.emit("War Declared", "Snowtusk declares war on Menslosia: Snowtusk Conquest of Menslosia.")
+	if args.has("group"):
+		var ids: Array = []
+		for a in Game.mil.armies_of(Game.player_tag):
+			ids.append(int(a["id"]))
+		_select_group(ids)
 	if args.has("army"):
 		var mine: Array = Game.mil.armies_of(Game.player_tag)
 		if mine.size() > 0:

@@ -110,7 +110,7 @@ func build() -> void:
 			UI.BAD if aut >= 50.0 else UI.TEXT), UI.bar(aut, 100.0, 100.0, UI.BAD, 8.0)]))
 		if mine:
 			add(UI.row([UI.action("Lower -25%", Game.eco.can_change_autonomy(tag, province, true),
-				func(): Game.eco.change_autonomy(tag, province, true), "Free. More income from this province, but +4 unrest for a year. Each province once every 5 years."),
+				func(): Game.eco.change_autonomy(tag, province, true), "Free. More income from this province, but +5 unrest for a year. Each province once every 5 years."),
 				UI.action("Raise +25%", Game.eco.can_change_autonomy(tag, province, false),
 				func(): Game.eco.change_autonomy(tag, province, false), "Free. Calms unrest (-3 for a year), but the province pays less. Each province once every 5 years.")]))
 		if "mine_site" in p["flags"]:

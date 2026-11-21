@@ -12,7 +12,9 @@ func setup() -> void:
 func build() -> void:
 	var tag = Game.player_tag
 	var n: Dictionary = Game.nations[tag]
-	text("Each level costs power of its type. Researching before a level's year costs 5%% more per year early. Tech cost modifier: %+d%%." % int(Game.mods.nat(tag, "tech_cost_mod") * 100), 12, UI.TEXT_DIM)
+	var tl = text("Each level costs power of its type. Researching before a level's year costs 5%% more per year early. Tech cost modifier: %+d%%." % int(Game.mods.nat(tag, "tech_cost_mod") * 100), 12, UI.TEXT_DIM)
+	tl.tooltip_text = "Technology cost:\n" + Game.mods.breakdown(tag, ["tech_cost_mod"])
+	tl.mouse_filter = Control.MOUSE_FILTER_PASS
 	var labels = ["Administrative", "Diplomatic", "Military"]
 	for i in 3:
 		var track: String = Game.TRACKS[i]

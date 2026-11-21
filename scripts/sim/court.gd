@@ -118,9 +118,9 @@ func election(tag: String) -> void:
 	n["elected_day"] = g.day_index
 	add_legitimacy(tag, 10.0 if re_elect else 5.0)
 	if re_elect:
-		g.post("%s: %s is re-elected." % [n["short"], old.get("name", "")])
+		g.post("%s: %s is re-elected." % [n["short"], old.get("name", "")], [tag])
 	else:
-		g.post("%s: %s is elected to lead the %s." % [n["short"], n["ruler"]["name"], g.governments.get(n["government"], {}).get("rank", "republic").to_lower()])
+		g.post("%s: %s is elected to lead the %s." % [n["short"], n["ruler"]["name"], g.governments.get(n["government"], {}).get("rank", "republic").to_lower()], [tag])
 	if tag == g.player_tag:
 		g.fire_event("republic_election", tag)
 	g.touch(tag)
@@ -129,12 +129,12 @@ func election(tag: String) -> void:
 func ruler_dies(tag: String) -> void:
 	var n: Dictionary = g.nations[tag]
 	var old: String = n["ruler"].get("name", "The ruler")
-	g.post("%s: %s has died at %d." % [n["short"], old, int(n["ruler"].get("age", 0))])
+	g.post("%s: %s has died at %d." % [n["short"], old, int(n["ruler"].get("age", 0))], [tag])
 	if gov_type(tag) in ["republic", "theocracy"]:
 		n["ruler"] = random_person(tag, g.rng.randi_range(30, 55), 0.3)
 		n["elected_day"] = g.day_index
 		add_legitimacy(tag, -10.0)
-		g.post("%s chooses %s as its new leader." % [n["short"], n["ruler"]["name"]])
+		g.post("%s chooses %s as its new leader." % [n["short"], n["ruler"]["name"]], [tag])
 		g.touch(tag)
 		return
 	add_legitimacy(tag, -10.0)
@@ -148,7 +148,7 @@ func ruler_dies(tag: String) -> void:
 	elif int(n["heir"].get("age", 0)) < 15:
 		n["ruler"] = {"name": "Regency Council", "adm": 1, "dip": 1, "mil": 1, "age": 0, "regency": true,
 			"dynasty": n["ruler"].get("dynasty", "")}
-		g.post("%s is too young to rule; a regency council governs until they come of age." % n["heir"]["name"])
+		g.post("%s is too young to rule; a regency council governs until they come of age." % n["heir"]["name"], [tag])
 	else:
 		succeed(tag, "succeeded")
 	g.touch(tag)
@@ -161,7 +161,7 @@ func succeed(tag: String, how: String) -> void:
 	n["ruler"] = n["heir"]
 	n["heir"] = {}
 	n["legitimacy"] = clampf(50.0 + 5.0 * (int(n["ruler"].get("adm", 2)) + int(n["ruler"].get("dip", 2))), 40.0, 90.0)
-	g.post("%s: %s has %s to the throne." % [n["short"], n["ruler"]["name"], how])
+	g.post("%s: %s has %s to the throne." % [n["short"], n["ruler"]["name"], how], [tag])
 	if tag == g.player_tag:
 		g.fire_event("new_ruler", tag)
 	g.touch(tag)

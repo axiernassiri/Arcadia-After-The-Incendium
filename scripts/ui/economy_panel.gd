@@ -16,15 +16,15 @@ func build() -> void:
 	var bal: float = b["balance"]
 	add(UI.kv("Monthly balance", UI.signed(bal, 2), "", UI.GOOD if bal >= 0.0 else UI.BAD))
 	section("Income (per month)")
-	add(UI.kv("Taxes", "%.2f" % b["tax"], "Tax development x (1 + tax modifiers) / 12. Uncored and occupied provinces pay less or nothing."))
-	add(UI.kv("Production", "%.2f" % b["production"], "Goods made x their market price x (1 + production modifiers) / 12."))
-	add(UI.kv("Trade", "%.2f" % b["trade"], "What your merchants collect in trade nodes. See the Trade panel."))
+	add(UI.kv("Taxes", "%.2f" % b["tax"], "Tax development x (1 + tax modifiers) / 12. Uncored and occupied provinces pay less or nothing.\nTax modifiers:\n" + Game.mods.breakdown(tag, ["tax_mod"])))
+	add(UI.kv("Production", "%.2f" % b["production"], "Goods made x their market price x (1 + production modifiers) / 12.\nProduction modifiers:\n" + Game.mods.breakdown(tag, ["production_mod"])))
+	add(UI.kv("Trade", "%.2f" % b["trade"], "What your merchants collect in trade nodes. See the Trade panel.\nTrade efficiency:\n" + Game.mods.breakdown(tag, ["trade_efficiency"])))
 	if float(b["subjects"]) > 0.0:
 		add(UI.kv("Vassals", "%.2f" % b["subjects"]))
 	add(UI.kv("Total income", "%.2f" % b["income"], "", UI.GOOD))
 	section("Expenses (per month)")
-	add(UI.kv("Army maintenance", "%.2f" % b["army"], "Each regiment's upkeep x the army slider. Over the force limit costs more."))
-	add(UI.kv("Navy maintenance", "%.2f" % b["navy"]))
+	add(UI.kv("Army maintenance", "%.2f" % b["army"], "Each regiment's upkeep x the army slider. Over the force limit costs more.\nMaintenance modifiers:\n" + Game.mods.breakdown(tag, ["land_maintenance_mod"])))
+	add(UI.kv("Navy maintenance", "%.2f" % b["navy"], "Maintenance modifiers:\n" + Game.mods.breakdown(tag, ["naval_maintenance_mod"])))
 	add(UI.kv("Fort upkeep", "%.2f" % b["forts"]))
 	add(UI.kv("Administration", "%.2f" % b["admin"], "1.2% of your total development a month."))
 	if float(b["colonies"]) > 0.0:

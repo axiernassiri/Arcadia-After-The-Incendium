@@ -7,11 +7,11 @@ signal layer_selected(layer: String)
 const UI = preload("res://scripts/ui/ui_util.gd")
 const MODE_LABELS := {"political": "Political", "diplomacy": "Diplomatic", "development": "Development",
 	"goods": "Goods", "trade": "Trade", "region": "Regions", "culture": "Culture", "religion": "Religion",
-	"ethnicity": "Ethnicity", "unrest": "Unrest", "terrain": "Terrain"}
+	"ethnicity": "Ethnicity", "unrest": "Unrest", "terrain": "Terrain", "autonomy": "Autonomy"}
 
 const MODE_ICONS := {"political": "flag", "diplomacy": "envelope", "development": "house", "goods": "coins",
 	"trade": "trade", "region": "map", "culture": "scroll", "religion": "sun", "ethnicity": "person", "unrest": "flame",
-	"terrain": "mountain"}
+	"terrain": "mountain", "autonomy": "seal"}
 
 var _mode_buttons = {}
 var _mode_label: Label

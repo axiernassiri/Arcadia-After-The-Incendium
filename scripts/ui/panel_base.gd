@@ -96,14 +96,23 @@ func _process(delta: float) -> void:
 	_since += delta
 	if visible and _dirty and _since >= MIN_INTERVAL and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		refresh_now()
+	elif visible and not is_equal_approx(max_height, _fitted_max):
+		_fit()   # the window was resized (main.gd sets max_height every frame)
+
+
+var _fitted_max = -1.0
 
 
 func _fit() -> void:
+	_fitted_max = max_height
 	await get_tree().process_frame
 	if not is_instance_valid(body):
 		return
+	# max_height caps the whole window, so take off the title row, divider and frame padding,
+	# otherwise a long panel runs past the bottom of the screen and its last rows can't be reached.
+	var chrome = get_combined_minimum_size().y - _scroll.get_combined_minimum_size().y
 	var want = body.get_combined_minimum_size().y + 4.0
-	_scroll.custom_minimum_size.y = minf(want, max_height)
+	_scroll.custom_minimum_size.y = maxf(80.0, minf(want, max_height - chrome))
 	reset_size()
 
 

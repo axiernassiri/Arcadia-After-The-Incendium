@@ -4,6 +4,7 @@ extends Control
 signal resume
 signal main_menu
 signal loaded
+signal settings_pressed
 
 const UI = preload("res://scripts/ui/ui_util.gd")
 
@@ -63,6 +64,7 @@ func refresh(msg: String = "") -> void:
 		row.add_child(UI.button("Delete", func(): Game.delete_save(s["file"]); refresh()))
 		_box.add_child(row)
 	_box.add_child(HSeparator.new())
+	_box.add_child(_big("Settings", func(): settings_pressed.emit()))
 	_box.add_child(_big("Main menu", func(): visible = false; main_menu.emit()))
 	_box.add_child(_big("Quit to desktop", func(): get_tree().quit()))
 	_msg = UI.label(msg, 13, UI.GOOD)

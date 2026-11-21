@@ -2,18 +2,18 @@
  "_note": "Mission trees, drawn as a grid: column and row place each mission. A mission unlocks when every mission in 'requires' is done; it can be claimed when all conditions hold. Rewards use the same effect types as events. nation is a tag; nations without their own tree use STATE (pig states) or TRIBE (boar nations).",
  "missions": [
   {
-   "id": "men_feed_the_empire",
+   "id": "men_rebuild_mentos",
    "nation": "MEN",
    "column": 0,
    "row": 0,
    "title": "Rebuild Mentos",
    "requires": [],
-   "text": "Rebuild Mentos, heart of the Holy Empire, after the Incendium.",
+   "text": "The Incendium burned the heart of the Holy Empire. Raise Mentos again.",
    "conditions": [
     {
      "type": "region_dev_at_least",
      "region": "Mentos",
-     "at_least": 200
+     "at_least": 175
     }
    ],
    "rewards": [
@@ -40,9 +40,9 @@
    "row": 1,
    "title": "Markets of Mentos",
    "requires": [
-    "men_feed_the_empire"
+    "men_rebuild_mentos"
    ],
-   "text": "Every town needs a market square.",
+   "text": "Bring traders back to the empire's market towns.",
    "conditions": [
     {
      "type": "buildings_at_least",
@@ -67,64 +67,66 @@
    ]
   },
   {
-   "id": "men_green_grid",
+   "id": "men_mines",
    "nation": "MEN",
    "column": 0,
    "row": 2,
-   "title": "The Green Power Grid",
+   "title": "Mines of the Empire",
    "requires": [
     "men_markets"
    ],
-   "text": "Never fossil fuels again. Wind, water and sun for every province.",
+   "text": "Marble Hog, Gearhollow, Dynamo Downs and the Midrean Labworks sit on sanctum ore. Dig.",
    "conditions": [
     {
-     "type": "tech_at_least",
-     "track": "adm",
+     "type": "mines_at_least",
      "at_least": 3
-    }
-   ],
-   "rewards": [
-    {
-     "type": "add_modifier",
-     "id": "green_grid",
-     "name": "Green Power Grid",
-     "modifiers": {
-      "production_mod": 0.1,
-      "build_cost_mod": -0.1
-     },
-     "months": -1
-    }
-   ]
-  },
-  {
-   "id": "men_workshops",
-   "nation": "MEN",
-   "column": 0,
-   "row": 3,
-   "title": "Workshops of the Empire",
-   "requires": [
-    "men_green_grid"
-   ],
-   "text": "Turn raw goods into wealth.",
-   "conditions": [
-    {
-     "type": "buildings_at_least",
-     "building": "workshop",
-     "at_least": 4
     }
    ],
    "rewards": [
     {
      "type": "add_power",
      "index": 0,
-     "amount": 100
+     "amount": 75
     },
     {
      "type": "add_modifier",
-     "id": "workshop_empire",
-     "name": "Workshop of Arcadia",
+     "id": "imperial_mines",
+     "name": "Imperial Mines",
      "modifiers": {
       "production_mod": 0.1
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "men_centralise",
+   "nation": "MEN",
+   "column": 0,
+   "row": 3,
+   "title": "One Seat of Government",
+   "requires": [
+    "men_mines"
+   ],
+   "text": "The old governors grew fat on their fiefs while the roads were ash. Take the Centralise the Realm decision.",
+   "conditions": [
+    {
+     "type": "flag",
+     "name": "centralised"
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_legitimacy",
+     "amount": 20
+    },
+    {
+     "type": "add_modifier",
+     "id": "one_seat",
+     "name": "One Seat of Government",
+     "modifiers": {
+      "monthly_adm": 1,
+      "unrest": -1
      },
      "months": -1
     }
@@ -137,9 +139,9 @@
    "row": 4,
    "title": "The Pig Lord's Treasury",
    "requires": [
-    "men_workshops"
+    "men_centralise"
    ],
-   "text": "A full treasury and no debts: the mark of a great empire.",
+   "text": "A full treasury and not a loan to anyone.",
    "conditions": [
     {
      "type": "treasury_at_least",
@@ -173,12 +175,12 @@
    "row": 0,
    "title": "The Labworks of Midrea",
    "requires": [],
-   "text": "Midrea is the most advanced region in Menslosia. Make it more so.",
+   "text": "The Midrean Labworks are ours. Make them the finest in Arcadia.",
    "conditions": [
     {
      "type": "province_dev_at_least",
      "province": "Midrea Labworks",
-     "at_least": 16
+     "at_least": 14
     }
    ],
    "rewards": [
@@ -199,19 +201,56 @@
    ]
   },
   {
-   "id": "men_observatory",
+   "id": "men_technocracy_question",
    "nation": "MEN",
    "column": 1,
    "row": 1,
-   "title": "Reclaim Midrea",
+   "title": "The Technocracy Question",
    "requires": [
     "men_labworks"
    ],
-   "text": "The Midrean Technocracy holds the Space Observatory. Midrea must be whole again.",
+   "text": "The Midrean Technocracy kept the Space Observatory when the Empire burned. The Imperial Council wants it back.",
    "conditions": [
     {
-     "type": "owns_region",
-     "region": "Midrea"
+     "type": "tech_at_least",
+     "track": "dip",
+     "at_least": 2
+    },
+    {
+     "type": "regiments_at_least",
+     "at_least": 14
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_claim",
+     "tag": "MID"
+    },
+    {
+     "type": "add_power",
+     "index": 2,
+     "amount": 50
+    }
+   ]
+  },
+  {
+   "id": "men_reclaim_midrea",
+   "nation": "MEN",
+   "column": 1,
+   "row": 2,
+   "title": "Reclaim Midrea",
+   "requires": [
+    "men_technocracy_question"
+   ],
+   "text": "End the Technocracy, or make it kneel.",
+   "conditions": [
+    {
+     "type": "subdued",
+     "tag": "MID"
+    },
+    {
+     "type": "owns",
+     "province": "Space Observatory"
     }
    ],
    "rewards": [
@@ -221,15 +260,12 @@
      "amount": 100
     },
     {
-     "type": "reveal",
-     "province": "Avalanche Pass"
-    },
-    {
      "type": "add_modifier",
      "id": "midrea_whole",
      "name": "Midrea Restored",
      "modifiers": {
-      "monthly_adm": 1
+      "monthly_adm": 1,
+      "tech_cost_mod": -0.05
      },
      "months": -1
     }
@@ -239,12 +275,12 @@
    "id": "men_pierce_the_haze",
    "nation": "MEN",
    "column": 1,
-   "row": 2,
+   "row": 3,
    "title": "Pierce the White Haze",
    "requires": [
-    "men_observatory"
+    "men_reclaim_midrea"
    ],
-   "text": "No satellite has ever seen past the mountains of Midrea. Send explorers into the White Haze.",
+   "text": "No one who walked into the White Haze has walked out. Send the observatory's instruments instead.",
    "conditions": [
     {
      "type": "explored",
@@ -253,46 +289,17 @@
    ],
    "rewards": [
     {
-     "type": "add_power",
-     "index": 0,
-     "amount": 50
-    },
-    {
      "type": "reveal",
      "province": "Waterfall Peaks"
     },
     {
      "type": "reveal",
      "province": "The Center"
-    }
-   ]
-  },
-  {
-   "id": "men_mist",
-   "nation": "MEN",
-   "column": 1,
-   "row": 3,
-   "title": "Find the Center",
-   "requires": [
-    "men_pierce_the_haze"
-   ],
-   "text": "Deep inside the haze the weather clears. Something waits at the Center.",
-   "conditions": [
-    {
-     "type": "owns",
-     "province": "The Center"
-    }
-   ],
-   "rewards": [
-    {
-     "type": "add_dev",
-     "province": "The Center",
-     "index": 1,
-     "amount": 5
     },
     {
-     "type": "set_flag",
-     "name": "found_mist"
+     "type": "add_power",
+     "index": 1,
+     "amount": 50
     }
    ]
   },
@@ -303,10 +310,9 @@
    "row": 4,
    "title": "Dawn of the Space Age",
    "requires": [
-    "men_mist",
-    "men_green_grid"
+    "men_pierce_the_haze"
    ],
-   "text": "From the observatory, the stars look closer than ever.",
+   "text": "From the Observatory, look past the sky islands to the stars.",
    "conditions": [
     {
      "type": "tech_at_least",
@@ -321,10 +327,6 @@
    ],
    "rewards": [
     {
-     "type": "set_flag",
-     "name": "space_program"
-    },
-    {
      "type": "add_modifier",
      "id": "space_age",
      "name": "The Space Age",
@@ -333,10 +335,6 @@
       "trade_efficiency": 0.1
      },
      "months": -1
-    },
-    {
-     "type": "message",
-     "text": "Menslosia begins its space programme."
     }
    ]
   },
@@ -347,11 +345,11 @@
    "row": 0,
    "title": "Unity Command",
    "requires": [],
-   "text": "Unity guards both nations. Give it an army worthy of the name.",
+   "text": "Unity guards the south. Give it an army worthy of the Empire.",
    "conditions": [
     {
      "type": "regiments_at_least",
-     "at_least": 20
+     "at_least": 18
     }
    ],
    "rewards": [
@@ -369,19 +367,15 @@
    "nation": "MEN",
    "column": 2,
    "row": 1,
-   "title": "The Snowtusk Question",
+   "title": "Break the Snowtusk",
    "requires": [
     "men_unity_command"
    ],
-   "text": "The Snowtusk Horde rides out of the frozen northeast of Mentos, the Pig Lord's own region.",
+   "text": "The Snowtusk Horde raids the frozen northeast of Mentos, the Pig Lord's own country.",
    "conditions": [
     {
-     "type": "owns_region",
-     "region": "Frost Reach"
-    },
-    {
-     "type": "owns",
-     "province": "Glacier Gate"
+     "type": "subdued",
+     "tag": "SNT"
     }
    ],
    "rewards": [
@@ -402,19 +396,23 @@
    ]
   },
   {
-   "id": "men_blood_the_army",
+   "id": "men_cinderhoof",
    "nation": "MEN",
    "column": 2,
    "row": 2,
-   "title": "Blood the Army",
+   "title": "Ash of the Cinderhoof",
    "requires": [
-    "men_unity_command"
+    "men_snowtusk"
    ],
-   "text": "An army that has never fought is an army that does not know itself.",
+   "text": "The Cinderhoof Horde camps on the Yellowstone Caldera, where the Incendium began.",
    "conditions": [
     {
-     "type": "battles_won_at_least",
-     "at_least": 3
+     "type": "subdued",
+     "tag": "CDH"
+    },
+    {
+     "type": "owns",
+     "province": "Yellowstone Caldera"
     }
    ],
    "rewards": [
@@ -424,8 +422,14 @@
      "amount": 100
     },
     {
-     "type": "add_army_tradition",
-     "amount": 15
+     "type": "add_modifier",
+     "id": "caldera_watch",
+     "name": "Watch on the Caldera",
+     "modifiers": {
+      "fort_defense": 0.1,
+      "manpower_mod": 0.05
+     },
+     "months": -1
     }
    ]
   },
@@ -436,9 +440,9 @@
    "row": 3,
    "title": "Rifled Barrels",
    "requires": [
-    "men_blood_the_army"
+    "men_cinderhoof"
    ],
-   "text": "Arm every regiment with rifles.",
+   "text": "Pigman engineers promise a rifle that fires three times as far.",
    "conditions": [
     {
      "type": "tech_at_least",
@@ -449,7 +453,7 @@
    "rewards": [
     {
      "type": "add_modifier",
-     "id": "rifles",
+     "id": "imperial_rifles",
      "name": "Imperial Rifles",
      "modifiers": {
       "infantry_power": 0.1,
@@ -468,12 +472,12 @@
    "requires": [
     "men_riflemen"
    ],
-   "text": "Forts on every border.",
+   "text": "Forts hold the roads: no enemy marches past them.",
    "conditions": [
     {
      "type": "buildings_at_least",
      "building": "fort",
-     "at_least": 6
+     "at_least": 8
     }
    ],
    "rewards": [
@@ -490,26 +494,26 @@
    ]
   },
   {
-   "id": "men_rule_the_bay",
+   "id": "men_unity_fleet",
    "nation": "MEN",
    "column": 3,
    "row": 0,
    "title": "The Unity Fleet",
    "requires": [],
-   "text": "A fleet for Unity, to carry our armies to the islands.",
+   "text": "A fleet for Unity, to carry our armies to the islands and hold the straits.",
    "conditions": [
     {
      "type": "ships_at_least",
-     "at_least": 12
+     "at_least": 10
     }
    ],
    "rewards": [
     {
      "type": "add_modifier",
-     "id": "bay_fleet",
-     "name": "Fleet of the Bay",
+     "id": "unity_fleet",
+     "name": "The Unity Fleet",
      "modifiers": {
-      "naval_morale": 0.15,
+      "naval_morale": 0.1,
       "naval_force_limit": 4
      },
      "months": -1
@@ -517,25 +521,25 @@
    ]
   },
   {
-   "id": "men_mines",
+   "id": "men_saltjaw",
    "nation": "MEN",
    "column": 3,
    "row": 1,
-   "title": "Mines of the Archipelago",
+   "title": "The Saltjaw Mines",
    "requires": [
-    "men_rule_the_bay"
+    "men_unity_fleet"
    ],
-   "text": "The islands of the southwest hold ore for a new age of green industry. The Saltjaw boars sit on the best of it.",
+   "text": "The Saltjaw League sits on the richest keys of the Western Archipelago.",
    "conditions": [
     {
-     "type": "owns_region",
-     "region": "Western Archipelago"
+     "type": "subdued",
+     "tag": "SAL"
     }
    ],
    "rewards": [
     {
      "type": "add_power",
-     "index": 2,
+     "index": 1,
      "amount": 75
     },
     {
@@ -550,26 +554,58 @@
    ]
   },
   {
-   "id": "men_southern_isles",
+   "id": "men_driftboar",
    "nation": "MEN",
    "column": 3,
    "row": 2,
-   "title": "The Southern Isles",
+   "title": "Across the Southwest",
    "requires": [
-    "men_rule_the_bay"
+    "men_saltjaw"
    ],
-   "text": "Unity stands among islands still held by Coralsnout boars, and many more lie empty.",
+   "text": "The Driftboar Kingdom raids our shipping from the Southwest Island.",
    "conditions": [
     {
-     "type": "owns_region",
-     "region": "Southern Isles"
+     "type": "subdued",
+     "tag": "DRF"
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_treasury",
+     "amount": 200
+    },
+    {
+     "type": "add_modifier",
+     "id": "southwest_lanes",
+     "name": "Safe Southern Lanes",
+     "modifiers": {
+      "trade_efficiency": 0.05
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "men_coral_crown",
+   "nation": "MEN",
+   "column": 3,
+   "row": 3,
+   "title": "The Coral Crown",
+   "requires": [
+    "men_driftboar"
+   ],
+   "text": "The Coralsnout Tribe holds the last free shore of the Southern Isles.",
+   "conditions": [
+    {
+     "type": "subdued",
+     "tag": "CRL"
     }
    ],
    "rewards": [
     {
      "type": "add_power",
      "index": 1,
-     "amount": 100
+     "amount": 75
     },
     {
      "type": "add_modifier",
@@ -583,50 +619,21 @@
    ]
   },
   {
-   "id": "men_driftboar",
-   "nation": "MEN",
-   "column": 3,
-   "row": 3,
-   "title": "Across the Equator",
-   "requires": [
-    "men_mines"
-   ],
-   "text": "The lone island in the southwest, home of the Driftboar tribe.",
-   "conditions": [
-    {
-     "type": "owns_region",
-     "region": "Southwest Island"
-    }
-   ],
-   "rewards": [
-    {
-     "type": "add_power",
-     "index": 0,
-     "amount": 100
-    },
-    {
-     "type": "add_modifier",
-     "id": "spice_isle",
-     "name": "Spice Island",
-     "modifiers": {
-      "trade_power_mod": 0.1
-     },
-     "months": -1
-    }
-   ]
-  },
-  {
    "id": "men_arcadian_sea",
    "nation": "MEN",
    "column": 3,
    "row": 4,
    "title": "Lord of the Arcadian Sea",
    "requires": [
-    "men_southern_isles",
-    "men_driftboar"
+    "men_coral_crown"
    ],
-   "text": "All of Arcadia's trade flows past Mentos.",
+   "text": "Three ships in four on the Arcadian Sea fly the Pig Lord's colours.",
    "conditions": [
+    {
+     "type": "trade_share_at_least",
+     "node": "Arcadian Sea",
+     "at_least": 0.75
+    },
     {
      "type": "trade_income_at_least",
      "at_least": 8
@@ -652,16 +659,16 @@
    "row": 0,
    "title": "Friendship with Skyfall",
    "requires": [],
-   "text": "Menslosia and Skyfall swore friendship after the Incendium. Keep it strong.",
+   "text": "Napoleon's Skyfall swore friendship at the end of the Incendium. Keep it.",
    "conditions": [
+    {
+     "type": "allied_with",
+     "tag": "SKY"
+    },
     {
      "type": "opinion_at_least",
      "tag": "SKY",
      "at_least": 120
-    },
-    {
-     "type": "allied_with",
-     "tag": "SKY"
     }
    ],
    "rewards": [
@@ -672,80 +679,72 @@
     },
     {
      "type": "add_modifier",
-     "id": "sky_friends",
+     "id": "friends_above",
      "name": "Friends Above the Clouds",
      "modifiers": {
-      "diplomatic_reputation": 1,
-      "trade_power_mod": 0.05
+      "diplomatic_reputation": 1
      },
      "months": -1
     }
    ]
   },
   {
-   "id": "men_ideas",
+   "id": "men_claim_breakaways",
    "nation": "MEN",
    "column": 4,
    "row": 1,
-   "title": "Ideas of the Empire",
-   "requires": [],
-   "text": "Great nations are built on great ideas.",
+   "title": "Claim the Breakaways",
+   "requires": [
+    "men_skyfall_friendship"
+   ],
+   "text": "Sylvania, the Bay of Pigs, the Grain League and Ryefield broke away while Mentos burned. Remind the world they are Menslosian.",
    "conditions": [
     {
-     "type": "ideas_at_least",
-     "at_least": 4
+     "type": "legitimacy_at_least",
+     "at_least": 75
+    },
+    {
+     "type": "stability_at_least",
+     "at_least": 1
     }
    ],
    "rewards": [
     {
-     "type": "add_power",
-     "index": 0,
-     "amount": 100
+     "type": "add_claim",
+     "tag": "SYL"
+    },
+    {
+     "type": "add_claim",
+     "tag": "BAY"
+    },
+    {
+     "type": "add_claim",
+     "tag": "EUR"
+    },
+    {
+     "type": "add_claim",
+     "tag": "RYE"
     }
    ]
   },
   {
-   "id": "men_reforms",
+   "id": "men_sylvania",
    "nation": "MEN",
    "column": 4,
    "row": 2,
-   "title": "Reform the Holy Empire",
+   "title": "Sylvania Returns",
    "requires": [
-    "men_ideas"
+    "men_claim_breakaways"
    ],
-   "text": "The Pig Lord's government must grow with the empire.",
+   "text": "The forests of Sylvania and the harbour of the Bay of Pigs, back in the Empire.",
    "conditions": [
     {
-     "type": "reforms_at_least",
-     "at_least": 3
-    }
-   ],
-   "rewards": [
-    {
-     "type": "add_reform_progress",
-     "amount": 60
+     "type": "subdued",
+     "tag": "SYL"
     },
     {
-     "type": "add_stability",
-     "amount": 1
-    }
-   ]
-  },
-  {
-   "id": "men_one_faith",
-   "nation": "MEN",
-   "column": 4,
-   "row": 3,
-   "title": "Reclaim Sylvania",
-   "requires": [
-    "men_reforms",
-    "men_snowtusk"
-   ],
-   "text": "Sylvania broke away during the Incendium. Bring the forest back into the Holy Empire.",
-   "conditions": [
-    {
-     "type": "owns_region",
-     "region": "Sylvania"
+     "type": "subdued",
+     "tag": "BAY"
     }
    ],
    "rewards": [
@@ -762,45 +761,91 @@
    ]
   },
   {
+   "id": "men_grain_fields",
+   "nation": "MEN",
+   "column": 4,
+   "row": 3,
+   "title": "The Grain Fields",
+   "requires": [
+    "men_sylvania"
+   ],
+   "text": "Without Eurome's grain the Empire goes hungry. Bring the Grain League and Ryefield home.",
+   "conditions": [
+    {
+     "type": "subdued",
+     "tag": "EUR"
+    },
+    {
+     "type": "subdued",
+     "tag": "RYE"
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_stability",
+     "amount": 1
+    },
+    {
+     "type": "add_modifier",
+     "id": "grain_fields",
+     "name": "The Grain Fields",
+     "modifiers": {
+      "tax_mod": 0.1,
+      "manpower_mod": 0.05
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
    "id": "men_all_arcadia",
    "nation": "MEN",
    "column": 4,
    "row": 4,
    "title": "Restore the Holy Empire",
    "requires": [
-    "men_one_faith",
-    "men_arcadian_sea"
+    "men_grain_fields",
+    "men_reclaim_midrea",
+    "men_cinderhoof"
    ],
-   "text": "The farms of Eurome, the forests of Sylvania, the labs of Midrea: one empire again.",
+   "text": "The farms of Eurome, the forests of Sylvania, the labs of Midrea and the frozen north: one empire again.",
    "conditions": [
+    {
+     "type": "owns_region",
+     "region": "Mentos"
+    },
+    {
+     "type": "owns_region",
+     "region": "Sylvania"
+    },
+    {
+     "type": "owns_region",
+     "region": "Midrea"
+    },
     {
      "type": "owns_region",
      "region": "Eurome"
     },
     {
-     "type": "total_dev_at_least",
-     "at_least": 800
-    },
-    {
      "type": "reforms_at_least",
-     "at_least": 5
+     "at_least": 3
     }
    ],
    "rewards": [
     {
+     "type": "add_legitimacy",
+     "amount": 30
+    },
+    {
      "type": "add_modifier",
-     "id": "all_arcadia",
-     "name": "Empire of All Arcadia",
+     "id": "holy_empire_restored",
+     "name": "The Holy Empire Restored",
      "modifiers": {
       "tax_mod": 0.15,
       "land_morale": 0.1,
       "diplomatic_reputation": 2
      },
      "months": -1
-    },
-    {
-     "type": "message",
-     "text": "The Holy Empire of Menslosia rules all of Arcadia's mainland."
     }
    ]
   },
@@ -811,7 +856,7 @@
    "row": 0,
    "title": "Hold the Barrier",
    "requires": [],
-   "text": "Survive the first rising of the Black Moon.",
+   "text": "Survive a Black Moon. Every leap year the Doomsday Barrier falls.",
    "conditions": [
     {
      "type": "flag",
@@ -820,13 +865,17 @@
    ],
    "rewards": [
     {
-     "type": "add_stability",
-     "amount": 1
+     "type": "add_legitimacy",
+     "amount": 10
     },
     {
-     "type": "add_power",
-     "index": 2,
-     "amount": 50
+     "type": "add_modifier",
+     "id": "barrier_held",
+     "name": "The Barrier Held",
+     "modifiers": {
+      "doomsday_resistance": 0.2
+     },
+     "months": -1
     }
    ]
   },
@@ -839,26 +888,28 @@
    "requires": [
     "sky_hold_the_barrier"
    ],
-   "text": "A standing guard at Portal Isle, every day of every year.",
+   "text": "A standing guard on Portal Isle.",
    "conditions": [
     {
      "type": "province_dev_at_least",
      "province": "Portal Isle",
-     "at_least": 8
+     "at_least": 7
     },
     {
      "type": "regiments_at_least",
-     "at_least": 14
+     "at_least": 10
     }
    ],
    "rewards": [
     {
+     "type": "spawn_leader"
+    },
+    {
      "type": "add_modifier",
      "id": "barrier_guard_m",
-     "name": "Barrier Guard",
+     "name": "The Barrier Guard",
      "modifiers": {
-      "doomsday_resistance": 0.25,
-      "fort_defense": 0.15
+      "land_morale": 0.1
      },
      "months": -1
     }
@@ -873,23 +924,60 @@
    "requires": [
     "sky_barrier_guard"
    ],
-   "text": "Forts to hold back whatever comes out of the portal.",
+   "text": "Whatever comes through the portal should meet stone first.",
    "conditions": [
     {
-     "type": "buildings_at_least",
-     "building": "fort",
-     "at_least": 2
+     "type": "province_has_building",
+     "province": "Portal Isle",
+     "building": "fort"
     }
    ],
    "rewards": [
     {
-     "type": "add_power",
-     "index": 0,
-     "amount": 100
+     "type": "add_modifier",
+     "id": "portal_walls",
+     "name": "Walls Around the Portal",
+     "modifiers": {
+      "fort_defense": 0.2,
+      "doomsday_resistance": 0.2
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "sky_purge_entities",
+   "nation": "SKY",
+   "column": 0,
+   "row": 3,
+   "title": "Purge the Entities",
+   "requires": [
+    "sky_portal_fort"
+   ],
+   "text": "Things from beyond have come through the portal. Drive them out and hold it.",
+   "conditions": [
+    {
+     "type": "flag",
+     "name": "entities_came",
+     "scope": "global"
     },
     {
+     "type": "owns",
+     "province": "Portal Isle"
+    },
+    {
+     "type": "portal_held_by_entities",
+     "negate": true
+    }
+   ],
+   "rewards": [
+    {
      "type": "add_army_tradition",
-     "amount": 10
+     "amount": 20
+    },
+    {
+     "type": "add_stability",
+     "amount": 1
     }
    ]
   },
@@ -897,20 +985,20 @@
    "id": "sky_eternal_vigil",
    "nation": "SKY",
    "column": 0,
-   "row": 3,
+   "row": 4,
    "title": "The Eternal Vigil",
    "requires": [
-    "sky_portal_fort"
+    "sky_purge_entities"
    ],
-   "text": "Skyfall has held the barrier for a generation.",
+   "text": "A generation of Barrier Guards, sworn for life.",
    "conditions": [
     {
      "type": "year_at_least",
-     "value": 4310
+     "value": 4330
     },
     {
      "type": "reforms_at_least",
-     "at_least": 4
+     "at_least": 2
     }
    ],
    "rewards": [
@@ -919,8 +1007,8 @@
      "id": "eternal_vigil",
      "name": "The Eternal Vigil",
      "modifiers": {
-      "land_morale": 0.1,
-      "unrest": -1
+      "doomsday_resistance": 0.5,
+      "monthly_mil": 1
      },
      "months": -1
     }
@@ -933,7 +1021,7 @@
    "row": 0,
    "title": "Harness the Core",
    "requires": [],
-   "text": "The Core keeps Skyfall aloft and powers our society. Draw more from it.",
+   "text": "The Core keeps Skyfall aloft. Feed it.",
    "conditions": [
     {
      "type": "province_dev_at_least",
@@ -945,7 +1033,7 @@
     {
      "type": "add_power",
      "index": 0,
-     "amount": 75
+     "amount": 100
     },
     {
      "type": "add_modifier",
@@ -959,48 +1047,35 @@
    ]
   },
   {
-   "id": "sky_book_of_flight",
+   "id": "sky_gardens",
    "nation": "SKY",
    "column": 1,
    "row": 1,
-   "title": "Eden's Book of Flight",
+   "title": "The Gardens of Eden",
    "requires": [
     "sky_the_core"
    ],
-   "text": "King Bonaparte searches for the book in which Eden explained permanent flight.",
+   "text": "Markets among the gardens, from Cloudfarm to Angelreach.",
    "conditions": [
     {
-     "type": "explored",
-     "province": "Staircase Spire"
-    },
-    {
-     "type": "power_at_least",
-     "index": 1,
-     "at_least": 150
+     "type": "buildings_at_least",
+     "building": "market",
+     "at_least": 3
     }
    ],
    "rewards": [
     {
-     "type": "add_power",
-     "index": 1,
-     "amount": -150
-    },
-    {
-     "type": "set_flag",
-     "name": "permanent_flight"
+     "type": "add_treasury",
+     "amount": 150
     },
     {
      "type": "add_modifier",
-     "id": "flight",
-     "name": "Permanent Flight",
+     "id": "eden_gardens",
+     "name": "Gardens of Eden",
      "modifiers": {
-      "cavalry_power": 0.2
+      "tax_mod": 0.1
      },
      "months": -1
-    },
-    {
-     "type": "message",
-     "text": "Skyfall has learned the secret of permanent flight."
     }
    ]
   },
@@ -1011,22 +1086,52 @@
    "row": 2,
    "title": "Core Energy for Arcadia",
    "requires": [
-    "sky_book_of_flight"
+    "sky_gardens"
    ],
-   "text": "Every market under the clouds wants Core Energy.",
+   "text": "The mainland pays well for Core Energy.",
    "conditions": [
     {
      "type": "trade_income_at_least",
-     "at_least": 3
+     "at_least": 4
     }
    ],
    "rewards": [
     {
      "type": "add_modifier",
-     "id": "core_trade",
-     "name": "Core Energy Trade",
+     "id": "core_exports",
+     "name": "Core Energy Exports",
      "modifiers": {
-      "trade_efficiency": 0.15
+      "trade_efficiency": 0.1
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "sky_waterfall_exchange",
+   "nation": "SKY",
+   "column": 1,
+   "row": 3,
+   "title": "The Waterfall Exchange",
+   "requires": [
+    "sky_core_trade"
+   ],
+   "text": "Hold the Skyfall trade node: everything that goes down the Holy Waterfall passes our counters.",
+   "conditions": [
+    {
+     "type": "trade_share_at_least",
+     "node": "Skyfall",
+     "at_least": 0.8
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "waterfall_exchange",
+     "name": "The Waterfall Exchange",
+     "modifiers": {
+      "trade_power_mod": 0.15,
+      "merchants": 1
      },
      "months": -1
     }
@@ -1036,13 +1141,12 @@
    "id": "sky_kingdom",
    "nation": "SKY",
    "column": 1,
-   "row": 3,
+   "row": 4,
    "title": "Kingdom of Heaven",
    "requires": [
-    "sky_core_trade",
-    "sky_eternal_vigil"
+    "sky_waterfall_exchange"
    ],
-   "text": "Skyfall, mightier than ever.",
+   "text": "The richest kingdom under the sun, or rather above it.",
    "conditions": [
     {
      "type": "total_dev_at_least",
@@ -1051,45 +1155,18 @@
    ],
    "rewards": [
     {
+     "type": "add_legitimacy",
+     "amount": 20
+    },
+    {
      "type": "add_modifier",
-     "id": "kingdom_heaven",
+     "id": "kingdom_of_heaven",
      "name": "Kingdom of Heaven",
      "modifiers": {
-      "tax_mod": 0.15,
-      "discipline": 0.05
+      "tax_mod": 0.1,
+      "diplomatic_reputation": 1
      },
      "months": -1
-    }
-   ]
-  },
-  {
-   "id": "sky_war_machine",
-   "nation": "SKY",
-   "column": 2,
-   "row": 0,
-   "title": "Napoleon's War Machine",
-   "requires": [],
-   "text": "Build the artillery and tanks from Eden's German blueprints.",
-   "conditions": [
-    {
-     "type": "flag",
-     "name": "tank_project"
-    },
-    {
-     "type": "province_dev_at_least",
-     "province": "Napoleon's Foundry",
-     "at_least": 12
-    }
-   ],
-   "rewards": [
-    {
-     "type": "set_flag",
-     "name": "tanks"
-    },
-    {
-     "type": "add_power",
-     "index": 2,
-     "amount": 100
     }
    ]
   },
@@ -1097,25 +1174,53 @@
    "id": "sky_wings",
    "nation": "SKY",
    "column": 2,
-   "row": 1,
+   "row": 0,
    "title": "Wings of Eden",
-   "requires": [
-    "sky_war_machine"
-   ],
-   "text": "An army of angels and Edenite guards.",
+   "requires": [],
+   "text": "Angels in the air, in formation.",
    "conditions": [
     {
      "type": "regiments_at_least",
-     "at_least": 20
+     "at_least": 12
     }
    ],
    "rewards": [
     {
-     "type": "spawn_leader"
+     "type": "add_army_tradition",
+     "amount": 10
+    }
+   ]
+  },
+  {
+   "id": "sky_know_the_cult",
+   "nation": "SKY",
+   "column": 2,
+   "row": 1,
+   "title": "Know Thy Enemy",
+   "requires": [
+    "sky_wings"
+   ],
+   "text": "The Order of the Black Moon hides on its own island chain. Find out what they are planning.",
+   "conditions": [
+    {
+     "type": "explored",
+     "province": "Moonfall Rock"
     },
     {
-     "type": "add_army_tradition",
-     "amount": 15
+     "type": "power_at_least",
+     "index": 1,
+     "at_least": 100
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_claim",
+     "tag": "BLM"
+    },
+    {
+     "type": "add_power",
+     "index": 2,
+     "amount": 50
     }
    ]
   },
@@ -1126,9 +1231,9 @@
    "row": 2,
    "title": "The Emperor's Return",
    "requires": [
-    "sky_wings"
+    "sky_know_the_cult"
    ],
-   "text": "Napoleon has not lost a war in centuries. Prove it.",
+   "text": "Napoleon has not forgotten how to win a battle.",
    "conditions": [
     {
      "type": "battles_won_at_least",
@@ -1137,69 +1242,82 @@
    ],
    "rewards": [
     {
+     "type": "spawn_leader"
+    },
+    {
      "type": "add_modifier",
-     "id": "emperor",
+     "id": "emperors_return",
      "name": "The Emperor's Return",
      "modifiers": {
-      "leader_fire": 1,
-      "leader_shock": 1
+      "leader_maneuver": 1
      },
      "months": -1
     }
    ]
   },
   {
-   "id": "sky_masks",
+   "id": "sky_crush_cult",
    "nation": "SKY",
-   "column": 3,
-   "row": 0,
-   "title": "Breath Below",
-   "requires": [],
-   "text": "Skyfallins need masks to breathe the mainland air.",
+   "column": 2,
+   "row": 3,
+   "title": "Crush the Black Moon",
+   "requires": [
+    "sky_generalship"
+   ],
+   "text": "The Order prays for the end of Skyfall. End them first.",
    "conditions": [
     {
-     "type": "flag",
-     "name": "breathing_masks"
+     "type": "subdued",
+     "tag": "BLM"
     }
    ],
    "rewards": [
     {
-     "type": "add_power",
-     "index": 0,
-     "amount": 50
+     "type": "add_stability",
+     "amount": 2
+    },
+    {
+     "type": "add_modifier",
+     "id": "cult_crushed",
+     "name": "The Cult Crushed",
+     "modifiers": {
+      "doomsday_resistance": 0.5,
+      "legitimacy_gain": 1.0
+     },
+     "months": -1
     }
    ]
   },
   {
-   "id": "sky_mainland",
+   "id": "sky_war_machine",
    "nation": "SKY",
-   "column": 3,
-   "row": 1,
-   "title": "Masks and the Mainland",
+   "column": 2,
+   "row": 4,
+   "title": "Napoleon's War Machine",
    "requires": [
-    "sky_masks",
-    "sky_hold_the_barrier"
+    "sky_crush_cult"
    ],
-   "text": "With masks, Skyfallins can settle below the clouds.",
+   "text": "Napoleon's Foundry turns out engines no army below has seen.",
    "conditions": [
     {
-     "type": "layer_provinces_owned_at_least",
-     "layer": "ground",
-     "at_least": 1
+     "type": "province_dev_at_least",
+     "province": "Napoleon's Foundry",
+     "at_least": 12
+    },
+    {
+     "type": "tech_at_least",
+     "track": "mil",
+     "at_least": 4
     }
    ],
    "rewards": [
     {
-     "type": "add_power",
-     "index": 0,
-     "amount": 75
-    },
-    {
      "type": "add_modifier",
-     "id": "below_clouds",
-     "name": "Below the Clouds",
+     "id": "war_machine",
+     "name": "Napoleon's War Machine",
      "modifiers": {
-      "colonists": 1
+      "artillery_power": 0.2,
+      "siege_ability": 0.1
      },
      "months": -1
     }
@@ -1209,31 +1327,165 @@
    "id": "sky_falls_landing",
    "nation": "SKY",
    "column": 3,
-   "row": 2,
+   "row": 0,
    "title": "Foot of the Waterfall",
-   "requires": [
-    "sky_mainland"
-   ],
-   "text": "The Holy Waterfall reaches the world below at Equator Isle. Hold its foot.",
+   "requires": [],
+   "text": "The Holy Waterfall reaches the world below at Equator Isle. Wall it.",
    "conditions": [
     {
-     "type": "owns",
-     "province": "Equator Isle"
-    },
-    {
-     "type": "buildings_at_least",
-     "building": "fort",
-     "at_least": 3
+     "type": "province_has_building",
+     "province": "Equator Isle",
+     "building": "fort"
     }
    ],
    "rewards": [
     {
      "type": "add_modifier",
-     "id": "waterfall_key",
-     "name": "Key to the Waterfall",
+     "id": "falls_fort",
+     "name": "The Foot of the Waterfall",
      "modifiers": {
-      "trade_power_mod": 0.2,
       "fort_defense": 0.1
+     },
+     "months": -1
+    },
+    {
+     "type": "add_power",
+     "index": 2,
+     "amount": 50
+    }
+   ]
+  },
+  {
+   "id": "sky_masks",
+   "nation": "SKY",
+   "column": 3,
+   "row": 1,
+   "title": "Breath Below",
+   "requires": [
+    "sky_falls_landing"
+   ],
+   "text": "Our people choke on the air below the clouds. Napoleon's engineers are building masks.",
+   "conditions": [
+    {
+     "type": "flag",
+     "name": "breathing_masks"
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_power",
+     "index": 1,
+     "amount": 75
+    }
+   ]
+  },
+  {
+   "id": "sky_isolation",
+   "nation": "SKY",
+   "column": 3,
+   "row": 2,
+   "title": "The Isolation of Eden",
+   "requires": [
+    "sky_masks"
+   ],
+   "text": "Let the mainland squabble. Eden keeps to the sky, and grows.",
+   "conditions": [
+    {
+     "type": "year_at_least",
+     "value": 4320
+    },
+    {
+     "type": "owns_mainland",
+     "negate": true
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "isolation_pride",
+     "name": "Pride of Eden",
+     "modifiers": {
+      "dev_cost_mod": -0.1,
+      "legitimacy_gain": 0.5
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "sky_friends_below",
+   "nation": "SKY",
+   "column": 3,
+   "row": 3,
+   "title": "Friends Below",
+   "requires": [
+    "sky_isolation"
+   ],
+   "text": "Keep the oath sworn with the Pig Lord after the Incendium.",
+   "conditions": [
+    {
+     "type": "allied_with",
+     "tag": "MEN"
+    },
+    {
+     "type": "opinion_at_least",
+     "tag": "MEN",
+     "at_least": 120
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_power",
+     "index": 1,
+     "amount": 100
+    },
+    {
+     "type": "add_modifier",
+     "id": "barrier_pact",
+     "name": "The Barrier Pact",
+     "modifiers": {
+      "diplomatic_reputation": 1,
+      "trade_efficiency": 0.05
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "sky_arbiter",
+   "nation": "SKY",
+   "column": 3,
+   "row": 4,
+   "title": "Arbiter of Arcadia",
+   "requires": [
+    "sky_friends_below",
+    "sky_kingdom"
+   ],
+   "text": "From the clouds, the angels settle the quarrels of the world below.",
+   "conditions": [
+    {
+     "type": "trade_share_at_least",
+     "node": "Arcadian Sea",
+     "at_least": 0.2
+    },
+    {
+     "type": "opinion_at_least",
+     "tag": "MEN",
+     "at_least": 150
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_legitimacy",
+     "amount": 20
+    },
+    {
+     "type": "add_modifier",
+     "id": "arbiter",
+     "name": "Arbiter of Arcadia",
+     "modifiers": {
+      "diplomatic_reputation": 2,
+      "tax_mod": 0.1
      },
      "months": -1
     }
@@ -1444,39 +1696,6 @@
      "name": "Learned from the Pigs",
      "modifiers": {
       "tech_cost_mod": -0.1
-     },
-     "months": -1
-    }
-   ]
-  },
-  {
-   "id": "sky_crush_cult",
-   "nation": "SKY",
-   "column": 2,
-   "row": 3,
-   "title": "Crush the Black Moon",
-   "requires": [
-    "sky_generalship"
-   ],
-   "text": "The Order of the Black Moon prays for the end of Skyfall. End them first.",
-   "conditions": [
-    {
-     "type": "nation_dead",
-     "tag": "BLM"
-    }
-   ],
-   "rewards": [
-    {
-     "type": "add_stability",
-     "amount": 2
-    },
-    {
-     "type": "add_modifier",
-     "id": "cult_crushed",
-     "name": "The Cult Crushed",
-     "modifiers": {
-      "doomsday_resistance": 0.5,
-      "legitimacy_gain": 1.0
      },
      "months": -1
     }

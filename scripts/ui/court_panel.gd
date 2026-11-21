@@ -52,7 +52,7 @@ func build() -> void:
 	section("Stability")
 	add(UI.row([UI.label("Stability %+d" % int(n["stability"]), 16, UI.GOOD if int(n["stability"]) > 0 else UI.TEXT), UI.spacer(),
 		UI.action("Raise (%d %s)" % [Game.court.stability_cost(tag), names[0]], Game.court.can_raise_stability(tag),
-			func(): Game.court.raise_stability(tag); mark_dirty())]))
+			func(): Game.court.raise_stability(tag); mark_dirty(), "Stability cost:\n" + Game.mods.breakdown(tag, ["stability_cost_mod"]))]))
 	text("Each point of stability: +5% tax and -1 unrest everywhere. Declaring war without a cause costs 2.", 11, UI.TEXT_DIM)
 	section("War")
 	add(UI.row([UI.label("War exhaustion %.1f" % float(n["war_exhaustion"]), 14, UI.BAD if float(n["war_exhaustion"]) > 2 else UI.TEXT), UI.spacer(),

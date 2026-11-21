@@ -1,5 +1,5 @@
 {
- "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'player', 'tribes' (tribes and hordes), 'republics', 'monarchies', 'pig_states' (pig nations other than Menslosia) or 'others' (everyone but Menslosia and Skyfall). Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types.",
+ "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'player', 'tribes' (tribes and hordes), 'republics', 'monarchies', 'pig_states' (pig nations other than Menslosia) or 'others' (everyone but Menslosia and Skyfall). Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types. once: true fires at most once per nation. Trigger years: [from, to] (0 = open) limits an event to those years. Trigger mtth_months gives an EU4 mean time to happen; mtth_modifiers [{factor, conditions}] multiply it when their conditions hold (0.5 = twice as likely). fire_event effects (with delay_days) chain events.",
  "events": [
   {
    "id": "arcadian_era_begins",
@@ -259,6 +259,10 @@
        "type": "set_flag",
        "name": "photographer_freed",
        "scope": "global"
+      },
+      {
+       "type": "set_flag",
+       "name": "photographer_pardoned"
       }
      ]
     }
@@ -1424,7 +1428,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "merchant_guild",
@@ -1630,7 +1635,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "tribe_shaman",
@@ -1741,7 +1747,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "men_pig_lord_speech",
@@ -1799,7 +1806,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "men_unity_parade",
@@ -1938,7 +1946,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "men_green_engineers",
@@ -1974,7 +1983,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "men_old_bureaucracy",
@@ -2060,7 +2070,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "men_truffle_war",
@@ -2351,7 +2362,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "sky_angel_council",
@@ -2434,7 +2446,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "blm_eclipse_rites",
@@ -2499,7 +2512,8 @@
       }
      ]
     }
-   ]
+   ],
+   "once": true
   },
   {
    "id": "blm_portal_whispers",
@@ -2542,6 +2556,2372 @@
      ]
     }
    ]
+  },
+  {
+   "id": "men_ash_harvest",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 6,
+    "years": [
+     4289,
+     4292
+    ],
+    "conditions": []
+   },
+   "title": "The First Harvest After the Ash",
+   "text": "For three years nothing grew under the grey sky. This spring the fields of Mentos are green again.",
+   "options": [
+    {
+     "text": "Give thanks at the Lotus temples.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    },
+    {
+     "text": "Sell the surplus to the mainland.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 90
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_canada_ruins",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 18,
+    "years": [
+     4289,
+     4300
+    ],
+    "conditions": []
+   },
+   "title": "The Canada Ruins",
+   "text": "Scavengers in the Canada Ruins have found a sealed vault from the old human world. The Pig Lord's own family name comes from these ruins.",
+   "options": [
+    {
+     "text": "Open it in the Pig Lord's presence.",
+     "effects": [
+      {
+       "type": "fire_event",
+       "id": "men_canada_vault",
+       "delay_days": 30
+      }
+     ]
+    },
+    {
+     "text": "Seal it again. Some things should stay buried.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_canada_vault",
+   "for": "MEN",
+   "trigger": {
+    "special": "fired_by_effect",
+    "conditions": []
+   },
+   "title": "The Vault of the Old World",
+   "text": "Inside: rusted machines, crumbling books, and a working seed bank.",
+   "options": [
+    {
+     "text": "The seeds go to the farms.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "old_world_seeds",
+       "name": "Seeds of the Old World",
+       "modifiers": {
+        "production_mod": 0.05,
+        "manpower_mod": 0.05
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "The books go to Midrea.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 80
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 40
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_yellowstone_rumble",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 60,
+    "years": [
+     4289,
+     0
+    ],
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     }
+    ]
+   },
+   "title": "The Caldera Rumbles",
+   "text": "The ground near the Yellowstone Caldera shakes again. The Incendium began here.",
+   "options": [
+    {
+     "text": "Evacuate the borderlands.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Pray to the Lotus. It is only the earth settling.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "caldera_fear",
+       "name": "Fear of the Caldera",
+       "modifiers": {
+        "unrest": 1
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_pigman_guild",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 36,
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "The Pigman Engineers' Guild",
+   "text": "The pigman engineers who built Midrea's labs want a charter of their own.",
+   "options": [
+    {
+     "text": "Grant the charter.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "engineers_guild",
+       "name": "Engineers' Guild",
+       "modifiers": {
+        "build_cost_mod": -0.1
+       },
+       "months": -1
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      }
+     ]
+    },
+    {
+     "text": "They serve the Pig Lord, not a guild.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": -25
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_sty_royal_fire",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 120,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Sty Royal"
+     }
+    ]
+   },
+   "title": "Fire at Sty Royal",
+   "text": "A fire has torn through the old royal sty, the Pig Lord's summer palace.",
+   "options": [
+    {
+     "text": "Rebuild it grander than before.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -120
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "text": "Leave the ruin as a memorial to the Incendium.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_truffle_baron",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 48,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Truffle Downs"
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "treasury_at_least",
+        "at_least": 400
+       }
+      ]
+     }
+    ]
+   },
+   "title": "The Truffle Baron's Loan",
+   "text": "Old Baron Snoutwell of Truffle Downs offers the crown a loan at a friendly rate, for a seat at court.",
+   "options": [
+    {
+     "text": "Take his sanctum and give him the seat.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 200
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -10
+      }
+     ]
+    },
+    {
+     "text": "The court is not for sale.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_lotus_schism",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 200,
+    "years": [
+     4300,
+     4400
+    ],
+    "conditions": [],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "stability_at_least",
+        "at_least": -3
+       },
+       {
+        "type": "legitimacy_at_least",
+        "at_least": 0
+       }
+      ]
+     }
+    ]
+   },
+   "title": "The Lotus Schism",
+   "text": "Two high priests of the Lotus Faith each claim the right to crown the next Pig Lord.",
+   "options": [
+    {
+     "text": "Back the old priest of Lotus Vale.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 60
+      },
+      {
+       "type": "fire_event",
+       "id": "men_lotus_schism_end",
+       "delay_days": 365
+      }
+     ]
+    },
+    {
+     "text": "Back the young reformer from Mentos.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 60
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -10
+      },
+      {
+       "type": "fire_event",
+       "id": "men_lotus_schism_end",
+       "delay_days": 365
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_lotus_schism_end",
+   "for": "MEN",
+   "trigger": {
+    "special": "fired_by_effect",
+    "conditions": []
+   },
+   "title": "The Schism Healed",
+   "text": "After a year of sermons and street fights, the two priests embrace on the steps of the Lotus temple.",
+   "options": [
+    {
+     "text": "Let the bells ring.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 2
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_unity_drills",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 40,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Unity"
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.6,
+      "conditions": [
+       {
+        "type": "at_war"
+       }
+      ]
+     }
+    ]
+   },
+   "title": "Drills at Unity",
+   "text": "The Unity Guard practises landing from the sea on the beaches of the Southern Isles.",
+   "options": [
+    {
+     "text": "Good. Keep them sharp.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 8
+      }
+     ]
+    },
+    {
+     "text": "Too costly in peacetime.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 40
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": -3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_napoleon_letter",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 30,
+    "years": [
+     4289,
+     4310
+    ],
+    "conditions": [
+     {
+      "type": "allied_with",
+      "tag": "SKY"
+     }
+    ]
+   },
+   "title": "A Letter from Napoleon",
+   "text": "The ageless king of Skyfall writes to the Pig Lord about the black moon, the barrier, and a strange new tank.",
+   "options": [
+    {
+     "text": "Reply warmly.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": 30
+      }
+     ]
+    },
+    {
+     "text": "Ask him about the tank.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": 40
+      },
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": -10
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_photographer_trial",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 24,
+    "conditions": [
+     {
+      "type": "flag",
+      "name": "photographer_pardoned"
+     }
+    ]
+   },
+   "title": "The Photographer's Pictures",
+   "text": "The photographer we bought back from Skyfall has published his pictures of the sky islands in the Mentos papers.",
+   "options": [
+    {
+     "text": "Burn the papers.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": 20
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      }
+     ]
+    },
+    {
+     "text": "Let the people see the sky islands.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      },
+      {
+       "type": "add_opinion",
+       "target": "SKY",
+       "amount": -30
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_green_power_plant",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 60,
+    "years": [
+     4300,
+     0
+    ],
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 3
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "ideas_at_least",
+        "at_least": 3
+       }
+      ]
+     }
+    ]
+   },
+   "title": "The Great Windfarm",
+   "text": "Engineers propose a windfarm on the hills of Coldsty that would power half of Mentos. The Pig Lord promised: never fossil fuels again.",
+   "options": [
+    {
+     "text": "Build it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -150
+      },
+      {
+       "type": "add_modifier",
+       "id": "great_windfarm",
+       "name": "The Great Windfarm",
+       "modifiers": {
+        "production_mod": 0.1,
+        "build_cost_mod": -0.05
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "Not yet.",
+     "effects": []
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_breakaway_envoys",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 36,
+    "years": [
+     4290,
+     4330
+    ],
+    "conditions": [
+     {
+      "type": "subdued",
+      "tag": "SYL",
+      "negate": true
+     }
+    ]
+   },
+   "title": "Envoys from the Breakaway States",
+   "text": "Sylvania, the Bay of Pigs and the Grain League have sent a joint embassy. They want recognition, not reunion.",
+   "options": [
+    {
+     "text": "Never. They are Menslosian.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_opinion",
+       "target": "SYL",
+       "amount": -20
+      },
+      {
+       "type": "add_opinion",
+       "target": "BAY",
+       "amount": -20
+      },
+      {
+       "type": "add_opinion",
+       "target": "EUR",
+       "amount": -20
+      }
+     ]
+    },
+    {
+     "text": "Recognise them, for now.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_opinion",
+       "target": "SYL",
+       "amount": 40
+      },
+      {
+       "type": "add_opinion",
+       "target": "BAY",
+       "amount": 40
+      },
+      {
+       "type": "add_opinion",
+       "target": "EUR",
+       "amount": 40
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -10
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_heir_rebellion",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 240,
+    "conditions": [
+     {
+      "type": "legitimacy_at_least",
+      "at_least": 0
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.3,
+      "conditions": [
+       {
+        "type": "legitimacy_at_least",
+        "at_least": 80,
+        "negate": true
+       }
+      ]
+     }
+    ]
+   },
+   "title": "The Heir's Ambition",
+   "text": "The heir to the Pig Throne has been seen drilling a private guard in Piggston.",
+   "options": [
+    {
+     "text": "Disband the guard.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_manpower",
+       "amount": -500
+      }
+     ]
+    },
+    {
+     "text": "Give him a command in the Unity Guard.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_space_signal",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 48,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Space Observatory"
+     },
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 5
+     }
+    ]
+   },
+   "title": "A Signal from the Stars",
+   "text": "The Space Observatory has picked up a repeating signal from beyond the sky islands.",
+   "options": [
+    {
+     "text": "Study it.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 100
+      },
+      {
+       "type": "set_flag",
+       "name": "star_signal",
+       "scope": "global"
+      }
+     ]
+    },
+    {
+     "text": "Tell no one.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_white_haze_return",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 36,
+    "conditions": [
+     {
+      "type": "explored",
+      "province": "White Haze"
+     }
+    ]
+   },
+   "title": "Out of the Haze",
+   "text": "One of the expeditions sent into the White Haze has come back. They will not speak of what they saw.",
+   "options": [
+    {
+     "text": "Pension them quietly.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -30
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 60
+      }
+     ]
+    },
+    {
+     "text": "Question them.",
+     "effects": [
+      {
+       "type": "fire_event",
+       "id": "men_haze_secret",
+       "delay_days": 20
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_haze_secret",
+   "for": "MEN",
+   "trigger": {
+    "special": "fired_by_effect",
+    "conditions": []
+   },
+   "title": "What the Haze Hides",
+   "text": "Under questioning, the expedition leader draws a map: a road through the Haze to a place they call the Center.",
+   "options": [
+    {
+     "text": "Mark it on our maps.",
+     "effects": [
+      {
+       "type": "reveal",
+       "province": "The Center"
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 30
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_centralisation_riots",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 12,
+    "years": [
+     4339,
+     4380
+    ],
+    "conditions": [
+     {
+      "type": "flag",
+      "name": "centralised"
+     }
+    ]
+   },
+   "title": "The Governors' Revolt",
+   "text": "The old governor families did not give up their charters quietly. Riots in the provinces.",
+   "options": [
+    {
+     "text": "Crush them.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      },
+      {
+       "type": "add_autonomy",
+       "amount": -5
+      }
+     ]
+    },
+    {
+     "text": "Buy them off.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -150
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_ore_isle_strike",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 60,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Ore Isle"
+     },
+     {
+      "type": "mines_at_least",
+      "at_least": 1
+     }
+    ]
+   },
+   "title": "Strike on Ore Isle",
+   "text": "The miners of Ore Isle have downed tools. They want a share of the sanctum they dig.",
+   "options": [
+    {
+     "text": "Pay them.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -50
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Send the Unity Guard.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_pig_lord_jubilee",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 6,
+    "years": [
+     4314,
+     4316
+    ],
+    "conditions": []
+   },
+   "title": "The Pig Lord's Jubilee",
+   "text": "Twenty-five years since the end of the Incendium. Mentos throws the feast of the century.",
+   "options": [
+    {
+     "text": "Spare no expense.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -200
+      },
+      {
+       "type": "add_stability",
+       "amount": 2
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 15
+      }
+     ]
+    },
+    {
+     "text": "A modest feast.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_grain_shortage",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 72,
+    "conditions": [
+     {
+      "type": "subdued",
+      "tag": "EUR",
+      "negate": true
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "at_war"
+       }
+      ]
+     }
+    ]
+   },
+   "title": "Grain Shortage",
+   "text": "Without the farms of Eurome, Mentos runs short of bread every hard winter.",
+   "options": [
+    {
+     "text": "Buy grain from the Grain League.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -80
+      },
+      {
+       "type": "add_opinion",
+       "target": "EUR",
+       "amount": 15
+      }
+     ]
+    },
+    {
+     "text": "Ration it.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_manpower",
+       "amount": -500
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "men_cartographers",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 48,
+    "years": [
+     4289,
+     4340
+    ],
+    "conditions": []
+   },
+   "title": "The Imperial Cartographers",
+   "text": "Cartographers ask for money to remap an Empire changed by the Incendium.",
+   "options": [
+    {
+     "text": "Fund them.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 60
+      }
+     ]
+    },
+    {
+     "text": "Old maps will do.",
+     "effects": []
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_menslosian_renaissance",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 120,
+    "years": [
+     4350,
+     0
+    ],
+    "conditions": [
+     {
+      "type": "stability_at_least",
+      "at_least": 2
+     },
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 5
+     }
+    ]
+   },
+   "title": "The Menslosian Renaissance",
+   "text": "A golden age of painting, music and science blooms in Mentos.",
+   "options": [
+    {
+     "text": "Patronise the arts.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -100
+      },
+      {
+       "type": "add_modifier",
+       "id": "renaissance",
+       "name": "The Menslosian Renaissance",
+       "modifiers": {
+        "monthly_dip": 1,
+        "tech_cost_mod": -0.05
+       },
+       "months": 240
+      }
+     ]
+    },
+    {
+     "text": "Patronise the sciences.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -100
+      },
+      {
+       "type": "add_modifier",
+       "id": "renaissance_sci",
+       "name": "The Menslosian Renaissance",
+       "modifiers": {
+        "monthly_adm": 1,
+        "tech_cost_mod": -0.05
+       },
+       "months": 240
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "men_empire_restored_parade",
+   "for": "MEN",
+   "trigger": {
+    "mtth_months": 6,
+    "conditions": [
+     {
+      "type": "owns_region",
+      "region": "Sylvania"
+     },
+     {
+      "type": "owns_region",
+      "region": "Eurome"
+     }
+    ]
+   },
+   "title": "The Empire Whole Again",
+   "text": "For the first time since the Incendium, the banners of every Menslosian province fly over Mentos.",
+   "options": [
+    {
+     "text": "Glory to the Pig Lord!",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 2
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 20
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_napoleon_birthday",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 12,
+    "years": [
+     4289,
+     4300
+    ],
+    "conditions": []
+   },
+   "title": "The Emperor's Birthday",
+   "text": "Napoleon does not age, but he still celebrates his birthday. All of Eden is invited.",
+   "options": [
+    {
+     "text": "A grand ball at Eden's Crown.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "text": "A military parade.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_core_flicker",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 90,
+    "conditions": [],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "province_dev_at_least",
+        "province": "Eden's Crown",
+        "at_least": 20,
+        "negate": true
+       }
+      ]
+     }
+    ]
+   },
+   "title": "The Core Flickers",
+   "text": "For an hour the Core dimmed and every island in Skyfall dropped a hand's breadth.",
+   "options": [
+    {
+     "text": "Pour sanctum into the Core.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -100
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Pray it holds.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_modifier",
+       "id": "core_doubts",
+       "name": "Doubts about the Core",
+       "modifiers": {
+        "unrest": 1
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_staircase_climb",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 48,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Staircase Spire"
+     }
+    ]
+   },
+   "title": "The Staircase Climbers",
+   "text": "Pilgrims climb the endless stair of Staircase Spire. Some say it leads to the Book of Flight.",
+   "options": [
+    {
+     "text": "Send scholars with them.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 40
+      },
+      {
+       "type": "fire_event",
+       "id": "sky_book_found",
+       "delay_days": 90
+      }
+     ]
+    },
+    {
+     "text": "Close the stair.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_book_found",
+   "for": "SKY",
+   "trigger": {
+    "special": "fired_by_effect",
+    "conditions": []
+   },
+   "title": "The Book of Flight",
+   "text": "At the top of the stair, a book: the lost manual of angel flight.",
+   "options": [
+    {
+     "text": "Teach it to every soldier.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "book_of_flight",
+       "name": "The Book of Flight",
+       "modifiers": {
+        "land_morale": 0.1,
+        "leader_maneuver": 1
+       },
+       "months": -1
+      },
+      {
+       "type": "set_flag",
+       "name": "book_of_flight"
+      }
+     ]
+    },
+    {
+     "text": "Lock it in Eden's library.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 100
+      },
+      {
+       "type": "set_flag",
+       "name": "book_of_flight"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_mask_trials",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 24,
+    "years": [
+     4290,
+     4330
+    ],
+    "conditions": [
+     {
+      "type": "not_flag",
+      "name": "breathing_masks"
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "owns",
+        "province": "Equator Isle"
+       }
+      ]
+     }
+    ]
+   },
+   "title": "Mask Trials at Equator Isle",
+   "text": "Engineers test breathing masks in the thick air at the foot of the waterfall.",
+   "options": [
+    {
+     "text": "Fund the trials.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -80
+      },
+      {
+       "type": "fire_event",
+       "id": "sky_mask_success",
+       "delay_days": 120
+      }
+     ]
+    },
+    {
+     "text": "Too dangerous.",
+     "effects": []
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_mask_success",
+   "for": "SKY",
+   "trigger": {
+    "special": "fired_by_effect",
+    "conditions": []
+   },
+   "title": "We Can Breathe Below",
+   "text": "The masks work. Skyfallins can walk the mainland without choking.",
+   "options": [
+    {
+     "text": "A new age for Eden.",
+     "effects": [
+      {
+       "type": "set_flag",
+       "name": "breathing_masks"
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_portal_whispers",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 36,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Portal Isle"
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "nation_dead",
+        "tag": "BLM",
+        "negate": true
+       }
+      ]
+     }
+    ]
+   },
+   "title": "Whispers at the Portal",
+   "text": "Barrier Guards on Portal Isle hear voices from the other side, calling them by name.",
+   "options": [
+    {
+     "text": "Rotate the guard more often.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -500
+      },
+      {
+       "type": "add_modifier",
+       "id": "fresh_guards",
+       "name": "Fresh Guards",
+       "modifiers": {
+        "doomsday_resistance": 0.2
+       },
+       "months": 60
+      }
+     ]
+    },
+    {
+     "text": "Ignore it. Voices can't hurt anyone.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "voices",
+       "name": "Voices at the Portal",
+       "modifiers": {
+        "unrest": 1
+       },
+       "months": 36
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_cult_assassin",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 96,
+    "conditions": [
+     {
+      "type": "nation_dead",
+      "tag": "BLM",
+      "negate": true
+     }
+    ],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "at_war"
+       }
+      ]
+     }
+    ]
+   },
+   "title": "The Moonblade",
+   "text": "An assassin of the Black Moon was caught in the halls of Eden's Crown, a black knife in hand.",
+   "options": [
+    {
+     "text": "Execute him publicly.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_opinion",
+       "target": "BLM",
+       "amount": -50
+      }
+     ]
+    },
+    {
+     "text": "Turn him: he will spy for us.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 60
+      },
+      {
+       "type": "add_claim",
+       "tag": "BLM"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_angel_exodus",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 120,
+    "conditions": [
+     {
+      "type": "stability_at_least",
+      "at_least": 0,
+      "negate": true
+     }
+    ]
+   },
+   "title": "The Angel Exodus",
+   "text": "Unhappy angels are leaving Skyfall for the free sky of the Black Moon Isles.",
+   "options": [
+    {
+     "text": "Promise reforms.",
+     "effects": [
+      {
+       "type": "add_reform_progress",
+       "amount": -20
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "text": "Let them go.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -1000
+      },
+      {
+       "type": "add_opinion",
+       "target": "BLM",
+       "amount": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_cloud_cotton_boom",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 60,
+    "conditions": [
+     {
+      "type": "owns",
+      "province": "Windward Isle"
+     }
+    ]
+   },
+   "title": "The Cloud Cotton Boom",
+   "text": "Cloud cotton has become the fashion of Mentos. Every weaver wants it.",
+   "options": [
+    {
+     "text": "Raise the export tariff.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 150
+      }
+     ]
+    },
+    {
+     "text": "Flood the market.",
+     "effects": [
+      {
+       "type": "price_shock",
+       "goods": "cloud_cotton",
+       "factor": 1.4
+      },
+      {
+       "type": "add_modifier",
+       "id": "cotton_boom",
+       "name": "Cloud Cotton Boom",
+       "modifiers": {
+        "trade_efficiency": 0.1
+       },
+       "months": 60
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_waterfall_drought",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 150,
+    "years": [
+     4295,
+     0
+    ],
+    "conditions": []
+   },
+   "title": "The Waterfall Runs Thin",
+   "text": "The Holy Waterfall of Eden has slowed to a trickle. Below, the pilgrims despair.",
+   "options": [
+    {
+     "text": "Divert the Core's power to the springs.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -100
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": -50
+      }
+     ]
+    },
+    {
+     "text": "It will return.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_modifier",
+       "id": "thin_waterfall",
+       "name": "Thin Waterfall",
+       "modifiers": {
+        "trade_efficiency": -0.1
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_napoleons_tank",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 36,
+    "years": [
+     4292,
+     4330
+    ],
+    "conditions": [
+     {
+      "type": "not_flag",
+      "name": "tank_project"
+     },
+     {
+      "type": "owns",
+      "province": "Napoleon's Foundry"
+     }
+    ]
+   },
+   "title": "The Emperor's Tank",
+   "text": "Napoleon has drawn plans for a steel engine that crawls over any ground. The foundry masters say they can build it.",
+   "options": [
+    {
+     "text": "Build it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -150
+      },
+      {
+       "type": "set_flag",
+       "name": "tank_project"
+      },
+      {
+       "type": "add_modifier",
+       "id": "tank_project_m",
+       "name": "The Tank Project",
+       "modifiers": {
+        "artillery_power": 0.1
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "Steel is for swords.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_black_moon_omen",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 18,
+    "years": [
+     4290,
+     0
+    ],
+    "conditions": [],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "flag",
+        "name": "entities_came",
+        "scope": "global"
+       }
+      ]
+     }
+    ]
+   },
+   "title": "Omens of the Black Moon",
+   "text": "Astronomers say the next Black Moon will be darker than the last.",
+   "options": [
+    {
+     "text": "Double the Barrier Guard.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -1000
+      },
+      {
+       "type": "add_modifier",
+       "id": "doubled_guard",
+       "name": "Doubled Barrier Guard",
+       "modifiers": {
+        "doomsday_resistance": 0.3
+       },
+       "months": 48
+      }
+     ]
+    },
+    {
+     "text": "Astronomers always say that.",
+     "effects": []
+    }
+   ]
+  },
+  {
+   "id": "sky_eden_school",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 72,
+    "years": [
+     4300,
+     0
+    ],
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "The Academy of Eden",
+   "text": "Angel scholars want to found an academy in Eden's Crown.",
+   "options": [
+    {
+     "text": "Found it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -120
+      },
+      {
+       "type": "add_modifier",
+       "id": "eden_academy",
+       "name": "Academy of Eden",
+       "modifiers": {
+        "tech_cost_mod": -0.05,
+        "idea_cost_mod": -0.05
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "Learning is for the Core priests.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 30
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_mainland_ambassador",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 36,
+    "years": [
+     4295,
+     4350
+    ],
+    "conditions": [
+     {
+      "type": "allied_with",
+      "tag": "MEN"
+     }
+    ]
+   },
+   "title": "An Ambassador to Mentos",
+   "text": "The Pig Lord asks Skyfall to send a permanent ambassador to Mentos, masks and all.",
+   "options": [
+    {
+     "text": "Send our best.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "MEN",
+       "amount": 40
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": -30
+      }
+     ]
+    },
+    {
+     "text": "Our place is in the sky.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "MEN",
+       "amount": -20
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_island_drifts",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 200,
+    "conditions": [],
+    "mtth_modifiers": [
+     {
+      "factor": 0.5,
+      "conditions": [
+       {
+        "type": "stability_at_least",
+        "at_least": 1,
+        "negate": true
+       }
+      ]
+     }
+    ]
+   },
+   "title": "An Island Drifts",
+   "text": "Halo Isle has drifted out of its old place in the sky. The angels who live there are frightened.",
+   "options": [
+    {
+     "text": "Anchor it with Core cables.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -80
+      }
+     ]
+    },
+    {
+     "text": "Let it find its own place.",
+     "effects": [
+      {
+       "type": "add_dev",
+       "province": "Halo Isle",
+       "index": 0,
+       "amount": -1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_napoleons_memoirs",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 120,
+    "years": [
+     4320,
+     0
+    ],
+    "conditions": []
+   },
+   "title": "Napoleon's Memoirs",
+   "text": "The ageless king has begun to write his memoirs. They begin long before the Incendium.",
+   "options": [
+    {
+     "text": "Publish them.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      }
+     ]
+    },
+    {
+     "text": "Keep them secret.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_entity_survivor",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 24,
+    "conditions": [
+     {
+      "type": "flag",
+      "name": "entities_came",
+      "scope": "global"
+     },
+     {
+      "type": "portal_held_by_entities",
+      "negate": true
+     }
+    ]
+   },
+   "title": "The Thing in the Cage",
+   "text": "One of the entities was captured alive after the last invasion. It does not eat. It watches.",
+   "options": [
+    {
+     "text": "Study it.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 80
+      },
+      {
+       "type": "add_modifier",
+       "id": "entity_study",
+       "name": "Study of the Entities",
+       "modifiers": {
+        "doomsday_resistance": 0.3
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "Throw it back through the portal.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_barrier_reinforced",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 60,
+    "years": [
+     4330,
+     0
+    ],
+    "conditions": [
+     {
+      "type": "province_has_building",
+      "province": "Portal Isle",
+      "building": "fort"
+     }
+    ]
+   },
+   "title": "The Barrier Reinforced",
+   "text": "Core engineers believe they can strengthen the Doomsday Barrier itself.",
+   "options": [
+    {
+     "text": "Pour the Core's strength into it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -200
+      },
+      {
+       "type": "add_modifier",
+       "id": "barrier_reinforced",
+       "name": "Reinforced Barrier",
+       "modifiers": {
+        "doomsday_resistance": 0.5
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "The Barrier has held so far.",
+     "effects": []
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_feathers_fashion",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 90,
+    "conditions": []
+   },
+   "title": "The Feather Market",
+   "text": "Mainland nobles pay fortunes for angel feathers. Some angels are selling their own.",
+   "options": [
+    {
+     "text": "Forbid it.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      },
+      {
+       "type": "add_treasury",
+       "amount": -30
+      }
+     ]
+    },
+    {
+     "text": "Tax it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 80
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_eclipse_festival",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 8,
+    "years": [
+     4300,
+     4302
+    ],
+    "conditions": []
+   },
+   "title": "The Festival of Light",
+   "text": "To answer the Black Moon cult, the priests of Eden hold a festival of light across every island.",
+   "options": [
+    {
+     "text": "Light every island!",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_opinion",
+       "target": "BLM",
+       "amount": -30
+      }
+     ]
+    },
+    {
+     "text": "A quiet vigil.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_second_incendium",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 36,
+    "years": [
+     4400,
+     0
+    ],
+    "conditions": [
+     {
+      "type": "flag",
+      "name": "star_signal",
+      "scope": "global"
+     }
+    ]
+   },
+   "title": "Fire on the Horizon",
+   "text": "Watchers on the highest island see a red glow over the far sea, like the Incendium a hundred years ago.",
+   "options": [
+    {
+     "text": "Warn the mainland.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "MEN",
+       "amount": 30
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": -30
+      }
+     ]
+    },
+    {
+     "text": "Prepare Skyfall alone.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 1000
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_core_overload",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 180,
+    "conditions": [
+     {
+      "type": "province_dev_at_least",
+      "province": "Eden's Crown",
+      "at_least": 25
+     }
+    ]
+   },
+   "title": "Core Overload",
+   "text": "The Core burns brighter than ever. The priests are not sure that is a good thing.",
+   "options": [
+    {
+     "text": "Vent the excess into the Waterfall.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "core_vent",
+       "name": "Core Vented",
+       "modifiers": {
+        "production_mod": 0.1
+       },
+       "months": 60
+      }
+     ]
+    },
+    {
+     "text": "Let it burn.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 100
+      },
+      {
+       "type": "add_modifier",
+       "id": "core_overload",
+       "name": "Core Overload",
+       "modifiers": {
+        "unrest": 1
+       },
+       "months": 24
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sky_eden_census",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 48,
+    "years": [
+     4289,
+     4310
+    ],
+    "conditions": []
+   },
+   "title": "The Census of Eden",
+   "text": "Napoleon orders every angel and human in Skyfall counted.",
+   "options": [
+    {
+     "text": "Count everyone.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      },
+      {
+       "type": "add_manpower",
+       "amount": 500
+      }
+     ]
+    },
+    {
+     "text": "The angels refuse to be counted.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": -5
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "once": true
+  },
+  {
+   "id": "sky_waterfall_bridge",
+   "for": "SKY",
+   "trigger": {
+    "mtth_months": 60,
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "dip",
+      "at_least": 4
+     },
+     {
+      "type": "owns",
+      "province": "Equator Isle"
+     }
+    ]
+   },
+   "title": "A Bridge of Water",
+   "text": "Engineers propose a lift beside the Holy Waterfall, carrying goods up and down in hours instead of weeks.",
+   "options": [
+    {
+     "text": "Build the lift.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -200
+      },
+      {
+       "type": "add_modifier",
+       "id": "waterfall_lift",
+       "name": "The Waterfall Lift",
+       "modifiers": {
+        "trade_efficiency": 0.1,
+        "trade_power_mod": 0.1
+       },
+       "months": -1
+      }
+     ]
+    },
+    {
+     "text": "The Waterfall is holy. No machines.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ]
+    }
+   ],
+   "once": true
   }
  ]
 }

@@ -572,6 +572,10 @@ func edge_days(a: Dictionary, from: int, to: int) -> float:
 			if not special(tag) and transport_capacity(tag) < a["regiments"].size():
 				return -1.0
 			return base * 1.5
+		"strait":
+			if strait_blocked(tag, from, to):
+				return -1.0
+			return base * 1.25
 		"waterfall":
 			if tag == "ENT":
 				return -1.0   # the things from the portal stay in Skyfall
@@ -788,37 +792,33 @@ func fleet_edge(f: Dictionary, from: int, to: int) -> float:
 	return -1.0
 
 
+func strait_blocked(tag: String, a: int, b: int) -> bool:
+	## EU4 straits: an army can walk across unless an enemy holds the water. Ships of nations at war
+	## with `tag` at either shore (or within reach of the crossing) outnumber those of `tag` and its allies.
+	if special(tag):
+		return false
+	var mid: Vector2 = (g.provinces[a]["centre"] + g.provinces[b]["centre"]) / 2.0
+	var hostile := 0
+	var friendly := 0
+	for f in g.fleets.values():
+		var loc: int = int(f["location"])
+		var near: bool = loc == a or loc == b or g.sea.port_point(loc).distance_to(mid) < 140.0
+		if not near or not f["path"].is_empty():
+			continue
+		var owner: String = f["owner"]
+		if owner == tag or g.dip.allied(tag, owner):
+			friendly += f["ships"].size()
+		elif g.dip.at_war(tag, owner):
+			hostile += f["ships"].size()
+	return hostile > friendly
+
+
 func fleet_path(f: Dictionary, dest: int) -> Array:
+	## Fleets sail straight through open water (or open sky) to the destination's shore.
 	var start: int = int(f["location"])
-	var dist = {start: 0.0}
-	var prev = {}
-	var open = [start]
-	while not open.is_empty():
-		var best = 0
-		for i in open.size():
-			if float(dist[open[i]]) < float(dist[open[best]]):
-				best = i
-		var cur: int = open[best]
-		open.remove_at(best)
-		if cur == dest:
-			break
-		for nb in g.provinces[cur]["connections"]:
-			var d = fleet_edge(f, cur, nb)
-			if d < 0.0:
-				continue
-			var nd: float = float(dist[cur]) + d
-			if not dist.has(nb) or nd < float(dist[nb]):
-				dist[nb] = nd
-				prev[nb] = cur
-				open.append(nb)
-	if not prev.has(dest):
+	if start == dest or not g.provinces[dest]["coastal"] or g.sea.days(start, dest) < 0.0:
 		return []
-	var path: Array = []
-	var c = dest
-	while c != start:
-		path.push_front(c)
-		c = prev[c]
-	return path
+	return [dest]
 
 
 func move_fleet(id: int, dest: int) -> bool:
@@ -830,7 +830,8 @@ func move_fleet(id: int, dest: int) -> bool:
 		return false
 	f["path"] = path
 	f["progress"] = 0.0
-	f["hop_days"] = fleet_edge(f, int(f["location"]), int(path[0]))
+	f["from"] = int(f["location"])
+	f["hop_days"] = g.sea.days(int(f["location"]), int(path[0]))
 	g.armies_changed.emit()
 	return true
 
@@ -877,7 +878,8 @@ func daily() -> void:
 			f["progress"] = 0.0
 			changed = true
 			if not f["path"].is_empty():
-				f["hop_days"] = maxf(1.0, fleet_edge(f, nxt, int(f["path"][0])))
+				f["from"] = nxt
+				f["hop_days"] = maxf(1.0, g.sea.days(nxt, int(f["path"][0])))
 	_start_battles()
 	_fight_battles()
 	_naval_battles()
@@ -1294,7 +1296,8 @@ func _fleet_retreat(f: Dictionary) -> void:
 	var path = fleet_path(f, best)
 	f["path"] = path
 	f["progress"] = 0.0
-	f["hop_days"] = 5.0
+	f["from"] = int(f["location"])
+	f["hop_days"] = maxf(1.0, g.sea.days(int(f["location"]), best))
 	if path.is_empty():
 		f["location"] = best
 
@@ -1422,7 +1425,7 @@ func spawn_rebels(pid: int, rtype: String) -> void:
 	for i in regs:
 		a["regiments"].append({"type": "inf" if i % 4 != 3 else "cav", "men": REGIMENT, "morale": 2.0})
 	g.armies[g.next_id] = a
-	g.post("%s have risen in %s! (%d regiments)" % [nm, p["name"], regs])
+	g.post("%s have risen in %s! (%d regiments)" % [nm, p["name"], regs], [String(p["owner"])])
 	if p["owner"] == g.player_tag:
 		g.fire_event("rebels_rise", g.player_tag)
 	g.armies_changed.emit()

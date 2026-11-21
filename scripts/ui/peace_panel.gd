@@ -107,6 +107,14 @@ func build() -> void:
 	section("Their answer")
 	var cost_all: float = Game.dip.peace_cost(w, demander, loser, demands)
 	add(UI.kv("Cost of these terms", "%d%%" % int(cost_all)))
+	if not give:
+		var ae: Array = Game.dip.ae_preview(w, me, target, demands)
+		if float(ae[0]) > 0.0:
+			var mine := Game.dip.aggressive_expansion(String(ae[1]), me)
+			add(UI.kv("Aggressive expansion", "up to %d (%s)" % [int(ae[0]), Game.nations[ae[1]]["short"]],
+				"Other nations will resent this land grab, most of all your neighbours and those who share the victim's faith or culture.\n%s would go from %d to %d. At %d they join a coalition against you." % [
+					Game.nation_name(ae[1]), int(mine), int(mine + float(ae[0])), int(Game.dip.COALITION_JOIN)],
+				UI.BAD if mine + float(ae[0]) >= Game.dip.COALITION_JOIN else UI.WARN))
 	var acc: Array
 	if give:
 		acc = _give_acceptance(w, cost_all)

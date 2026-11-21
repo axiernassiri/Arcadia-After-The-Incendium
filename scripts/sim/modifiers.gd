@@ -72,6 +72,24 @@ func sources(tag: String) -> Array:
 	return _sources.get(tag, [])
 
 
+func breakdown(tag: String, keys: Array, percent: bool = true) -> String:
+	## "Where does this number come from": one line per named source that changes any of `keys`,
+	## then the total. Used for the EU4-style breakdown tooltips.
+	var lines: PackedStringArray = []
+	var total := 0.0
+	for s in sources(tag):
+		var v := 0.0
+		for k in keys:
+			v += float(s[1].get(k, 0.0))
+		if absf(v) > 0.0001:
+			total += v
+			lines.append(("  %s: %+d%%" % [s[0], int(round(v * 100.0))]) if percent else ("  %s: %+.2f" % [s[0], v]))
+	if lines.is_empty():
+		return "No modifiers."
+	lines.append(("Total: %+d%%" % int(round(total * 100.0))) if percent else ("Total: %+.2f" % total))
+	return "\n".join(lines)
+
+
 func _add(out: Dictionary, mods: Dictionary) -> void:
 	for k in mods:
 		out[k] = float(out.get(k, 0.0)) + float(mods[k])

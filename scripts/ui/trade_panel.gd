@@ -2,6 +2,9 @@ extends "res://scripts/ui/panel_base.gd"
 ## Trade: nodes, your share of trade power, merchants, and market prices.
 
 
+signal node_selected(node: String)
+
+
 func setup() -> void:
 	set_title("Trade")
 	panel_width = 440.0
@@ -17,7 +20,7 @@ func build() -> void:
 	add(UI.kv("Merchants", "%d / %d" % [Game.trade.merchants_used(tag), Game.trade.merchants(tag)],
 		"Send merchants to collect in other nodes (half trade power there) or to steer trade downstream toward your home node (+10% value)."))
 	add(UI.kv("Trade efficiency", "%+d%%" % int(Game.mods.nat(tag, "trade_efficiency") * 100)))
-	text("Value made in each node flows downstream unless someone collects it. The Trade map mode colours the nodes.", 12, UI.TEXT_DIM)
+	text("Value made in each node flows downstream unless someone collects it. In the Trade map mode, click any province to open its node.", 12, UI.TEXT_DIM)
 	for k in Game.trade.order:
 		var s: Dictionary = Game.trade.state.get(k, {})
 		var share: float = Game.trade.share(tag, k)
@@ -26,7 +29,9 @@ func build() -> void:
 		var v = VBoxContainer.new()
 		c.add_child(v)
 		var down: Array = Game.trade.nodes[k].get("downstream", [])
-		v.add_child(UI.row([UI.label(k, 15, UI.GOLD), UI.spacer(), UI.label("%.1f value" % float(s.get("value", 0.0)), 13)]))
+		var open_b = UI.icon_button("map", "", func(): node_selected.emit(k), "Show this node on the trade map", 14)
+		open_b.theme_type_variation = "FlatButton"
+		v.add_child(UI.row([UI.heading(k, 15), open_b, UI.spacer(), UI.label("%.1f value" % float(s.get("value", 0.0)), 13)]))
 		v.add_child(UI.label("Flows to: %s" % (", ".join(down) if down.size() > 0 else "nowhere (end node)"), 11, UI.TEXT_DIM))
 		var bar = UI.bar(share, 1.0, 200.0, UI.GOOD)
 		v.add_child(UI.row([UI.label("Your power %d%%" % int(share * 100), 12), bar]))

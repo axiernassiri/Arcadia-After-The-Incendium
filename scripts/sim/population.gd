@@ -338,24 +338,24 @@ func enforce_rebel_demands(faction: Dictionary, pids: Array) -> void:
 					if g.provinces[pid]["owner"] == target:
 						g.set_province_owner(pid, free_tag)
 						g.provinces[pid]["cores"][free_tag] = true
-				g.post("Separatists have broken away from %s: %s is free again." % [n["short"], g.nations[free_tag]["short"]])
+				g.post("Separatists have broken away from %s: %s is free again." % [n["short"], g.nations[free_tag]["short"]], [target])
 			else:
 				for pid in pids:
 					g.add_province_modifier(pid, "rebel_autonomy", "Separatist autonomy", {"local_tax_mod": -0.5,
 						"local_unrest": -3}, 120)
 				n["stability"] = maxi(-3, int(n["stability"]) - 1)
-				g.post("%s grants the separatists of %s wide autonomy." % [n["short"], faction.get("home_name", "the province")])
+				g.post("%s grants the separatists of %s wide autonomy." % [n["short"], faction.get("home_name", "the province")], [target])
 		"zealots":
 			for pid in pids:
 				g.provinces[pid]["religion"] = faction.get("religion", g.provinces[pid]["religion"])
-			g.post("Zealots have forced %s to follow the %s." % [faction.get("home_name", "the province"), faction.get("religion", "")])
+			g.post("Zealots have forced %s to follow the %s." % [faction.get("home_name", "the province"), faction.get("religion", "")], [target])
 		_:
 			n["stability"] = maxi(-3, int(n["stability"]) - 1)
 			n["treasury"] = maxf(0.0, float(n["treasury"]) * 0.85)
 			for pid in pids:
 				g.add_province_modifier(pid, "peasant_concessions", "Peasant concessions", {"local_tax_mod": -0.25,
 					"local_unrest": -2}, 60)
-			g.post("Peasant rebels have won concessions from %s." % n["short"])
+			g.post("Peasant rebels have won concessions from %s." % n["short"], [target])
 	for pid in pids:
 		g.provinces[pid]["rebel_progress"] = 0.0
 		if g.provinces[pid]["controller"] == "REB":
