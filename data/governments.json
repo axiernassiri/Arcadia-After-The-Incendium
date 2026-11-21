@@ -1,0 +1,79 @@
+{
+  "_note": "Government types and their reform tiers, like EU4's government reforms. Reform progress builds up each month; enacting a reform in the next tier costs progress (cost_per_tier x tier number). The chosen reform in each tier gives its modifiers. Modifier keys are listed in README.",
+  "cost_per_tier": 40,
+  "governments": {
+    "holy_pig_monarchy": {
+      "name": "Holy Pig Monarchy", "rank": "Empire", "text": "The Pig Lord rules the Holy Empire from Mentos.",
+      "modifiers": {"monthly_adm": 1},
+      "tiers": [
+        {"name": "Seat of the Pig Lord", "reforms": [
+          {"id": "divine_swine", "name": "Divine Swine", "modifiers": {"stability_cost_mod": -0.15, "tolerance_own": 1}, "text": "The Pig Lord's word is holy."},
+          {"id": "lotus_court", "name": "Lotus Court", "modifiers": {"monthly_dip": 1}, "text": "A court of diplomats and scholars."},
+          {"id": "pork_barrel", "name": "Pork Barrel Autocracy", "modifiers": {"tax_mod": 0.10}, "text": "Every snout pays its share."}]},
+        {"name": "Administration", "reforms": [
+          {"id": "sty_wardens", "name": "Sty Wardens", "modifiers": {"unrest": -1}, "text": "Wardens keep the peace in every sty."},
+          {"id": "grain_bureau", "name": "Grain Bureaucracy", "modifiers": {"production_mod": 0.10}, "text": "Eurome's harvests, counted and stored."},
+          {"id": "centralized_mud", "name": "Centralized Mud", "modifiers": {"dev_cost_mod": -0.10}, "text": "Plans for every province drawn up in Mentos."}]},
+        {"name": "The Armies of the Empire", "reforms": [
+          {"id": "unity_command", "name": "Unity Command", "modifiers": {"land_morale": 0.10}, "text": "Unity trains every officer."},
+          {"id": "levee_of_hogs", "name": "Levée of Hogs", "modifiers": {"manpower_mod": 0.20}, "text": "Every farm sends a son."},
+          {"id": "pig_iron", "name": "Pig Iron Discipline", "modifiers": {"discipline": 0.05}, "text": "Drill, drill and drill again."}]},
+        {"name": "Reach of the Empire", "reforms": [
+          {"id": "charter_colonies", "name": "Charter Colonies", "modifiers": {"colonists": 1, "colonist_growth": 15}, "text": "Settlers for the empty isles."},
+          {"id": "archipelago_mandate", "name": "Archipelago Mandate", "modifiers": {"naval_maintenance_mod": -0.15, "trade_power_mod": 0.10}, "text": "Rule the waves around the mines."},
+          {"id": "haze_expeditions", "name": "Haze Expeditions", "modifiers": {"monthly_dip": 1, "core_cost_mod": -0.10}, "text": "Push into the unknown."}]},
+        {"name": "Rights of the Herd", "reforms": [
+          {"id": "herd_assembly", "name": "Herd Assembly", "modifiers": {"unrest": -1, "tax_mod": 0.05}, "text": "Every herd has a voice."},
+          {"id": "noble_snouts", "name": "Noble Snouts", "modifiers": {"land_maintenance_mod": -0.10, "leader_shock": 1}, "text": "The great families lead the army."},
+          {"id": "merchant_pigs", "name": "Merchant Pigs", "modifiers": {"merchants": 1, "trade_efficiency": 0.10}, "text": "Trade guilds get a seat at court."}]},
+        {"name": "Empire of All Arcadia", "reforms": [
+          {"id": "green_empire", "name": "The Green Empire", "modifiers": {"production_mod": 0.10, "build_cost_mod": -0.15}, "text": "Never fossil fuels: green power for every province."},
+          {"id": "iron_empire", "name": "The Iron Empire", "modifiers": {"land_morale": 0.10, "siege_ability": 0.15}, "text": "Arcadia will have one master."},
+          {"id": "lotus_empire", "name": "The Lotus Empire", "modifiers": {"tech_cost_mod": -0.10, "idea_cost_mod": -0.10}, "text": "An empire of learning."}]}
+      ]
+    },
+    "edenic_monarchy": {
+      "name": "Edenic Monarchy", "rank": "Kingdom", "text": "An ageless king holds the islands Eden raised.",
+      "modifiers": {"monthly_mil": 1},
+      "tiers": [
+        {"name": "The Ageless King", "reforms": [
+          {"id": "napoleons_mandate", "name": "Napoleon's Mandate", "modifiers": {"leader_fire": 1, "land_morale": 0.05}, "text": "The King leads from the front."},
+          {"id": "edens_will", "name": "Eden's Will", "modifiers": {"doomsday_resistance": 0.25, "stability_cost_mod": -0.10}, "text": "Eden's will is law."},
+          {"id": "court_of_angels", "name": "Court of Angels", "modifiers": {"monthly_dip": 1, "diplomatic_reputation": 1}, "text": "Angels serve as envoys."}]},
+        {"name": "Barrier Doctrine", "reforms": [
+          {"id": "barrier_guard", "name": "The Barrier Guard", "modifiers": {"fort_defense": 0.20, "doomsday_resistance": 0.15}, "text": "A standing guard at Portal Isle."},
+          {"id": "holy_spellcraft", "name": "Holy Spellcraft", "modifiers": {"artillery_power": 0.15}, "text": "Spells against everything that moves."},
+          {"id": "core_wardens", "name": "Core Wardens", "modifiers": {"production_mod": 0.10}, "text": "The Core powers our workshops."}]},
+        {"name": "Wings", "reforms": [
+          {"id": "angel_cavalry", "name": "Angel Cavalry", "modifiers": {"cavalry_power": 0.20}, "text": "Winged riders."},
+          {"id": "airship_fleet", "name": "Airship Fleet", "modifiers": {"naval_morale": 0.15, "naval_maintenance_mod": -0.10}, "text": "Airships patrol every cloud."},
+          {"id": "skyward_levies", "name": "Skyward Levies", "modifiers": {"manpower_mod": 0.25}, "text": "Every islander learns to fight."}]},
+        {"name": "Below the Clouds", "reforms": [
+          {"id": "mask_works", "name": "Mask Works", "modifiers": {"colonists": 1, "colonist_growth": 10}, "text": "Masks for those who go below."},
+          {"id": "waterfall_tolls", "name": "Waterfall Tolls", "modifiers": {"trade_power_mod": 0.15, "trade_efficiency": 0.05}, "text": "Everything that climbs the waterfall pays."},
+          {"id": "napoleons_foundries", "name": "Napoleon's Foundries", "modifiers": {"build_cost_mod": -0.15, "siege_ability": 0.10}, "text": "Steel from Eden's German blueprints."}]},
+        {"name": "Kingdom of Heaven", "reforms": [
+          {"id": "eternal_kingdom", "name": "The Eternal Kingdom", "modifiers": {"tech_cost_mod": -0.10, "unrest": -1}, "text": "A kingdom that cannot fall."},
+          {"id": "sword_of_eden", "name": "The Sword of Eden", "modifiers": {"discipline": 0.05, "land_morale": 0.10}, "text": "Eden's soldiers do not break."},
+          {"id": "skyward_trade", "name": "Skyward Trade", "modifiers": {"merchants": 1, "trade_power_mod": 0.10}, "text": "Every market under the clouds wants Core Energy."}]}
+      ]
+    },
+    "boar_tribe": {
+      "name": "Boar Tribe", "rank": "Tribe", "text": "Clans of wild boars led by a chief.",
+      "modifiers": {"manpower_mod": 0.25, "land_maintenance_mod": -0.25, "dev_cost_mod": 0.15},
+      "tiers": [
+        {"name": "The Chief", "reforms": [
+          {"id": "war_chief", "name": "War Chief", "modifiers": {"land_morale": 0.10}, "text": "The strongest tusk leads."},
+          {"id": "elder_council", "name": "Council of Elders", "modifiers": {"unrest": -1, "monthly_adm": 1}, "text": "The old ones decide."},
+          {"id": "trade_chief", "name": "Trading Chief", "modifiers": {"trade_power_mod": 0.15}, "text": "Pearls and salt for the outside world."}]},
+        {"name": "Ways of the Tribe", "reforms": [
+          {"id": "settled_herds", "name": "Settled Herds", "modifiers": {"dev_cost_mod": -0.15, "tax_mod": 0.10}, "text": "Stop moving, start farming."},
+          {"id": "raiders", "name": "Raiders", "modifiers": {"cavalry_power": 0.15, "manpower_mod": 0.10}, "text": "Take what the pigs won't give."},
+          {"id": "mud_shamans", "name": "Mud Shamans", "modifiers": {"tolerance_own": 2, "stability_cost_mod": -0.10}, "text": "The spirits of the mud guide us."}]},
+        {"name": "Becoming a Nation", "reforms": [
+          {"id": "boar_kingdom", "name": "Boar Kingdom", "modifiers": {"monthly_dip": 1, "tech_cost_mod": -0.10}, "text": "A crown for the chief."},
+          {"id": "tusk_confederacy", "name": "Tusk Confederacy", "modifiers": {"diplomatic_reputation": 2, "land_morale": 0.05}, "text": "All boars, one council."}]}
+      ]
+    }
+  }
+}

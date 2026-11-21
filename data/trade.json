@@ -1,0 +1,15 @@
+{
+  "_note": "Trade nodes, like EU4. Each province belongs to one node (trade_node in provinces.json). Value made in a node flows downstream unless collected. A nation collects in its home node (the node of its capital) and wherever it sends a merchant to collect; elsewhere a merchant steers value downstream (+10%). The node seats are the stars on the lore map.",
+  "nodes": {
+    "Arcadian Sea":        {"downstream": [], "text": "The end node: all trade in Arcadia flows here, past Mentos."},
+    "Bay of Pigs":         {"downstream": ["Arcadian Sea"], "text": "Sylvania's great harbour."},
+    "Midrea":              {"downstream": ["Arcadian Sea"], "text": "Tech and ore out of the Midrean hills."},
+    "Eurome":              {"downstream": ["Midrea", "Bay of Pigs"], "text": "Grain and wine from the farms."},
+    "Western Archipelago": {"downstream": ["Bay of Pigs"], "text": "Ore, gems and salt from the mines."},
+    "Southern Sea":        {"downstream": ["Eurome"], "text": "Pearls and fish from the Southern Isles."},
+    "Skyfall":             {"downstream": ["Arcadian Sea"], "text": "Core Energy and holy relics, down the Holy Waterfall."}
+  },
+  "home_bonus": 0.10,
+  "collect_away_penalty": 0.5,
+  "steer_bonus": 0.10
+}

@@ -1,0 +1,25 @@
+{
+  "_note": "Opening cutscene: the Incendium, as told by the Pig Lord. Source: 'The Incendium' lore doc. One entry per beat.",
+  "title": "The Incendium",
+  "narrator": "as remembered by the Pig Lord",
+  "beats": [
+    {"year": "2042", "heading": "The Eruption of Yellowstone",
+     "text": "Humans thought Yellowstone would sleep for thousands of years. It woke instead, and a winter of ash and sulfur covered the world for a decade."},
+    {"year": "2043 - 2053", "heading": "Cataclysm",
+     "text": "The farms died under the ash. Famine turned neighbours against each other, and fights over food became wars between nations."},
+    {"year": "2051 - 2100", "heading": "The Incendium",
+     "text": "The wars merged into one: the Incendium, 'inferno' in the Menslosian tongue. Old alliances broke, old empires rose again, and the nuclear fire began."},
+    {"year": "2100 - 2706", "heading": "Deformation of Nations",
+     "text": "Radiation and winter took billions. In bunkers the humans never noticed, pigs and chickens grew wiser, learned tools, and waited."},
+    {"year": "2502 - 2706", "heading": "A Message from J82wC4",
+     "text": "Lightyears away, a civilization near utopia watched the war and sent a message. To this day no one has deciphered it. When the bombs stopped, only three humans remained."},
+    {"year": "2706 - 3500", "heading": "Continental Merge",
+     "text": "The plates drifted together into one supercontinent. The animals came out of hiding to claim a silent, desolate land."},
+    {"year": "4100", "heading": "The Universal Merge",
+     "text": "A flash of light and colour split the sky. Through the fissures came a chain of floating islands, a portal sealed in an unbreakable barrier, staircases in Sylvania, and things that cannot be described. The universe split in two."},
+    {"year": "4100 - 4289", "heading": "A New Beginning",
+     "text": "Villages became towns and towns became cities. We took control of Menslosia and established order. The floating islands were inhabited, and they became the nation of Skyfall."},
+    {"year": "4289", "heading": "The Arcadian Era",
+     "text": "The Incendium is over. Two nations share a new world: Menslosia below, Skyfall above. Every leap year, the Black Moon rises over the barrier. Choose your nation."}
+  ]
+}

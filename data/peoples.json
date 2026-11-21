@@ -1,0 +1,31 @@
+{
+  "_note": "Cultures (in culture groups), ethnicities and religions. A province whose culture isn't accepted by its owner gets unrest; a different culture group or ethnicity adds more. Religions give their followers' nations modifiers. Names other than Pigs, Pigmen, Humans, Angels and the Will of Eden are placeholders.",
+  "culture_groups": {
+    "Porcine":   {"name": "Porcine",   "colour": "#e27a8a", "cultures": ["Mentosian", "Sylvanian", "Midrean", "Euromean", "Archipelagan"]},
+    "Wild Boar": {"name": "Wild Boar", "colour": "#8a6a4a", "cultures": ["Snowtusk", "Saltjaw", "Driftboar", "Coralsnout"]},
+    "Edenic":    {"name": "Edenic",    "colour": "#f0d070", "cultures": ["Edenite"]}
+  },
+  "cultures": {
+    "Mentosian":   {"colour": "#e06070"}, "Sylvanian":  {"colour": "#5aa060"}, "Midrean":   {"colour": "#9060c0"},
+    "Euromean":    {"colour": "#d08040"}, "Archipelagan": {"colour": "#8090a0"},
+    "Snowtusk":    {"colour": "#c0d8e8"}, "Saltjaw":    {"colour": "#507080"}, "Driftboar": {"colour": "#a0a040"},
+    "Coralsnout":  {"colour": "#e08870"}, "Edenite":    {"colour": "#f0d070"}
+  },
+  "ethnicities": {
+    "Pig":    {"colour": "#f2a0b0", "breathes": "ground", "text": "Pigs of Menslosia."},
+    "Pigman": {"colour": "#c07888", "breathes": "ground", "text": "Pigmen: upright, clever, often found in the labs and mines."},
+    "Boar":   {"colour": "#7a5a3a", "breathes": "ground", "text": "Wild boars of the fringes."},
+    "Human":  {"colour": "#e8c89a", "breathes": "sky", "text": "Skyfallin humans. They need breathing masks below the clouds."},
+    "Angel":  {"colour": "#fff4c0", "breathes": "sky", "text": "Angels of Skyfall."}
+  },
+  "religions": {
+    "Lotus Faith":  {"colour": "#f28ab8", "modifiers": {"tolerance_own": 1, "dev_cost_mod": -0.05}, "text": "The faith of the Holy Empire (placeholder name)."},
+    "Will of Eden": {"colour": "#f0c040", "modifiers": {"land_morale": 0.05, "doomsday_resistance": 0.25}, "text": "Skyfall's devotion to Eden, who raised the islands."},
+    "Mud Spirits":  {"colour": "#8a6a3a", "modifiers": {"manpower_mod": 0.10, "unrest": -1}, "text": "The old ways of the wild boars (placeholder)."}
+  },
+  "rebels": {
+    "separatists": {"name": "Separatists", "text": "Want their land out of the empire."},
+    "zealots":     {"name": "Religious zealots", "text": "Want their province to follow their faith."},
+    "peasants":    {"name": "Peasant revolt", "text": "Angry about taxes, war and hunger."}
+  }
+}

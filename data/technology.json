@@ -1,0 +1,57 @@
+{
+  "_note": "Three tech tracks like EU4 (adm, dip, mil), paid with the matching power type. cost = base + per_level x level, changed by tech_cost_mod; each level researched before its year costs 5% more per year early. Unlocks: modifiers (added permanently), buildings, units (land unit tier names), idea_slot, fort_level, ship types.",
+  "base_cost": 160, "per_level": 30,
+  "tracks": {
+    "adm": [
+      {"level": 1, "year": 4289, "name": "Rebuilding Charters", "text": "Ledgers for a ruined world.", "buildings": ["market"]},
+      {"level": 2, "year": 4290, "name": "Ration Ledgers", "modifiers": {"tax_mod": 0.05}, "idea_slot": true},
+      {"level": 3, "year": 4292, "name": "Provincial Courts", "buildings": ["courthouse", "temple"]},
+      {"level": 4, "year": 4294, "name": "Green Power Grid", "modifiers": {"production_mod": 0.05}, "idea_slot": true},
+      {"level": 5, "year": 4296, "name": "Census of the Herd", "buildings": ["workshop"], "modifiers": {"manpower_mod": 0.05}},
+      {"level": 6, "year": 4298, "name": "Wind and Water Mills", "modifiers": {"production_mod": 0.05}, "idea_slot": true},
+      {"level": 7, "year": 4300, "name": "Imperial Bureaucracy", "modifiers": {"unrest": -1}, "buildings": ["granary"]},
+      {"level": 8, "year": 4303, "name": "Solar Farms", "modifiers": {"production_mod": 0.05}, "idea_slot": true},
+      {"level": 9, "year": 4306, "name": "Planned Cities", "buildings": ["university"], "modifiers": {"dev_cost_mod": -0.05}},
+      {"level": 10, "year": 4309, "name": "Lotus Academies", "idea_slot": true, "modifiers": {"tech_cost_mod": -0.05}},
+      {"level": 11, "year": 4312, "name": "Arcadian Law", "modifiers": {"tax_mod": 0.10}},
+      {"level": 12, "year": 4315, "name": "Fusion Lanterns", "idea_slot": true, "modifiers": {"production_mod": 0.10}},
+      {"level": 13, "year": 4318, "name": "Weather Engineering", "modifiers": {"dev_cost_mod": -0.10}},
+      {"level": 14, "year": 4321, "name": "Orbital Survey", "idea_slot": true},
+      {"level": 15, "year": 4325, "name": "Kardashev Ambitions", "modifiers": {"production_mod": 0.10, "tax_mod": 0.10}}
+    ],
+    "dip": [
+      {"level": 1, "year": 4289, "name": "Coastal Charts", "buildings": ["dock"], "ships": ["light", "transport"]},
+      {"level": 2, "year": 4290, "name": "Envoys", "modifiers": {"diplomats": 1}},
+      {"level": 3, "year": 4292, "name": "Trade Ledgers", "buildings": ["trade_depot"], "ships": ["heavy"], "modifiers": {"merchants": 1}},
+      {"level": 4, "year": 4294, "name": "Shipyards", "buildings": ["shipyard"], "modifiers": {"colonists": 1}},
+      {"level": 5, "year": 4296, "name": "Trade Fleets", "modifiers": {"trade_efficiency": 0.10}},
+      {"level": 6, "year": 4298, "name": "Ironclad Hulls", "modifiers": {"naval_morale": 0.10}},
+      {"level": 7, "year": 4300, "name": "Merchant Guilds", "modifiers": {"merchants": 1, "trade_power_mod": 0.05}},
+      {"level": 8, "year": 4303, "name": "Port Cranes", "buildings": ["harbour"], "modifiers": {"trade_efficiency": 0.10}},
+      {"level": 9, "year": 4306, "name": "Embassies", "modifiers": {"diplomats": 1, "improve_relations_mod": 0.25}},
+      {"level": 10, "year": 4309, "name": "Steam Clippers", "modifiers": {"naval_morale": 0.10, "colonist_growth": 15}},
+      {"level": 11, "year": 4312, "name": "Exchange Houses", "modifiers": {"trade_efficiency": 0.10}},
+      {"level": 12, "year": 4315, "name": "Radio", "modifiers": {"merchants": 1}},
+      {"level": 13, "year": 4318, "name": "Hovercraft", "modifiers": {"naval_morale": 0.10}},
+      {"level": 14, "year": 4321, "name": "Satellite Uplink", "modifiers": {"trade_power_mod": 0.10}},
+      {"level": 15, "year": 4325, "name": "Starships", "modifiers": {"trade_efficiency": 0.15}}
+    ],
+    "mil": [
+      {"level": 1, "year": 4289, "name": "Militias", "units": "Militia", "buildings": ["barracks"]},
+      {"level": 2, "year": 4290, "name": "Drill Yards", "modifiers": {"land_morale": 0.10}},
+      {"level": 3, "year": 4292, "name": "Field Guns", "units": "Line Infantry", "fort_level": 1, "buildings": ["fort"]},
+      {"level": 4, "year": 4294, "name": "Tactics of Unity", "modifiers": {"land_morale": 0.10, "discipline": 0.05}},
+      {"level": 5, "year": 4296, "name": "Rifled Barrels", "modifiers": {"infantry_power": 0.15}},
+      {"level": 6, "year": 4298, "name": "Siege Engines", "modifiers": {"siege_ability": 0.10}, "fort_level": 2},
+      {"level": 7, "year": 4300, "name": "Riflemen", "units": "Riflemen", "modifiers": {"land_morale": 0.10}},
+      {"level": 8, "year": 4303, "name": "Armoured Cavalry", "modifiers": {"cavalry_power": 0.20}},
+      {"level": 9, "year": 4306, "name": "Howitzers", "modifiers": {"artillery_power": 0.25}},
+      {"level": 10, "year": 4309, "name": "Combined Arms", "modifiers": {"discipline": 0.05, "land_morale": 0.10}, "fort_level": 3},
+      {"level": 11, "year": 4312, "name": "Tanks", "units": "Armoured Corps", "modifiers": {"infantry_power": 0.20}},
+      {"level": 12, "year": 4315, "name": "Air Support", "modifiers": {"land_morale": 0.10}},
+      {"level": 13, "year": 4318, "name": "Power Armour", "modifiers": {"infantry_power": 0.20, "cavalry_power": 0.20}},
+      {"level": 14, "year": 4321, "name": "Railguns", "modifiers": {"artillery_power": 0.30}},
+      {"level": 15, "year": 4325, "name": "Anomaly Shields", "modifiers": {"discipline": 0.10, "doomsday_resistance": 0.25}}
+    ]
+  }
+}

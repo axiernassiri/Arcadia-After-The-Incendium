@@ -1,0 +1,19 @@
+{
+  "_note": "Terrain. dev_cost: extra cost to develop (+0.2 = 20% more). move: days to march in. defence: dice bonus for the defender in battle. supply: armies that fit before attrition. build_slots: building slots.",
+  "terrain": {
+    "farmland":  {"name": "Farmland",  "dev_cost": -0.10, "move": 1.0, "defence": 0, "supply": 8, "build_slots": 3},
+    "grassland": {"name": "Grassland", "dev_cost": 0.00,  "move": 1.0, "defence": 0, "supply": 7, "build_slots": 3},
+    "coast":     {"name": "Coast",     "dev_cost": 0.00,  "move": 1.0, "defence": 0, "supply": 6, "build_slots": 3},
+    "drylands":  {"name": "Drylands",  "dev_cost": 0.20,  "move": 1.1, "defence": 0, "supply": 4, "build_slots": 2},
+    "forest":    {"name": "Forest",    "dev_cost": 0.20,  "move": 1.25, "defence": 1, "supply": 5, "build_slots": 2},
+    "hills":     {"name": "Hills",     "dev_cost": 0.25,  "move": 1.4, "defence": 1, "supply": 5, "build_slots": 2},
+    "jungle":    {"name": "Jungle",    "dev_cost": 0.35,  "move": 1.5, "defence": 1, "supply": 4, "build_slots": 2},
+    "mountains": {"name": "Mountains", "dev_cost": 0.40,  "move": 1.5, "defence": 2, "supply": 3, "build_slots": 1},
+    "tundra":    {"name": "Tundra",    "dev_cost": 0.35,  "move": 1.3, "defence": 0, "supply": 3, "build_slots": 1},
+    "volcanic":  {"name": "Volcanic",  "dev_cost": 0.45,  "move": 1.4, "defence": 1, "supply": 3, "build_slots": 1},
+    "anomalous": {"name": "Anomalous", "dev_cost": 0.50,  "move": 1.5, "defence": 1, "supply": 3, "build_slots": 1},
+    "fortress":  {"name": "Fortress Isle", "dev_cost": 0.30, "move": 1.0, "defence": 2, "supply": 6, "build_slots": 3},
+    "skyland":   {"name": "Skyland",   "dev_cost": 0.10,  "move": 1.0, "defence": 1, "supply": 6, "build_slots": 3},
+    "wasteland": {"name": "Wasteland", "dev_cost": 0.50,  "move": 1.5, "defence": 0, "supply": 2, "build_slots": 1}
+  }
+}

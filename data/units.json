@@ -1,0 +1,16 @@
+{
+  "_note": "Unit types. cost in sanctum, manpower per regiment (1000 men), maintenance per month, months to recruit. fire/shock are combat strength per regiment before tech and modifiers. Ships: hull, guns (combat), capacity (regiments carried), trade (trade power when protecting a node). Skyfall's ships are airships and sail only between the sky islands.",
+  "land": {
+    "inf": {"name": "Infantry",  "cost": 10, "manpower": 1000, "maintenance": 0.20, "months": 1, "fire": 1.0, "shock": 0.8, "tech": 1},
+    "cav": {"name": "Cavalry",   "cost": 25, "manpower": 1000, "maintenance": 0.45, "months": 2, "fire": 0.4, "shock": 2.0, "tech": 1},
+    "art": {"name": "Artillery", "cost": 30, "manpower": 1000, "maintenance": 0.55, "months": 2, "fire": 2.0, "shock": 0.4, "tech": 3, "siege": 1}
+  },
+  "sky_names": {"inf": "Edenite Guard", "cav": "Angel Cavalry", "art": "Holy Artillery"},
+  "tribe_names": {"inf": "Tusk Warriors", "cav": "Boar Riders", "art": "Stone Throwers"},
+  "ships": {
+    "heavy":     {"name": "Heavy ship", "cost": 50, "maintenance": 0.50, "months": 4, "hull": 3.0, "guns": 3.0, "capacity": 1, "trade": 0.0, "tech": 3},
+    "light":     {"name": "Light ship", "cost": 20, "maintenance": 0.20, "months": 2, "hull": 1.0, "guns": 1.0, "capacity": 0, "trade": 3.0, "tech": 1},
+    "transport": {"name": "Transport",  "cost": 12, "maintenance": 0.10, "months": 1, "hull": 1.0, "guns": 0.2, "capacity": 2, "trade": 0.0, "tech": 1}
+  },
+  "airship_names": {"heavy": "War airship", "light": "Scout airship", "transport": "Cargo airship"}
+}

@@ -1,0 +1,93 @@
+{
+  "_note": "Nations of the First World. power_names rename EU4's admin / diplomatic / military points. ruler stats (adm, dip, mil, 0-6) add to monthly power. tech is the starting level of each tech track. Tribes are the native groups on land Menslosia hasn't conquered; their names are placeholders.",
+  "nations": {
+    "MEN": {
+      "name": "Holy Empire of Menslosia", "short": "Menslosia", "adjective": "Menslosian", "colour": "#c8505a",
+      "government": "holy_pig_monarchy", "capital": "Mentos", "ideas": "MEN",
+      "culture": "Mentosian", "accepted_cultures": ["Sylvanian", "Midrean", "Euromean", "Archipelagan"],
+      "religion": "Lotus Faith", "ethnicity": "Pig",
+      "ruler": {"name": "The Pig Lord", "adm": 5, "dip": 4, "mil": 3, "age": 41, "dynasty": "of Canada"},
+      "heir": {"name": "Prince Truffle", "adm": 3, "dip": 3, "mil": 2, "age": 12, "dynasty": "of Canada"},
+      "ruler_names": ["Hamwise", "Bristle", "Snoutimer", "Porcius", "Truffle", "Oinkhart", "Rindgar", "Sowena", "Curlina", "Hogwald"],
+      "power_names": ["Lotus", "Accord", "Unity"],
+      "treasury": 150, "manpower": 22000, "stability": 1, "tech": [3, 3, 3],
+      "army": {"location": "Mentos", "inf": 10, "cav": 3, "art": 0},
+      "army2": {"location": "Eurome Fields", "inf": 6, "cav": 1, "art": 0},
+      "fleet": {"location": "Bay of Pigs", "heavy": 2, "light": 4, "transport": 4},
+      "known_layers": ["ground"], "known_extra": ["Holy Waterfall of Eden"],
+      "relations": {"SKY": {"opinion": 50, "alliance": true}},
+      "flags": [], "playable": true, "difficulty": "Easy",
+      "blurb": "The wide nation. Pigs and pigmen rebuilding the supercontinent after the Incendium: many provinces, farms in Eurome, labs in Midrea and mines in the Western Archipelago. Wild boar tribes still hold the fringes."
+    },
+    "SKY": {
+      "name": "Skyfall", "short": "Skyfall", "adjective": "Skyfallin", "colour": "#e8b84a",
+      "government": "edenic_monarchy", "capital": "Eden's Crown", "ideas": "SKY",
+      "culture": "Edenite", "accepted_cultures": [], "religion": "Will of Eden", "ethnicity": "Human",
+      "ruler": {"name": "Napoleon Bonaparte", "adm": 3, "dip": 3, "mil": 6, "age": 52, "dynasty": "Bonaparte", "ageless": true},
+      "heir": {},
+      "ruler_names": ["Josephine", "Gabriel", "Seraphine", "Michel", "Aurelian", "Celeste"],
+      "power_names": ["Core", "Eden", "Wings"],
+      "treasury": 120, "manpower": 9000, "stability": 2, "tech": [3, 3, 4],
+      "army": {"location": "Eden's Crown", "inf": 6, "cav": 3, "art": 2},
+      "fleet": {"location": "Eden's Crown", "heavy": 2, "light": 2, "transport": 2},
+      "known_layers": ["sky"], "known_extra": ["Falls Landing"],
+      "relations": {"MEN": {"opinion": 50, "alliance": true}},
+      "flags": ["will_of_eden"], "playable": true, "difficulty": "Normal",
+      "blurb": "The tall nation. Flying islands that fell into Arcadia in the Universal Merge, ruled by an ageless Napoleon. Few provinces, strong armies, airships instead of ships, and the burden of holding the Doomsday Barrier."
+    },
+    "SNT": {
+      "name": "Snowtusk Clans", "short": "Snowtusk", "adjective": "Snowtusk", "colour": "#9ab8c8",
+      "government": "boar_tribe", "capital": "Frost Reach", "ideas": "TRIBE",
+      "culture": "Snowtusk", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
+      "ruler": {"name": "Chief Rimeback", "adm": 2, "dip": 1, "mil": 4, "age": 33, "dynasty": "Snowtusk"},
+      "heir": {"name": "Icejaw the Young", "adm": 1, "dip": 2, "mil": 3, "age": 9, "dynasty": "Snowtusk"},
+      "ruler_names": ["Rime", "Hoarfrost", "Glacius", "Sleet", "Frostbristle"],
+      "power_names": ["Council", "Kinship", "Tusks"],
+      "treasury": 25, "manpower": 4000, "stability": 0, "tech": [1, 1, 2],
+      "army": {"location": "Frost Reach", "inf": 3, "cav": 1, "art": 0},
+      "known_layers": [], "flags": [], "playable": true, "difficulty": "Very hard",
+      "blurb": "Wild boars of the frozen northeast of Mentos, right on the Pig Lord's doorstep."
+    },
+    "SAL": {
+      "name": "Saltjaw Islanders", "short": "Saltjaw", "adjective": "Saltjaw", "colour": "#4a8a8a",
+      "government": "boar_tribe", "capital": "Mine Key", "ideas": "TRIBE",
+      "culture": "Saltjaw", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
+      "ruler": {"name": "Old Brinehide", "adm": 2, "dip": 3, "mil": 2, "age": 47, "dynasty": "Saltjaw"},
+      "heir": {},
+      "ruler_names": ["Brine", "Kelp", "Shoal", "Barnacle", "Tidebristle"],
+      "power_names": ["Council", "Kinship", "Tusks"],
+      "treasury": 20, "manpower": 3000, "stability": 0, "tech": [1, 2, 1],
+      "army": {"location": "Mine Key", "inf": 2, "cav": 0, "art": 0},
+      "known_layers": [], "flags": [], "playable": true, "difficulty": "Very hard",
+      "blurb": "Island boars of the southern Western Archipelago, sitting on the richest ore in Arcadia."
+    },
+    "DRF": {
+      "name": "Driftboar Tribe", "short": "Driftboar", "adjective": "Driftboar", "colour": "#9a9a3a",
+      "government": "boar_tribe", "capital": "Driftboar Shore", "ideas": "TRIBE",
+      "culture": "Driftboar", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
+      "ruler": {"name": "Chief Palmtusk", "adm": 3, "dip": 2, "mil": 3, "age": 29, "dynasty": "Driftboar"},
+      "heir": {},
+      "ruler_names": ["Palm", "Coconut", "Mango", "Reef", "Sunbristle"],
+      "power_names": ["Council", "Kinship", "Tusks"],
+      "treasury": 30, "manpower": 4500, "stability": 1, "tech": [1, 1, 1],
+      "army": {"location": "Driftboar Shore", "inf": 4, "cav": 0, "art": 0},
+      "known_layers": [], "flags": [], "playable": true, "difficulty": "Hard",
+      "blurb": "Boars of the lone southwestern island across the equator, far from the Pig Lord's reach."
+    },
+    "CRL": {
+      "name": "Coralsnout Tribe", "short": "Coralsnout", "adjective": "Coralsnout", "colour": "#d07a60",
+      "government": "boar_tribe", "capital": "Sandsnout", "ideas": "TRIBE",
+      "culture": "Coralsnout", "accepted_cultures": [], "religion": "Mud Spirits", "ethnicity": "Boar",
+      "ruler": {"name": "Shellmother Conch", "adm": 3, "dip": 3, "mil": 1, "age": 55, "dynasty": "Coralsnout"},
+      "heir": {},
+      "ruler_names": ["Conch", "Pearl", "Urchin", "Coral", "Seafoam"],
+      "power_names": ["Council", "Kinship", "Tusks"],
+      "treasury": 20, "manpower": 2000, "stability": 0, "tech": [1, 2, 1],
+      "army": {"location": "Sandsnout", "inf": 2, "cav": 0, "art": 0},
+      "known_layers": [], "flags": [], "playable": true, "difficulty": "Very hard",
+      "blurb": "Pearl-diving boars of the Southern Isles, just off Unity."
+    }
+  },
+  "unowned_colour": "#b9b29b",
+  "fog_colour": "#2b3138"
+}

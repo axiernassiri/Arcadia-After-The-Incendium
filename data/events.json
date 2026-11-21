@@ -1,0 +1,128 @@
+{
+  "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'tribes' or 'player'. Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types.",
+  "events": [
+    {"id": "arcadian_era_begins", "for": "all", "trigger": {"date": "4289-01-02"},
+     "title": "The Arcadian Era Begins",
+     "text": "The ash has cleared and the Incendium is over. Menslosia and Skyfall have sworn friendship. The world is ours to rebuild.",
+     "options": [
+       {"text": "Rebuild with green power, never fossil fuels.", "effects": [{"type": "add_stability", "amount": 1}, {"type": "add_modifier", "id": "green_rebuilding", "name": "Green Rebuilding", "modifiers": {"production_mod": 0.05}, "months": 120}]},
+       {"text": "Rebuild fast, whatever it takes.", "effects": [{"type": "add_treasury", "amount": 100}, {"type": "add_stability", "amount": -1}]}]},
+
+    {"id": "doomsday_men", "for": "MEN", "trigger": {"special": "doomsday"},
+     "title": "The Black Moon Rises over Our Troops",
+     "text": "It is the 29th of February. The moon has turned black over Skyfall and the Doomsday Barrier has fallen. Our soldiers in Skyfall are caught in it as anomalies pour from the portal. Tomorrow time will reverse, but what we choose today will be remembered.",
+     "options": [
+       {"text": "Join the Barrier Pact: fight beside Skyfall.", "effects": [{"type": "add_power", "index": 2, "amount": -40}, {"type": "add_opinion", "target": "SKY", "amount": 25}, {"type": "set_flag", "name": "barrier_pact"}, {"type": "add_stability", "amount": 1}]},
+       {"text": "Exploit the chaos: study the anomalies in Midrea's labs.", "effects": [{"type": "add_power", "index": 1, "amount": 60}, {"type": "add_opinion", "target": "SKY", "amount": -40}, {"type": "add_stability", "amount": -1}, {"type": "set_flag", "name": "studied_anomalies"}]},
+       {"text": "Pull our soldiers back and wait for the dawn.", "effects": [{"type": "add_manpower", "amount": -3000}]}]},
+    {"id": "doomsday_sky", "for": "SKY", "trigger": {"special": "doomsday"},
+     "title": "The Black Moon Rises",
+     "text": "The Black Moon has torn the barrier open. Our king holds the line at Portal Isle while Demons and Angels clash above the clouds. Tomorrow time will reverse, but courage and cowardice will both be remembered.",
+     "options": [
+       {"text": "Hold the Barrier alone, by the Will of Eden.", "effects": [{"type": "add_power", "index": 2, "amount": -50}, {"type": "add_stability", "amount": 1}, {"type": "add_power", "index": 0, "amount": 40}]},
+       {"text": "Call on Menslosia for the Barrier Pact.", "effects": [{"type": "add_opinion", "target": "MEN", "amount": 15}, {"type": "add_power", "index": 1, "amount": -30}, {"type": "set_flag", "name": "barrier_pact"}]},
+       {"text": "Cast holy spells on everything that moves.", "effects": [{"type": "add_power", "index": 2, "amount": -20}, {"type": "add_manpower", "amount": -1500}, {"type": "set_flag", "name": "holy_spells_unleashed"}, {"type": "add_army_tradition", "amount": 10}]}]},
+    {"id": "doomsday_other", "for": "tribes", "trigger": {"special": "doomsday"},
+     "title": "The Black Moon Rises",
+     "text": "Our warriors in the sky islands watch the moon turn black. Things are coming out of the portal.",
+     "options": [{"text": "Hold fast.", "effects": [{"type": "add_manpower", "amount": -500}]}]},
+
+    {"id": "photographer_incident", "for": "MEN", "once": true,
+     "trigger": {"monthly_chance": 0.15, "conditions": [{"type": "year_at_least", "value": 4291}, {"type": "explored_count", "layer": "sky", "at_least": 3}, {"type": "not_flag", "name": "great_war", "scope": "global"}]},
+     "title": "The Photographer",
+     "text": "One of our explorers, a pig with a camera, was caught photographing Skyfall. Cameras are forbidden there. Skyfall has jailed him and refuses to release him.",
+     "options": [
+       {"text": "Demand his return. He is a pig of Menslosia!", "ai_weight": 0.5, "effects": [{"type": "add_opinion", "target": "SKY", "amount": -30}, {"type": "fire_event", "id": "photographer_executed", "target": "MEN", "delay_days": 20}]},
+       {"text": "Apologise and pay for his release.", "effects": [{"type": "add_treasury", "amount": -80}, {"type": "add_opinion", "target": "SKY", "amount": 10}, {"type": "set_flag", "name": "photographer_freed", "scope": "global"}]}]},
+    {"id": "photographer_executed", "for": "MEN", "trigger": {"special": "fired_by_effect"},
+     "title": "Execution in the Sky",
+     "text": "Skyfall has publicly executed our photographer. The whole of Menslosia is in uproar. This is a question of who will be the great power of Arcadia.",
+     "options": [
+       {"text": "Declare the Great War for Arcadia.", "ai_weight": 0.3, "effects": [{"type": "set_flag", "name": "great_war", "scope": "global"}, {"type": "clear_flag", "name": "allied_SKY"}, {"type": "declare_war", "target": "SKY"}]},
+       {"text": "Swallow our pride. For now.", "effects": [{"type": "add_stability", "amount": -2}, {"type": "add_power", "index": 0, "amount": 50}]}]},
+    {"id": "napoleons_blueprints", "for": "SKY", "once": true, "trigger": {"monthly_chance": 0.05, "conditions": [{"type": "year_at_least", "value": 4290}]},
+     "title": "Scraps and Blueprints",
+     "text": "King Bonaparte has found blueprints left by King Eden, written in a human language he calls German. He says they describe 'artillery' and 'tanks', lost machines of the human era.",
+     "options": [
+       {"text": "Begin the war machine project.", "effects": [{"type": "set_flag", "name": "tank_project"}, {"type": "add_power", "index": 2, "amount": -30}, {"type": "add_modifier", "id": "war_machine", "name": "War Machine Project", "modifiers": {"artillery_power": 0.10}, "months": -1}]},
+       {"text": "Too much power for anyone. Lock them away.", "effects": [{"type": "add_stability", "amount": 1}]}]},
+    {"id": "staircase_to_nowhere", "for": "all", "once": true, "trigger": {"monthly_chance": 0.02, "conditions": [{"type": "year_at_least", "value": 4290}]},
+     "title": "The Staircase to Nowhere",
+     "text": "A curious citizen has gone down a staircase that leads nowhere. They have not come back up. It is said the stairs only go one way: down, into the Backrooms.",
+     "options": [
+       {"text": "Seal the staircases.", "effects": [{"type": "add_stability", "amount": 1}]},
+       {"text": "Send explorers after them.", "effects": [{"type": "add_power", "index": 1, "amount": 30}, {"type": "add_manpower", "amount": -500}, {"type": "set_flag", "name": "backrooms_expedition"}]}]},
+    {"id": "eden_masks", "for": "SKY", "once": true, "trigger": {"monthly_chance": 0.08, "conditions": [{"type": "year_at_least", "value": 4290}, {"type": "not_flag", "name": "breathing_masks"}]},
+     "title": "Masks for the Mainland",
+     "text": "Skyfallins cannot breathe the air of the mainland for more than a day or two. Our alchemists have designed an expensive mask that might let settlers and soldiers survive below.",
+     "options": [
+       {"text": "Fund the masks.", "effects": [{"type": "add_treasury", "amount": -60}, {"type": "set_flag", "name": "breathing_masks"}]},
+       {"text": "Skyfall belongs in the sky.", "effects": [{"type": "add_stability", "amount": 1}]}]},
+
+    {"id": "heir_born", "for": "player", "trigger": {"special": "fired_by_effect"},
+     "title": "An Heir is Born",
+     "text": "The court rejoices: the realm has an heir.",
+     "options": [{"text": "Long may they live.", "effects": [{"type": "add_stability", "amount": 0}]}]},
+    {"id": "new_ruler", "for": "player", "trigger": {"special": "fired_by_effect"},
+     "title": "A New Ruler",
+     "text": "The old ruler is dead. Long live the new ruler! The court looks to them for direction.",
+     "options": [
+       {"text": "Focus on the realm.", "effects": [{"type": "add_power", "index": 0, "amount": 30}]},
+       {"text": "Focus on our neighbours.", "effects": [{"type": "add_power", "index": 1, "amount": 30}]},
+       {"text": "Focus on the army.", "effects": [{"type": "add_power", "index": 2, "amount": 30}]}]},
+    {"id": "regency_council", "for": "player", "trigger": {"special": "fired_by_effect"},
+     "title": "A Regency Council",
+     "text": "Our ruler has died with no heir old enough to rule. A council of nobles governs until an heir can be found and comes of age.",
+     "options": [{"text": "Find an heir quickly.", "effects": [{"type": "add_power", "index": 0, "amount": -25}]}]},
+    {"id": "rebels_rise", "for": "player", "trigger": {"special": "fired_by_effect"},
+     "title": "Rebellion!",
+     "text": "Rebels have taken up arms in one of our provinces. If they hold it for half a year they will force their demands on us. Send an army to crush them.",
+     "options": [
+       {"text": "Crush them.", "effects": [{"type": "add_power", "index": 2, "amount": -10}]},
+       {"text": "Hear their grievances.", "effects": [{"type": "add_stability", "amount": -1}, {"type": "add_modifier", "id": "grievances", "name": "Grievances Heard", "modifiers": {"unrest": -2}, "months": 24}]}]},
+
+    {"id": "bountiful_harvest", "for": "all", "trigger": {"monthly_chance": 0.006, "conditions": [{"type": "not_at_war"}]},
+     "title": "Bountiful Harvest",
+     "text": "The farms have outdone themselves this year. There is more grain than anyone can eat.",
+     "options": [
+       {"text": "Sell the surplus.", "effects": [{"type": "add_treasury", "amount": 60}, {"type": "price_shock", "goods": "grain", "factor": 0.8}]},
+       {"text": "Feed the people.", "effects": [{"type": "add_modifier", "id": "full_bellies", "name": "Full Bellies", "modifiers": {"unrest": -1, "manpower_mod": 0.1}, "months": 24}]}]},
+    {"id": "truffle_rush", "for": "MEN", "trigger": {"monthly_chance": 0.01, "conditions": [{"type": "year_at_least", "value": 4290}]},
+     "title": "Truffle Rush",
+     "text": "A pig in Sylvania has rooted up a truffle the size of a cabbage. Every pig in the empire wants to go digging.",
+     "options": [
+       {"text": "Let them dig!", "effects": [{"type": "price_shock", "goods": "truffles", "factor": 1.4}, {"type": "add_treasury", "amount": 40}]},
+       {"text": "Back to work, everyone.", "effects": [{"type": "add_power", "index": 0, "amount": 25}]}]},
+    {"id": "core_surge", "for": "SKY", "trigger": {"monthly_chance": 0.01, "conditions": [{"type": "year_at_least", "value": 4290}]},
+     "title": "The Core Surges",
+     "text": "The Core flares with power. The islands rise a little higher, and every workshop in Skyfall hums.",
+     "options": [
+       {"text": "Put the power to work.", "effects": [{"type": "add_modifier", "id": "core_surge", "name": "Core Surge", "modifiers": {"production_mod": 0.15}, "months": 12}, {"type": "price_shock", "goods": "core_energy", "factor": 0.8}]},
+       {"text": "Store it for the Black Moon.", "effects": [{"type": "add_modifier", "id": "core_reserve", "name": "Core Reserve", "modifiers": {"doomsday_resistance": 0.25}, "months": 60}]}]},
+    {"id": "boar_raid", "for": "tribes", "trigger": {"monthly_chance": 0.01, "conditions": [{"type": "not_at_war"}]},
+     "title": "The Young Boars Grow Restless",
+     "text": "The young warriors of the tribe want to prove themselves.",
+     "options": [
+       {"text": "Let them train.", "effects": [{"type": "add_army_tradition", "amount": 10}]},
+       {"text": "Put them to work.", "effects": [{"type": "add_power", "index": 0, "amount": 25}]}]},
+    {"id": "great_scholar", "for": "all", "trigger": {"monthly_chance": 0.004},
+     "title": "A Great Scholar",
+     "text": "A brilliant mind has appeared at court, full of new ideas.",
+     "options": [
+       {"text": "Put them in charge of the treasury.", "effects": [{"type": "add_power", "index": 0, "amount": 50}]},
+       {"text": "Send them abroad as an envoy.", "effects": [{"type": "add_power", "index": 1, "amount": 50}]},
+       {"text": "Have them draw up war plans.", "effects": [{"type": "add_power", "index": 2, "amount": 50}]}]},
+    {"id": "war_weariness", "for": "all", "trigger": {"monthly_chance": 0.03, "conditions": [{"type": "at_war"}]},
+     "title": "Weariness of War",
+     "text": "The people are tired of war. Mothers want their sons home.",
+     "options": [
+       {"text": "Promise peace soon.", "effects": [{"type": "add_war_exhaustion", "amount": -1}, {"type": "add_stability", "amount": -1}]},
+       {"text": "The war goes on.", "effects": [{"type": "add_war_exhaustion", "amount": 1}]}]},
+    {"id": "skyfall_feast", "for": "MEN", "once": true, "trigger": {"monthly_chance": 0.03, "conditions": [{"type": "allied_with", "tag": "SKY"}, {"type": "year_at_least", "value": 4290}]},
+     "title": "A Feast at Eden's Crown",
+     "text": "King Napoleon invites the Pig Lord to a feast above the clouds to celebrate the friendship of our two nations.",
+     "options": [
+       {"text": "Accept with thanks.", "effects": [{"type": "add_opinion", "target": "SKY", "amount": 20}, {"type": "add_treasury", "amount": -30}]},
+       {"text": "Send a gift instead.", "effects": [{"type": "add_opinion", "target": "SKY", "amount": 10}, {"type": "add_treasury", "amount": -50}]}]}
+  ]
+}
