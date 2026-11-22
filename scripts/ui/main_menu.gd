@@ -4,6 +4,7 @@ extends Control
 signal new_game_pressed
 signal load_pressed(slot: String)
 signal settings_pressed
+signal multiplayer_pressed
 
 const UI = preload("res://scripts/ui/ui_util.gd")
 const Tokens = preload("res://ui/style/tokens.gd")
@@ -104,6 +105,7 @@ func refresh() -> void:
 		var latest: Dictionary = saves[0]
 		_box.add_child(_big("Continue: %s, %s" % [latest.get("nation", ""), latest.get("date", "")], func(): load_pressed.emit(latest["file"])))
 	_box.add_child(_big("New Game", func(): new_game_pressed.emit()))
+	_box.add_child(_big("Multiplayer", func(): multiplayer_pressed.emit()))
 	_box.add_child(_big("Load Game", func(): _saves_box.visible = not _saves_box.visible))
 	_saves_box = VBoxContainer.new()
 	_saves_box.visible = false

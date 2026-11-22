@@ -51,7 +51,7 @@ func build() -> void:
 		v.add_child(UI.label("Bonus when complete: " + Game.mods.describe(grp.get("bonus", {}), n["power_names"]), 11, UI.TEXT_DIM, panel_width - 60))
 		if int(ig["taken"]) < grp["ideas"].size():
 			v.add_child(UI.action("Adopt %s (%d %s)" % [grp["ideas"][int(ig["taken"])][0], Game.prog.idea_cost(tag), n["power_names"][i_pow]],
-				Game.prog.can_take_idea(tag, ig["id"]), func(): Game.prog.take_idea(tag, ig["id"]); mark_dirty()))
+				Game.prog.can_take_idea(tag, ig["id"]), func(): Game.act("prog.take_idea", [tag, ig["id"]]); mark_dirty()))
 		add(c)
 	if n["idea_groups"].size() < slots:
 		section("Choose an idea group")
@@ -65,7 +65,7 @@ func build() -> void:
 			var grp: Dictionary = Game.idea_data["groups"][gid]
 			var first: Array = grp["ideas"][0]
 			var tip = "%s ideas (%s power)\nFirst idea: %s\nBonus: %s" % [grp["name"], grp["type"], first[0], Game.mods.describe(grp.get("bonus", {}), n["power_names"])]
-			add(UI.row([UI.action("Pick %s" % grp["name"], Game.prog.can_pick_group(tag, gid), func(): Game.prog.pick_group(tag, gid); mark_dirty(), tip),
+			add(UI.row([UI.action("Pick %s" % grp["name"], Game.prog.can_pick_group(tag, gid), func(): Game.act("prog.pick_group", [tag, gid]); mark_dirty(), tip),
 				UI.label(grp["type"].to_upper(), 11, UI.TEXT_DIM)]))
 	elif slots == 0:
 		text("No idea slots yet: research administrative tech 2.", 12, UI.BAD)

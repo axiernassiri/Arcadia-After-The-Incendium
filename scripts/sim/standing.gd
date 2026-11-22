@@ -190,7 +190,7 @@ func monthly() -> void:
 				n["estate_disrupt_day"] = g.day_index
 				n["stability"] = maxi(-3, int(n["stability"]) - 1)
 				g.post("%s: %s, powerful and angry, throw the realm into disorder (stability -1)." % [n["short"], estate_defs()[k]["name"]],
-					[tag], "Estate Unrest" if tag == g.player_tag else "")
+					[tag], "Estate Unrest" if g.is_human(tag) else "")
 		if n["ai"]:
 			_ai(tag)
 		if not g.age_data.is_empty():
@@ -295,8 +295,7 @@ func _monthly_age(tag: String) -> void:
 		if g.check_conditions(o.get("conditions", []), tag):
 			n["age_objectives"][key] = true
 			n["splendor"] = splendor(tag) + float(g.age_data.get("objective_splendor", 200))
-			if tag == g.player_tag:
-				g.post("%s objective fulfilled: %s (+%d splendor)." % [age["name"], o["name"], int(g.age_data.get("objective_splendor", 200))])
+			g.tell(tag, "%s objective fulfilled: %s (+%d splendor)." % [age["name"], o["name"], int(g.age_data.get("objective_splendor", 200))])
 	if n["ai"]:
 		for ab in age.get("abilities", []):
 			if take_ability(tag, ab["id"]):

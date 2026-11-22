@@ -139,14 +139,17 @@ func _act(action: String, label: String, accept_key: String, tip: String = "") -
 	var me = Game.player_tag
 	var why: String = Game.dip.can_act(action, me, tag)
 	var extra = ""
-	if accept_key != "" and why == "":
+	if accept_key != "" and why == "" and Game.is_human(tag):
+		tip = "%s is played by a person: they get your offer and answer it themselves." % Game.nation_name(tag)
+		extra = "  (their choice)"
+	elif accept_key != "" and why == "":
 		var acc: Array = Game.dip.acceptance(accept_key, me, tag)
 		var parts: PackedStringArray = []
 		for r in acc[1]:
 			parts.append("%s: %+d" % [r[0], int(r[1])])
 		tip = "They accept when the total is above 0.\n" + "\n".join(parts) + "\nTotal: %+d" % int(acc[0])
 		extra = "  (likely yes)" if float(acc[0]) > 0.0 else "  (likely no)"
-	var b = UI.action(label + extra, why, func(): _msg = Game.dip.act(action, me, tag); mark_dirty(), tip)
+	var b = UI.action(label + extra, why, func(): _msg = Game.act("dip.act", [action, me, tag]); mark_dirty(), tip)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.custom_minimum_size.x = panel_width - 40
 	add(b)

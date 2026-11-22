@@ -54,7 +54,7 @@ func build() -> void:
 	if not explored:
 		text("Unexplored. Your maps show nothing but mist here.", 13)
 		add(UI.action("Explore (%d %s)" % [Game.explore_cost(tag, province), n["power_names"][1]], Game.can_explore(tag, province),
-			func(): Game.explore(tag, province)))
+			func(): Game.act("explore", [tag, province])))
 		_links(p)
 		return
 	var owner: String = p["owner"]
@@ -93,7 +93,7 @@ func build() -> void:
 		if mine:
 			var power_name: String = n["power_names"][k]
 			var why: String = Game.eco.can_develop(tag, province, k)
-			var b = UI.action("+1  (%d %s)" % [cost, power_name], why, func(): Game.eco.develop(tag, province, k),
+			var b = UI.action("+1  (%d %s)" % [cost, power_name], why, func(): Game.act("eco.develop", [tag, province, k]),
 				"Spend %d %s power.\n%s" % [cost, power_name, Game.eco.dev_cost_breakdown(tag, province)])
 			grid.add_child(b)
 		else:
@@ -110,9 +110,9 @@ func build() -> void:
 			UI.BAD if aut >= 50.0 else UI.TEXT), UI.bar(aut, 100.0, 100.0, UI.BAD, 8.0)]))
 		if mine:
 			add(UI.row([UI.action("Lower -25%", Game.eco.can_change_autonomy(tag, province, true),
-				func(): Game.eco.change_autonomy(tag, province, true), "Free. More income from this province, but +5 unrest for a year. Each province once every 5 years."),
+				func(): Game.act("eco.change_autonomy", [tag, province, true]), "Free. More income from this province, but +5 unrest for a year. Each province once every 5 years."),
 				UI.action("Raise +25%", Game.eco.can_change_autonomy(tag, province, false),
-				func(): Game.eco.change_autonomy(tag, province, false), "Free. Calms unrest (-3 for a year), but the province pays less. Each province once every 5 years.")]))
+				func(): Game.act("eco.change_autonomy", [tag, province, false]), "Free. Calms unrest (-3 for a year), but the province pays less. Each province once every 5 years.")]))
 		if "mine_site" in p["flags"]:
 			add(UI.kv("Sanctum mine site", ("mine: +%.1f a month" % Game.eco.mine_income(province)) if p["buildings"].has("mine") else "no mine yet",
 				"Sanctum ore lies under this province. Build a mine to dig it out.", UI.GOOD if p["buildings"].has("mine") else UI.INFO))
@@ -128,7 +128,7 @@ func build() -> void:
 			add(UI.row([UI.label("Rebels organising", 12, UI.BAD), UI.bar(float(p["rebel_progress"]), 100.0, 140.0, UI.BAD)]))
 			if mine:
 				add(UI.action("Harsh treatment (%d %s)" % [Game.pop.harsh_cost(province), n["power_names"][2]], Game.pop.can_harsh(tag, province),
-					func(): Game.pop.harsh_treatment(tag, province)))
+					func(): Game.act("pop.harsh_treatment", [tag, province])))
 	if mine:
 		if not p["cores"].has(tag):
 			var left: int = Game.pop.coring_left(province)
@@ -137,15 +137,15 @@ func build() -> void:
 					UI.bar(float(Game.pop.CORE_MONTHS - left), float(Game.pop.CORE_MONTHS), 120.0, UI.INFO)]))
 			else:
 				add(UI.action("Make core (%d %s, %d months)" % [Game.pop.core_cost(tag, province), n["power_names"][0], Game.pop.CORE_MONTHS], Game.pop.can_core(tag, province),
-					func(): Game.pop.make_core(tag, province), "Uncored provinces pay a third of their taxes and cause overextension. Pay now; it becomes a core after %d months." % Game.pop.CORE_MONTHS))
+					func(): Game.act("pop.make_core", [tag, province]), "Uncored provinces pay a third of their taxes and cause overextension. Pay now; it becomes a core after %d months." % Game.pop.CORE_MONTHS))
 		if p["culture"] != n["culture"]:
 			add(UI.action("Convert culture (%d %s)" % [Game.pop.culture_convert_cost(tag, province), n["power_names"][1]],
-				Game.pop.can_convert_culture(tag, province), func(): Game.pop.convert_culture(tag, province)))
+				Game.pop.can_convert_culture(tag, province), func(): Game.act("pop.convert_culture", [tag, province])))
 		if p["religion"] != n["religion"] and p["religion"] != "":
 			if p["conversion"].get("tag", "") == tag:
 				add(UI.row([UI.label("Missionary at work", 12, UI.INFO), UI.bar(float(p["conversion"]["progress"]), 100.0, 140.0, UI.INFO)]))
 			else:
-				add(UI.action("Send missionary", Game.pop.can_start_conversion(tag, province), func(): Game.pop.start_conversion(tag, province)))
+				add(UI.action("Send missionary", Game.pop.can_start_conversion(tag, province), func(): Game.act("pop.start_conversion", [tag, province])))
 
 	# buildings
 	if owner != "":
@@ -158,7 +158,7 @@ func build() -> void:
 			var done = float(Game.day_index - int(c.get("start", Game.day_index)))
 			add(UI.row([UI.label("Building %s" % Game.building_data[c["id"]]["name"], 12, UI.INFO), UI.bar(done, maxf(total, 1.0), 120.0, UI.INFO)]))
 			if mine:
-				add(UI.button("Cancel (refund half)", func(): Game.eco.cancel_build(tag, province)))
+				add(UI.button("Cancel (refund half)", func(): Game.act("eco.cancel_build", [tag, province])))
 		if mine and p["construction"].is_empty():
 			for bid in Game.building_data:
 				if p["buildings"].has(bid):
@@ -168,7 +168,7 @@ func build() -> void:
 					continue
 				var bd: Dictionary = Game.building_data[bid]
 				var b = UI.action("Build %s (%d)" % [bd["name"], Game.eco.building_cost(tag, bid)], why,
-					func(): Game.eco.build(tag, province, bid),
+					func(): Game.act("eco.build", [tag, province, bid]),
 					"%s\n%d months." % [bd.get("text", ""), Game.eco.building_months(tag, bid)])
 				b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 				add(b)
@@ -183,7 +183,7 @@ func build() -> void:
 				continue
 			var ud: Dictionary = Game.unit_data["land"][ut]
 			rr.add_child(UI.action("%s (%d)" % [Game.mil.unit_name(tag, ut), int(ud["cost"])], Game.mil.can_recruit(tag, province, ut),
-				func(): Game.mil.recruit(tag, province, ut), "%s1,000 men, %d sanctum, %.2f a month upkeep, %d month(s) to train." % [
+				func(): Game.act("mil.recruit", [tag, province, ut]), "%s1,000 men, %d sanctum, %.2f a month upkeep, %d month(s) to train." % [
 					ud.get("text", "") + "\n" if ud.has("text") else "", int(ud["cost"]), float(ud["maintenance"]), int(ud.get("months", 1))]))
 		add(rr)
 		if p["coastal"]:
@@ -191,7 +191,7 @@ func build() -> void:
 			for st in ["light", "heavy", "transport"]:
 				var sd: Dictionary = Game.unit_data["ships"][st]
 				sr.add_child(UI.action("%s (%d)" % [Game.mil.ship_name(tag, st), int(sd["cost"])], Game.mil.can_build_ship(tag, province, st),
-					func(): Game.mil.build_ship(tag, province, st), "Guns %.1f, carries %d regiments, %.0f trade power." % [
+					func(): Game.act("mil.build_ship", [tag, province, st]), "Guns %.1f, carries %d regiments, %.0f trade power." % [
 						float(sd["guns"]), int(sd["capacity"]), float(sd["trade"])]))
 			add(sr)
 	var here: Array = Game.mil.armies_at(province)
@@ -215,7 +215,7 @@ func build() -> void:
 				UI.bar(float(p["colony"]["settlers"]), 1000.0, 140.0, UI.INFO)]))
 		else:
 			add(UI.action("Send colonists (%d sanctum)" % int(Game.eco.COLONY_COST), Game.eco.can_colonize(tag, province),
-				func(): Game.eco.colonize(tag, province), "Settlers grow each month; at 1,000 the colony becomes your province."))
+				func(): Game.act("eco.colonize", [tag, province]), "Settlers grow each month; at 1,000 the colony becomes your province."))
 
 	var notes: PackedStringArray = []
 	for f in p["flags"]:

@@ -203,8 +203,7 @@ func take_loan(tag: String) -> bool:
 	var amount = loan_size(tag)
 	n["loans"].append(amount)
 	n["treasury"] += amount
-	if tag == g.player_tag:
-		g.post("Took a loan of %d sanctum at %.1f%% a year." % [amount, loan_rate(tag) * 100.0])
+	g.tell(tag, "Took a loan of %d sanctum at %.1f%% a year." % [amount, loan_rate(tag) * 100.0])
 	g.touch(tag)
 	return true
 
@@ -383,8 +382,7 @@ func daily_construction() -> void:
 			p["construction"] = {}
 			if p["owner"] != "" and not p["buildings"].has(bid):
 				p["buildings"].append(bid)
-				if p["owner"] == g.player_tag:
-					g.post("%s finished in %s." % [g.building_data[bid]["name"], p["name"]])
+				g.tell(p["owner"], "%s finished in %s." % [g.building_data[bid]["name"], p["name"]])
 				g.province_changed.emit(pid)
 				g.touch(p["owner"])
 
@@ -458,8 +456,7 @@ func colonize(tag: String, pid: int) -> bool:
 		return false
 	g.nations[tag]["treasury"] -= COLONY_COST
 	g.provinces[pid]["colony"] = {"tag": tag, "settlers": 0.0}
-	if tag == g.player_tag:
-		g.post("Colonists set out for %s." % g.provinces[pid]["name"])
+	g.tell(tag, "Colonists set out for %s." % g.provinces[pid]["name"])
 	g.province_changed.emit(pid)
 	g.touch(tag)
 	return true

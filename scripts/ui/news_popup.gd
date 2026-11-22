@@ -26,8 +26,8 @@ func _ready() -> void:
 func _on_news(title: String, text: String) -> void:
 	_queue.append([title, text])
 	UI.sfx("war" if title in ["War Declared", "Coalition War"] else "event")
-	if Settings.get_value("pause_on_news"):
-		Game.set_speed(0)
+	if Settings.get_value("pause_on_news") and not Net.online():   # one player's news doesn't stop everyone
+		Game.act("set_speed", [0])
 		paused_changed.emit()
 	if not visible:
 		_show_next()

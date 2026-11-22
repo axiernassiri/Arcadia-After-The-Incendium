@@ -39,7 +39,7 @@ func build() -> void:
 		add(row)
 		if not acc:
 			add(UI.action("   Accept %s culture (100 %s)" % [c, n["power_names"][1]], Game.pop.can_accept_culture(tag, c),
-				func(): Game.pop.accept_culture(tag, c); mark_dirty(), "Accepted cultures cause no unrest."))
+				func(): Game.act("pop.accept_culture", [tag, c]); mark_dirty(), "Accepted cultures cause no unrest."))
 	text("Accepted: %s" % (", ".join(n["accepted_cultures"]) if n["accepted_cultures"].size() > 0 else "none"), 12, UI.TEXT_DIM)
 	section("Faiths in your realm (development)")
 	for r in religions:
@@ -61,6 +61,6 @@ func build() -> void:
 				UI.label("%.1f a month" % Game.pop.conversion_speed(tag, pid), 11, UI.TEXT_DIM)]))
 		else:
 			add(UI.row([UI.label("%s (%s)" % [p["name"], p["religion"]], 13), UI.spacer(),
-				UI.action("Send missionary", Game.pop.can_start_conversion(tag, pid), func(): Game.pop.start_conversion(tag, pid); mark_dirty())]))
+				UI.action("Send missionary", Game.pop.can_start_conversion(tag, pid), func(): Game.act("pop.start_conversion", [tag, pid]); mark_dirty())]))
 	if not any:
 		text("Every province follows the %s." % n["religion"], 12, UI.GOOD)

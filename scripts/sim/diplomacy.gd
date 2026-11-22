@@ -320,13 +320,15 @@ func act(action: String, from: String, to: String) -> String:
 		return why
 	var r = rel(from, to)
 	var nm: String = g.nation_name(to)
+	if action in PROPOSALS and g.is_human(from) and g.is_human(to) and from != to:
+		return _propose(action, from, to)
 	match action:
 		"improve":
 			r["improving"] = not r["improving"]
 			g.touch(from)
 			return ("A diplomat is improving relations with %s." if r["improving"] else "Recalled the diplomat from %s.") % nm
 		"alliance":
-			if to == g.player_tag or ai_accepts("alliance", from, to):
+			if g.is_human(to) or ai_accepts("alliance", from, to):
 				set_both(from, to, "alliance", true)
 				g.post("%s and %s are now allies." % [g.nation_name(from), nm], [from, to])
 				g.touch(from)
@@ -339,14 +341,14 @@ func act(action: String, from: String, to: String) -> String:
 			g.touch(from)
 			return "Alliance with %s broken." % nm
 		"marriage":
-			if to == g.player_tag or ai_accepts("marriage", from, to):
+			if g.is_human(to) or ai_accepts("marriage", from, to):
 				set_both(from, to, "marriage", true)
 				g.post("A royal marriage between %s and %s." % [g.nation_name(from), nm], [from, to])
 				g.touch(from)
 				return "%s accepted the royal marriage." % nm
 			return "%s declined the royal marriage." % nm
 		"access":
-			if to == g.player_tag or ai_accepts("access", from, to):
+			if g.is_human(to) or ai_accepts("access", from, to):
 				rel(to, from)["access"] = true
 				g.touch(from)
 				return "%s grants you military access." % nm
@@ -377,7 +379,7 @@ func act(action: String, from: String, to: String) -> String:
 			g.touch(from)
 			return "Your scribes fabricated a claim on %s." % g.provinces[best]["name"]
 		"vassalize":
-			if to == g.player_tag or ai_accepts("vassalize", from, to):
+			if g.is_human(to) or ai_accepts("vassalize", from, to):
 				make_vassal(from, to)
 				return "%s is now your vassal." % nm
 			return "%s refused to become your vassal." % nm
@@ -443,6 +445,93 @@ func _honour_guarantees(w: Dictionary, attacker: String, target: String) -> void
 		if war_side(w, t) == "defenders":
 			g.post("%s honours its word and joins %s against %s." % [g.nation_name(t), g.nation_name(target), g.nation_name(attacker)],
 				[t, target, attacker], "", true)
+
+
+const PROPOSALS := {"alliance": "an alliance", "marriage": "a royal marriage", "access": "military access", "vassalize": "that you become their vassal"}
+
+
+func _propose(action: String, from: String, to: String) -> String:
+	## Multiplayer: one player's offer to another is an event they answer, not an AI's dice roll.
+	g.fire_dynamic_event({"id": "proposal_" + action, "title": "A Proposal from %s" % g.nation_name(from),
+		"text": "%s proposes %s." % [g.nation_name(from), PROPOSALS[action]],
+		"options": [{"text": "Accept.", "effects": [{"type": "accept_proposal", "action": action, "from": from}]},
+			{"text": "Decline.", "effects": [{"type": "decline_proposal", "action": action, "from": from}]}]}, to)
+	return "Your proposal is on its way to %s." % g.nation_name(to)
+
+
+func accept_proposal(action: String, from: String, to: String) -> void:
+	## `to` accepted `from`'s proposal (see _propose).
+	if not (g.nations.has(from) and g.nations.has(to)) or not g.nations[from]["alive"] or not g.nations[to]["alive"]:
+		return
+	match action:
+		"alliance":
+			set_both(from, to, "alliance", true)
+			g.post("%s and %s are now allies." % [g.nation_name(from), g.nation_name(to)], [from, to])
+		"marriage":
+			set_both(from, to, "marriage", true)
+			g.post("A royal marriage between %s and %s." % [g.nation_name(from), g.nation_name(to)], [from, to])
+		"access":
+			rel(to, from)["access"] = true
+			g.tell(from, "%s grants you military access." % g.nation_name(to))
+		"vassalize":
+			make_vassal(from, to)
+	rebuild_pairs()
+	g.touch(from)
+	g.touch(to)
+
+
+func propose_peace(war_id: int, me: String, target: String, demands: Array, mode: String) -> String:
+	## The peace window's buttons. mode: "demand" (me takes `demands` from target), "give" (me hands
+	## `demands` to target) or "force" (target is fully occupied and has no say). Returns "" when the
+	## war ends (or the offer is sent to another player), else why it was refused.
+	var w: Dictionary = g.wars.get(war_id, {})
+	if w.is_empty() or war_side(w, me) == "" or war_side(w, target) == "" or war_side(w, me) == war_side(w, target):
+		return "No such war."
+	var ds: Array = demands.duplicate(true)
+	if ds.is_empty():
+		ds = [{"type": "white"}]
+	match mode:
+		"force":
+			if not (fully_occupied(w, me, target) and target == enemy_leader(w, me)) or peace_cost(w, me, target, demands) > 100.0:
+				return "You can't force these terms."
+			add_opinion(target, me, -25.0, "Enforced peace on us", 0.5)
+			enforce_peace(w, me, target, ds)
+			return ""
+		"give":
+			if g.is_human(target) and target != me:
+				g.fire_dynamic_event({"id": "peace_offer", "title": "Peace Offer",
+					"text": "%s offers peace in %s.\nThey give: %s." % [g.nation_name(me), w["name"], ", ".join(PackedStringArray(ds.map(describe_demand)))],
+					"options": [{"text": "Accept.", "effects": [{"type": "accept_peace", "war": war_id, "demander": target, "target": me, "demands": ds}]},
+						{"text": "Refuse.", "effects": []}]}, target)
+				g.tell(me, "Your offer is on its way to %s." % g.nation_name(target))
+				return ""
+			if give_acceptance(w, target, peace_cost(w, target, me, demands))[0]:
+				enforce_peace(w, target, me, ds)
+				return ""
+			return "%s refused." % g.nation_name(target)
+		_:
+			if g.is_human(target) and target != me:
+				offer_peace(w, me, target, ds)
+				g.tell(me, "Your demands are on their way to %s." % g.nation_name(target))
+				return ""
+			if peace_acceptance(w, me, target, demands)[0]:
+				enforce_peace(w, me, target, ds)
+				return ""
+			return "%s refused your terms." % g.nation_name(target)
+
+
+func give_acceptance(w: Dictionary, target: String, cost: float) -> Array:
+	## Would `target` take what we offer them? [accepts, total, [[reason, value]...]]
+	var their: float = score_for(w, target)
+	var reasons: Array = [["What you offer", cost], ["Their war score", -maxf(0.0, their)]]
+	var we = float(g.nations[target]["war_exhaustion"])
+	if we > 0.0:
+		reasons.append(["Their war exhaustion", we * 1.5])
+	reasons.append(["Willing to end it", 5.0])
+	var total = 0.0
+	for r in reasons:
+		total += float(r[1])
+	return [total >= 0.0, total, reasons]
 
 
 func make_vassal(overlord: String, vassal: String) -> void:
@@ -524,7 +613,7 @@ func declare_war(a: String, b: String, cb: Dictionary = {}) -> Dictionary:
 	rel(b, a)["access"] = false
 	rel(a, b)["access"] = false
 	rebuild_pairs()
-	g.post("%s declares war on %s: %s." % [g.nation_name(a), g.nation_name(b), w["name"]], [a, b], "War Declared" if b == g.player_tag else "", true)
+	g.post("%s declares war on %s: %s." % [g.nation_name(a), g.nation_name(b), w["name"]], [a, b], "War Declared" if g.is_human(b) else "", true)
 	# subjects and overlords join, allies are called
 	for s in g.nations[a]["subjects"]:
 		_join(w, s, "attackers")
@@ -536,8 +625,8 @@ func declare_war(a: String, b: String, cb: Dictionary = {}) -> Dictionary:
 	if g.nations[b]["ai"]:
 		ai_call_allies(w, b)
 	_honour_guarantees(w, a, b)
-	if b == g.player_tag and allies_of(b).size() > 0:
-		g.post("Call your allies to arms from the Diplomacy panel: they won't join by themselves.")
+	if g.is_human(b) and allies_of(b).size() > 0:
+		g.tell(b, "Call your allies to arms from the Diplomacy panel: they won't join by themselves.")
 	rebuild_pairs()
 	g.war_changed.emit()
 	g.touch(a)
@@ -635,7 +724,7 @@ func call_ally(w: Dictionary, caller: String, ally: String) -> String:
 	if not q["accept"]:
 		add_opinion(caller, ally, -10.0, "Refused our call to arms", 1.0)
 		return "%s refused to join the war." % g.nation_name(ally)
-	if ally == g.player_tag:
+	if g.is_human(ally):
 		g.fire_dynamic_event({
 			"id": "call_to_arms", "title": "Call to Arms",
 			"text": "%s asks us to join %s against %s. In return they offer %d sanctum." % [g.nation_name(caller), w["name"],
@@ -809,7 +898,7 @@ func gold_amount(target: String, pct: float) -> int:
 
 func offer_peace(w: Dictionary, demander: String, target: String, demands: Array) -> bool:
 	## The demander proposes; an AI target answers at once, the player gets an event.
-	if target == g.player_tag:
+	if g.is_human(target):
 		var parts: PackedStringArray = []
 		for d in demands:
 			parts.append(describe_demand(d))
@@ -867,7 +956,7 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 	for d in demands:
 		if d.get("type", "") == "annex":
 			annexing = true
-	g.post("Peace in %s: %s %s." % [w["name"], g.nation_name(target), "gives " + ", ".join(parts) if parts.size() > 0 else "makes a white peace"], [demander, target], "Peace" if demander != g.player_tag else "")
+	g.post("Peace in %s: %s %s." % [w["name"], g.nation_name(target), "gives " + ", ".join(parts) if parts.size() > 0 else "makes a white peace"], [demander, target], "Peace" if g.is_human(target) or not g.is_human(demander) else "")
 	if ae_dev > 0.0:
 		add_aggressive_expansion(demander, target, ae_dev, ae_mult)
 	if parts.size() > 0:   # a won peace brings prestige; giving in costs it
@@ -1081,7 +1170,7 @@ func update_coalitions() -> void:
 		var members: Array = n.get("coalition", []).duplicate()
 		var big: bool = g.nation_dev(x) >= COALITION_MIN_DEV
 		for t in g.nations:
-			if t == x or t in ["REB", "ENT"] or t == g.player_tag:
+			if t == x or t in ["REB", "ENT"] or g.is_human(t):
 				continue   # the player decides for themselves (EU4 lets you refuse to join)
 			var tn: Dictionary = g.nations[t]
 			var ae := aggressive_expansion(t, x)
@@ -1089,11 +1178,10 @@ func update_coalitions() -> void:
 			if t in members:
 				if not can_be or ae < COALITION_LEAVE:
 					members.erase(t)
-					if x == g.player_tag:
-						g.post("%s has left the coalition against us." % g.nation_name(t), [t, x])
+					g.tell(x, "%s has left the coalition against us." % g.nation_name(t))
 			elif can_be and ae >= COALITION_JOIN:
 				members.append(t)
-				g.post("%s joins the coalition against %s." % [g.nation_name(t), g.nation_name(x)], [t, x], "Coalition" if x == g.player_tag else "")
+				g.post("%s joins the coalition against %s." % [g.nation_name(t), g.nation_name(x)], [t, x], "Coalition" if g.is_human(x) else "")
 		n["coalition"] = members
 		if members.size() < COALITION_MIN_MEMBERS:
 			n.erase("coalition_since")
@@ -1129,7 +1217,7 @@ func _maybe_coalition_war(x: String, members: Array) -> void:
 		_join(w, t, "attackers")
 	g.nations[x]["coalition_since"] = g.day_index   # no second war from the same coalition right away
 	g.post("A coalition of %d nations led by %s marches against %s!" % [free.size(), g.nation_name(leader), g.nation_name(x)],
-		[leader, x], "Coalition War" if x == g.player_tag else "", true)
+		[leader, x], "Coalition War" if g.is_human(x) else "", true)
 	rebuild_pairs()
 	g.war_changed.emit()
 

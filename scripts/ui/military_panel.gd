@@ -70,7 +70,7 @@ func build() -> void:
 		add(UI.kv(l["name"], "fire %d  shock %d  manoeuvre %d  siege %d" % [int(l["fire"]), int(l["shock"]), int(l["maneuver"]), int(l["siege"])],
 			"Leading: %s" % army_name))
 	add(UI.action("Recruit a general (%d %s)" % [Game.mil.leader_cost(), n["power_names"][2]], Game.mil.can_recruit_leader(tag),
-		func(): Game.mil.recruit_leader(tag); mark_dirty(), "Better generals come with more army tradition."))
+		func(): Game.act("mil.recruit_leader", [tag]); mark_dirty(), "Better generals come with more army tradition."))
 	var queue: Array = []
 	for q in Game.recruit_queue:
 		if q["tag"] == tag:

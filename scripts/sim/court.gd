@@ -88,8 +88,7 @@ func monthly(tag: String) -> void:
 			succeed(tag, "came of age")
 		elif n["heir"].is_empty() and g.rng.randf() < 0.04:
 			n["heir"] = random_person(tag, g.rng.randi_range(0, 4))
-			if tag == g.player_tag:
-				g.post("An heir has been found for the regency council: %s." % n["heir"]["name"])
+			g.tell(tag, "An heir has been found for the regency council: %s." % n["heir"]["name"])
 		return
 	if not r.get("ageless", false):
 		var age = int(r.get("age", 30))
@@ -99,13 +98,12 @@ func monthly(tag: String) -> void:
 			return
 	if n["heir"].is_empty() and not r.get("ageless", false) and g.rng.randf() < 0.012:
 		n["heir"] = random_person(tag, 0)
-		if tag == g.player_tag:
+		if g.is_human(tag):
 			g.fire_event("heir_born", tag)
 	elif not n["heir"].is_empty() and int(n["heir"]["age"]) < 15 and g.rng.randf() < 0.0008:
 		var who: String = n["heir"]["name"]
 		n["heir"] = {}
-		if tag == g.player_tag:
-			g.post("Tragedy: the heir %s has died." % who)
+		g.tell(tag, "Tragedy: the heir %s has died." % who)
 
 
 func election(tag: String) -> void:
@@ -121,7 +119,7 @@ func election(tag: String) -> void:
 		g.post("%s: %s is re-elected." % [n["short"], old.get("name", "")], [tag])
 	else:
 		g.post("%s: %s is elected to lead the %s." % [n["short"], n["ruler"]["name"], g.governments.get(n["government"], {}).get("rank", "republic").to_lower()], [tag])
-	if tag == g.player_tag:
+	if g.is_human(tag):
 		g.fire_event("republic_election", tag)
 	g.touch(tag)
 
@@ -143,7 +141,7 @@ func ruler_dies(tag: String) -> void:
 			"dynasty": n["ruler"].get("dynasty", "")}
 		n["stability"] = maxi(-3, int(n["stability"]) - 1)
 		n["legitimacy"] = minf(float(n["legitimacy"]), 40.0)
-		if tag == g.player_tag:
+		if g.is_human(tag):
 			g.fire_event("regency_council", tag)
 	elif int(n["heir"].get("age", 0)) < 15:
 		n["ruler"] = {"name": "Regency Council", "adm": 1, "dip": 1, "mil": 1, "age": 0, "regency": true,
@@ -162,7 +160,7 @@ func succeed(tag: String, how: String) -> void:
 	n["heir"] = {}
 	n["legitimacy"] = clampf(50.0 + 5.0 * (int(n["ruler"].get("adm", 2)) + int(n["ruler"].get("dip", 2))), 40.0, 90.0)
 	g.post("%s: %s has %s to the throne." % [n["short"], n["ruler"]["name"], how], [tag])
-	if tag == g.player_tag:
+	if g.is_human(tag):
 		g.fire_event("new_ruler", tag)
 	g.touch(tag)
 
@@ -282,8 +280,7 @@ func _advisors_monthly(tag: String) -> void:
 	for k in n.get("advisors", {}):
 		var a: Dictionary = n["advisors"][k]
 		if not a.is_empty() and g.rng.randf() < 0.004:
-			if tag == g.player_tag:
-				g.post("Your advisor %s has retired." % a["name"])
+			g.tell(tag, "Your advisor %s has retired." % a["name"])
 			n["advisors"][k] = {}
 
 
@@ -308,8 +305,7 @@ func hire(tag: String, cand_id: int) -> bool:
 			n["advisors"][c["power"]] = c
 			n["advisor_pool"].erase(c)
 			refill_pool(tag)
-			if tag == g.player_tag:
-				g.post("Hired %s, %s (skill %d)." % [c["name"], g.advisor_data["types"][c["type"]]["name"], int(c["skill"])])
+			g.tell(tag, "Hired %s, %s (skill %d)." % [c["name"], g.advisor_data["types"][c["type"]]["name"], int(c["skill"])])
 			g.touch(tag)
 			return true
 	return false

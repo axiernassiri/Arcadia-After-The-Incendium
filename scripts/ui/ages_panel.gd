@@ -43,7 +43,7 @@ func build() -> void:
 		v.add_child(UI.mod_box(ab.get("modifiers", {}), n["power_names"], panel_width - 60))
 		if not taken:
 			v.add_child(UI.action("Take (%d splendor)" % int(Game.age_data.get("ability_cost", 600)), Game.standing.can_take_ability(tag, ab["id"]),
-				func(): Game.standing.take_ability(tag, ab["id"]); mark_dirty()))
+				func(): Game.act("standing.take_ability", [tag, ab["id"]]); mark_dirty()))
 		add(c)
 
 	section("The ages of Arcadia")

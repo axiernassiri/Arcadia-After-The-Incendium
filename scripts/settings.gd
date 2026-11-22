@@ -12,6 +12,7 @@ const DEFAULTS := {
 	"master_volume": 0.8,       # 0..1, applied by the Sound autoload
 	"music_volume": 0.5,
 	"sfx_volume": 0.8,
+	"player_name": "",          # your name in multiplayer games (empty: the computer's user name)
 }
 const AUTOSAVE_SLOTS := 3
 

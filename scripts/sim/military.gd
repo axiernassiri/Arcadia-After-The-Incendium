@@ -449,6 +449,13 @@ func disband_army(id: int) -> void:
 	g.armies_changed.emit()
 
 
+func stop_army(id: int) -> void:
+	var a: Dictionary = g.armies.get(id, {})
+	if not a.is_empty() and not a["retreating"]:
+		a["path"] = []
+		g.armies_changed.emit()
+
+
 func disband_fleet(id: int) -> void:
 	g.fleets.erase(id)
 	g.armies_changed.emit()
@@ -516,8 +523,7 @@ func recruit_leader(tag: String, kind: String = "general") -> Dictionary:
 	var l = {"id": g.next_id, "name": "%s %s" % ["General" if kind == "general" else "Admiral", names[g.rng.randi_range(0, names.size() - 1)]],
 		"fire": stats[0], "shock": stats[1], "maneuver": stats[2], "siege": stats[3], "kind": kind, "army": -1}
 	n["leaders"].append(l)
-	if tag == g.player_tag:
-		g.post("New %s: %s (%d / %d / %d / %d)." % [kind, l["name"], stats[0], stats[1], stats[2], stats[3]])
+	g.tell(tag, "New %s: %s (%d / %d / %d / %d)." % [kind, l["name"], stats[0], stats[1], stats[2], stats[3]])
 	g.touch(tag)
 	return l
 
@@ -990,8 +996,7 @@ func _start_battles() -> void:
 			var big = side_a if men_a > men_b else side_b
 			var small = side_b if men_a > men_b else side_a
 			for x in small:
-				if g.player_tag in [x["owner"], big[0]["owner"]]:
-					g.post("%s was overrun at %s by a force ten times its size." % [x["name"], g.provinces[pid]["name"]])
+				g.tell_any([x["owner"], big[0]["owner"]], "%s was overrun at %s by a force ten times its size." % [x["name"], g.provinces[pid]["name"]])
 				_wipe(x)
 			g.armies_changed.emit()
 			continue
@@ -1015,8 +1020,7 @@ func _start_battles() -> void:
 			battle["def"].append(x["id"])
 		g.battles.append(battle)
 		var involved = _side_tags(battle["att"]) + _side_tags(battle["def"])
-		if g.player_tag in involved:
-			g.post("Battle of %s has begun!" % g.provinces[pid]["name"])
+		g.tell_any(involved, "Battle of %s has begun!" % g.provinces[pid]["name"])
 
 
 func _side_tags(ids: Array) -> Array:
@@ -1175,8 +1179,7 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 			if not l.is_empty():
 				g.nations[g.armies[i]["owner"]]["leaders"].erase(l)
 				g.armies[i]["leader"] = -1
-				if g.armies[i]["owner"] == g.player_tag:
-					g.post("%s fell at the Battle of %s." % [l["name"], g.provinces[pid]["name"]])
+				g.tell(g.armies[i]["owner"], "%s fell at the Battle of %s." % [l["name"], g.provinces[pid]["name"]])
 	for t in win_tags:
 		if g.nations.has(t):
 			g.nations[t]["army_tradition"] = minf(100.0, float(g.nations[t]["army_tradition"]) + minf(10.0, ll / 1000.0))
@@ -1197,8 +1200,7 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 		names_l.append(g.nation_name(t))
 	var text = "Battle of %s: %s beat %s (%d against %d losses)%s." % [g.provinces[pid]["name"], ", ".join(names_w),
 		", ".join(names_l), int(lw), int(ll), ", wiping them out" if wiped else ""]
-	if g.player_tag in win_tags or g.player_tag in lose_tags:
-		g.post(text)
+	g.tell_any(win_tags + lose_tags, text)
 	# prestige for the victors, shame for the beaten (more for a bigger battle)
 	var glory := minf(6.0, 1.0 + ll / 2500.0)
 	for t in win_tags:
@@ -1218,8 +1220,7 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 					"loser": lose_tags[0], "win_losses": int(lw), "lose_losses": int(ll), "wiped": wiped})
 				if w["battles"].size() > 40:
 					w["battles"].pop_front()
-	if g.player_tag in win_tags or g.player_tag in lose_tags:
-		g.battle_report.emit(report)
+	g.report_battle(win_tags + lose_tags, report)
 	g.armies_changed.emit()
 
 
@@ -1346,8 +1347,7 @@ func _naval_battles() -> void:
 			for x in losers:
 				if g.fleets.has(x["id"]):
 					_fleet_retreat(x)
-			if f["owner"] == g.player_tag or side_b[0]["owner"] == g.player_tag:
-				g.post("Naval battle at %s." % g.provinces[pid]["name"])
+			g.tell_any([f["owner"], side_b[0]["owner"]], "Naval battle at %s." % g.provinces[pid]["name"])
 		g.armies_changed.emit()
 
 
@@ -1464,8 +1464,7 @@ func _sieges() -> void:
 			if tag == "REB":
 				group[0]["held_days"] = 0
 			var who = g.nation_name(tag) if not special(tag) else group[0]["name"]
-			if g.player_tag in [p["owner"], tag, old]:
-				g.post("%s %s %s." % [who, "liberated" if new_ctrl == p["owner"] else "occupied", p["name"]])
+			g.tell_any([p["owner"], tag, old], "%s %s %s." % [who, "liberated" if new_ctrl == p["owner"] else "occupied", p["name"]])
 			g.province_changed.emit(pid)
 			g.dip.update_war_scores()
 
@@ -1500,8 +1499,7 @@ func _zoc_reversion() -> void:
 		if int(p["zoc_days"]) >= ZOC_REVERT_DAYS:
 			p.erase("zoc_days")
 			p["controller"] = owner
-			if g.player_tag in [owner, ctrl]:
-				g.post("%s returned to %s: the fort next door still holds." % [p["name"], g.nation_name(owner)])
+			g.tell_any([owner, ctrl], "%s returned to %s: the fort next door still holds." % [p["name"], g.nation_name(owner)])
 			g.province_changed.emit(pid)
 			g.dip.update_war_scores()
 
@@ -1523,8 +1521,8 @@ func spawn_rebels(pid: int, rtype: String) -> void:
 		a["regiments"].append({"type": "inf" if i % 4 != 3 else "cav", "men": REGIMENT, "morale": 2.0})
 	g.armies[g.next_id] = a
 	g.post("%s have risen in %s! (%d regiments)" % [nm, p["name"], regs], [String(p["owner"])])
-	if p["owner"] == g.player_tag:
-		g.fire_event("rebels_rise", g.player_tag)
+	if g.is_human(p["owner"]):
+		g.fire_event("rebels_rise", p["owner"])
 	g.armies_changed.emit()
 
 

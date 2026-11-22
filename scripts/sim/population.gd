@@ -165,8 +165,7 @@ func make_core(tag: String, pid: int) -> bool:
 		return false
 	g.nations[tag]["power"][0] -= core_cost(tag, pid)
 	g.provinces[pid]["coring"] = {"tag": tag, "start": g.day_index, "done": g.day_index + CORE_MONTHS * 30}
-	if tag == g.player_tag:
-		g.post("Started making %s a core: %d months." % [g.provinces[pid]["name"], CORE_MONTHS])
+	g.tell(tag, "Started making %s a core: %d months." % [g.provinces[pid]["name"], CORE_MONTHS])
 	g.province_changed.emit(pid)
 	g.touch(tag)
 	return true
@@ -184,8 +183,7 @@ func monthly_cores() -> void:
 		if g.day_index >= int(c["done"]):
 			p["coring"] = {}
 			p["cores"][c["tag"]] = true
-			if c["tag"] == g.player_tag:
-				g.post("%s is now a core of %s." % [p["name"], g.nation_name(c["tag"])])
+			g.tell(c["tag"], "%s is now a core of %s." % [p["name"], g.nation_name(c["tag"])])
 			g.province_changed.emit(pid)
 			g.touch(c["tag"])
 
@@ -313,8 +311,7 @@ func monthly() -> void:
 				if float(conv["progress"]) >= 100.0:
 					p["religion"] = g.nations[tag]["religion"]
 					p["conversion"] = {}
-					if tag == g.player_tag:
-						g.post("%s has converted to the %s." % [p["name"], p["religion"]])
+					g.tell(tag, "%s has converted to the %s." % [p["name"], p["religion"]])
 					g.province_changed.emit(pid)
 
 

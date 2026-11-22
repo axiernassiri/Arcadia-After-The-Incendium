@@ -47,7 +47,7 @@ func build() -> void:
 		sl.custom_minimum_size = Vector2(180, 18)
 		sl.focus_mode = Control.FOCUS_NONE
 		sl.tooltip_text = "Lower maintenance saves sanctum, but lowers morale and slows reinforcement."
-		sl.value_changed.connect(func(v): n["maintenance"][key] = v; Game.touch(tag))
+		sl.value_changed.connect(func(v): Game.act("set_maintenance", [tag, key, v]))
 		var lbl = UI.label("%s %d%%" % ["Army" if key == "land" else "Navy", int(float(n["maintenance"][key]) * 100)], 13)
 		lbl.custom_minimum_size.x = 120
 		add(UI.row([lbl, sl]))
@@ -58,9 +58,9 @@ func build() -> void:
 		n["loans"].size(), int(_sum(n["loans"])), rate * 100.0, Game.eco.MAX_LOANS], 12, UI.TEXT_DIM)
 	add(UI.row([
 		UI.action("Take a loan (+%d)" % Game.eco.loan_size(tag), "" if n["loans"].size() < Game.eco.MAX_LOANS else "Too many loans.",
-			func(): Game.eco.take_loan(tag); mark_dirty()),
+			func(): Game.act("eco.take_loan", [tag]); mark_dirty()),
 		UI.action("Repay one", "" if not n["loans"].is_empty() and float(n["treasury"]) >= float(n["loans"][0]) else "Nothing to repay, or not enough sanctum.",
-			func(): Game.eco.repay_loan(tag); mark_dirty())]))
+			func(): Game.act("eco.repay_loan", [tag]); mark_dirty())]))
 
 	var hist: Array = Game.eco.history.get(tag, [])
 	if hist.size() >= 2:

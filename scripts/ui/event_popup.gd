@@ -19,13 +19,14 @@ func _ready() -> void:
 
 
 func _show_next() -> void:
-	if Game.pending_events.is_empty():
+	var mine: Array = Game.my_events()
+	if mine.is_empty():
 		visible = false
 		_current = {}
 		return
-	if visible and Game.pending_events.has(_current):
+	if visible and mine.has(_current):
 		return
-	_current = Game.pending_events[0]
+	_current = mine[0]
 	var e: Dictionary = _current["event"]
 	var doom: bool = e.get("trigger", {}).get("special", "") == "doomsday"
 	var war: bool = e.get("id", "") in ["call_to_arms", "peace_offer", "game_over"]
@@ -73,14 +74,14 @@ func _show_next() -> void:
 
 
 func _process(_delta: float) -> void:
-	if visible and not Game.pending_events.has(_current):
+	if visible and not Game.my_events().has(_current):
 		_show_next()
-	elif not visible and not Game.pending_events.is_empty():
+	elif not visible and not Game.my_events().is_empty():
 		_show_next()
 
 
 func _choose(i: int) -> void:
 	var inst = _current
 	visible = false
-	Game.resolve_event(inst, i)
+	Game.act("resolve_event", [inst, i])
 	call_deferred("_show_next")

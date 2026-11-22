@@ -83,7 +83,7 @@ func _buildings(tag: String, ids: Array) -> void:
 					continue
 				var bd: Dictionary = Game.building_data[bid]
 				var b = UI.action("%s %d" % [_short(bd["name"]), Game.eco.building_cost(tag, bid)], why,
-					func(): Game.eco.build(tag, pid, bid); mark_dirty(), "%s\n%d months." % [bd.get("text", ""), Game.eco.building_months(tag, bid)])
+					func(): Game.act("eco.build", [tag, pid, bid]); mark_dirty(), "%s\n%d months." % [bd.get("text", ""), Game.eco.building_months(tag, bid)])
 				row.add_child(b)
 				any = true
 			if not any:
@@ -121,7 +121,7 @@ func _army(tag: String, ids: Array, at_war: bool) -> void:
 				continue
 			if why != "" and only_affordable:
 				continue
-			row.add_child(UI.action(_short(Game.mil.unit_name(tag, ut)), why, func(): Game.mil.recruit(tag, pid, ut); mark_dirty()))
+			row.add_child(UI.action(_short(Game.mil.unit_name(tag, ut)), why, func(): Game.act("mil.recruit", [tag, pid, ut]); mark_dirty()))
 		add(row)
 
 
@@ -140,7 +140,7 @@ func _navy(tag: String, ids: Array) -> void:
 				continue
 			var sd: Dictionary = Game.unit_data["ships"][st]
 			row.add_child(UI.action("%s %d" % [_short(Game.mil.ship_name(tag, st)), int(sd["cost"])], why,
-				func(): Game.mil.build_ship(tag, pid, st); mark_dirty()))
+				func(): Game.act("mil.build_ship", [tag, pid, st]); mark_dirty()))
 		add(row)
 	if not any:
 		text("You have no coastal provinces to build ships in.", 12, UI.TEXT_DIM)
@@ -166,7 +166,7 @@ func _cores(tag: String, ids: Array) -> void:
 			row.add_child(UI.label("%d month(s) left" % left, 12, UI.INFO))
 		else:
 			row.add_child(UI.action("Make core (%d %s)" % [Game.pop.core_cost(tag, pid), n["power_names"][0]], Game.pop.can_core(tag, pid),
-				func(): Game.pop.make_core(tag, pid); mark_dirty()))
+				func(): Game.act("pop.make_core", [tag, pid]); mark_dirty()))
 		add(row)
 	if not any:
 		text("Every province you own is a core.", 12, UI.GOOD)

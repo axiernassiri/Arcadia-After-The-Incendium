@@ -59,6 +59,8 @@ var help_overlay
 var main_menu
 var intro
 var nation_select
+var mp_lobby
+var chat_edit: LineEdit
 var game_menu
 var settings_panel
 var news_popup
@@ -111,6 +113,7 @@ func _ready() -> void:
 	trade_node_panel = _add("res://scripts/ui/trade_node_panel.gd")
 	peace_panel = _add("res://scripts/ui/peace_panel.gd")
 	nation_select = _add("res://scripts/ui/nation_select.gd")
+	mp_lobby = _add("res://scripts/ui/mp_lobby.gd")
 	event_popup = _add("res://scripts/ui/event_popup.gd")
 	outliner = _add("res://scripts/ui/outliner.gd")
 	outliner.army_clicked.connect(func(id): _select_army(id); _focus_unit(id, true))
@@ -187,6 +190,24 @@ func _ready() -> void:
 	tab_bar.open_panel.connect(open_panel)
 	main_menu.new_game_pressed.connect(func(): _set_state("intro"); intro.play())
 	main_menu.load_pressed.connect(_load)
+	main_menu.multiplayer_pressed.connect(_open_lobby)
+	mp_lobby.back_pressed.connect(func(): _set_state("menu"))
+	mp_lobby.nation_focused.connect(_focus_nation)
+	Net.began.connect(_mp_began)
+	Net.ended.connect(_mp_ended)
+	Net.chat_received.connect(func(who, text): if state == "game": Game.post(("%s: %s" % [who, text]) if who != "" else text))
+	chat_edit = LineEdit.new()
+	chat_edit.placeholder_text = "Chat to everyone (Enter to send, Esc to close)"
+	chat_edit.custom_minimum_size = Vector2(420, 30)
+	chat_edit.max_length = 200
+	chat_edit.visible = false
+	chat_edit.text_submitted.connect(func(t):
+		Net.send_chat(t)
+		chat_edit.text = ""
+		chat_edit.visible = false)
+	chat_edit.focus_exited.connect(func(): chat_edit.visible = false)
+	chat_edit.gui_input.connect(func(ev): if ev is InputEventKey and ev.pressed and ev.keycode == KEY_ESCAPE: chat_edit.release_focus())
+	root_ui.add_child(chat_edit)
 	intro.finished.connect(_open_select)
 	nation_select.nation_chosen.connect(start_game)
 	nation_select.back_pressed.connect(func(): _set_state("menu"))
@@ -203,7 +224,9 @@ func _ready() -> void:
 	Game.nation_changed.connect(func(_t): _update_badges())
 	_set_state("menu")
 
-	if args.has("nation"):
+	if args.has("host") or args.has("join"):
+		_mp_automation()
+	elif args.has("nation"):
 		start_game(args["nation"])
 		_run_automation()
 	elif args.has("intro"):
@@ -245,6 +268,9 @@ func _set_state(s: String) -> void:
 	if s == "menu":
 		main_menu.refresh()
 	nation_select.visible = s == "select"
+	mp_lobby.visible = s == "lobby"
+	if s != "game":
+		chat_edit.visible = false
 	if s != "intro":
 		intro.visible = false
 	map.show_all = s != "game"
@@ -273,7 +299,36 @@ func _focus_nation(tag: String) -> void:
 	map.select(cap)
 	# centre the capital in the part of the screen the nation-select window doesn't cover
 	var covered: float = nation_select.position.x + nation_select.size.x if nation_select.visible else 0.0
+	if mp_lobby.visible:
+		covered = mp_lobby.position.x + mp_lobby.size.x
 	camera.position = Game.provinces[cap]["centre"] + Vector2(-covered / 2.0 / camera.zoom.x, 0)
+
+
+func _open_lobby(status: String = "") -> void:
+	## The multiplayer window, over the map of the starting world.
+	if not Net.in_game:
+		Game.setup_world()
+		Game.started = false
+	map.set_layer("ground")
+	map.set_mode("political")
+	_set_state("lobby")
+	camera.fit_bounds()
+	mp_lobby.open(status)
+
+
+func _mp_began() -> void:
+	## The host started (or we took over a nation in a running game).
+	news_popup.clear()
+	_set_state("game")
+	_after_start()
+
+
+func _mp_ended(reason: String) -> void:
+	if state == "game":
+		_to_main_menu()
+		_open_lobby(reason)
+	elif state == "lobby":
+		_open_lobby(reason)
 
 
 func start_game(tag: String) -> void:
@@ -327,7 +382,7 @@ func _update_music() -> void:
 func _autosave() -> void:
 	## Monthly or yearly autosave into a few rotating slots ("Autosave 1".."Autosave N").
 	## Skipped during automation runs (tests, soak, screenshots) so they don't litter user://.
-	if state != "game" or not args.is_empty() or Game.player_tag == "":
+	if state != "game" or not args.is_empty() or Game.player_tag == "" or Net.is_client():
 		return
 	var mode := String(Settings.get_value("autosave"))
 	if mode == "off" or (mode == "yearly" and Game.month != 1):
@@ -340,7 +395,10 @@ func _autosave() -> void:
 
 func _to_main_menu() -> void:
 	news_popup.clear()
-	Game.set_speed(0)
+	state = "menu"
+	if Net.online():
+		Net.leave()
+	Game.act("set_speed", [0])
 	Game.started = false
 	Game.setup_world()
 	_set_state("menu")
@@ -458,14 +516,14 @@ func _on_right_click(id: int) -> void:
 	if map.group.size() > 1:
 		var failed: PackedStringArray = []
 		for aid in map.group:
-			if Game.armies.has(aid) and Game.armies[aid]["owner"] == Game.player_tag and not Game.mil.move_army(aid, id):
+			if Game.armies.has(aid) and Game.armies[aid]["owner"] == Game.player_tag and not Game.act("mil.move_army", [aid, id]):
 				failed.append(Game.armies[aid]["name"])
 		if failed.size() > 0:
 			Game.post("Can't reach %s: %s." % [Game.provinces[id]["name"], ", ".join(failed)])
 		army_panel.mark_dirty()
 		return
 	if map.selected_army >= 0 and Game.armies.has(map.selected_army) and Game.armies[map.selected_army]["owner"] == Game.player_tag:
-		if not Game.mil.move_army(map.selected_army, id):
+		if not Game.act("mil.move_army", [map.selected_army, id]):
 			var sel_army: Dictionary = Game.armies[map.selected_army]
 			var mask_why: String = _mask_block(sel_army, id)
 			if mask_why != "":
@@ -479,7 +537,7 @@ func _on_right_click(id: int) -> void:
 		army_panel.mark_dirty()
 		return
 	if map.selected_fleet >= 0 and Game.fleets.has(map.selected_fleet) and Game.fleets[map.selected_fleet]["owner"] == Game.player_tag:
-		if not Game.mil.move_fleet(map.selected_fleet, id):
+		if not Game.act("mil.move_fleet", [map.selected_fleet, id]):
 			Game.post("The fleet can't sail to %s: fleets only go to coastal provinces they can reach." % Game.provinces[id]["name"])
 		army_panel.mark_dirty()
 		return
@@ -640,12 +698,12 @@ var _soak_step := 0
 func _soak(delta: float) -> void:
 	_soak_t += delta
 	while Game.is_blocked():
-		Game.resolve_event(Game.pending_events[0], Game.rng.randi_range(0, Game.pending_events[0]["event"].get("options", [1]).size() - 1))
+		Game.act("resolve_event", [Game.pending_events[0], Game.rng.randi_range(0, Game.pending_events[0]["event"].get("options", [1]).size() - 1)])
 	if _soak_t < 0.7:
 		return
 	_soak_t = 0.0
 	_soak_step += 1
-	Game.set_speed(5)
+	Game.act("set_speed", [5])
 	var k: String = PANELS[_soak_step % PANELS.size()]
 	open_panel(k)
 	var ids: Array = Game.owned(Game.player_tag)
@@ -701,6 +759,9 @@ func _layout() -> void:
 	trade_node_panel.position = Vector2(vp.x - trade_node_panel.size.x - 8, top)
 	peace_panel.max_height = maxf(200.0, vp.y - top - 120.0)
 	peace_panel.position = ((vp - peace_panel.size) / 2.0).round()
+	mp_lobby.fit_height(vp.y)
+	mp_lobby.position = Vector2(16, maxf(8.0, (vp.y - mp_lobby.size.y) / 2.0))
+	chat_edit.position = Vector2(log_panel.position.x, log_panel.position.y - 36.0)
 	nation_select.fit_height(vp.y)
 	nation_select.position = Vector2(16, maxf(8.0, (vp.y - nation_select.size.y) / 2.0))
 	event_popup.position = ((vp - event_popup.size) / 2.0).round()
@@ -735,10 +796,15 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	match event.keycode:
+		KEY_ENTER, KEY_KP_ENTER:
+			if not Net.online():
+				return
+			chat_edit.visible = true
+			chat_edit.grab_focus()
 		KEY_SPACE:
 			top_bar._toggle_pause()
 		KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
-			Game.set_speed(event.keycode - KEY_0)
+			Game.act("set_speed", [event.keycode - KEY_0])
 			top_bar.refresh()
 		KEY_TAB:
 			map.set_layer("sky" if map.layer == "ground" else "ground")
@@ -786,7 +852,7 @@ func _answer_events(keep_last: bool) -> void:
 	while Game.is_blocked():
 		if keep_last and Game.pending_events.size() == 1:
 			return
-		Game.resolve_event(Game.pending_events[0], 0)
+		Game.act("resolve_event", [Game.pending_events[0], 0])
 
 
 func _run_automation() -> void:
@@ -835,10 +901,10 @@ func _run_automation() -> void:
 	if args.has("fleet-to"):
 		var fl: Array = Game.mil.fleets_of(Game.player_tag)
 		if fl.size() > 0:
-			Game.mil.move_fleet(int(fl[0]["id"]), int(Game.province_ids_by_name.get(args["fleet-to"], -1)))
+			Game.act("mil.move_fleet", [int(fl[0]["id"]), int(Game.province_ids_by_name.get(args["fleet-to"], -1))])
 			for i in int(args.get("sail", "0")):
 				while Game.is_blocked():
-					Game.resolve_event(Game.pending_events[0], 0)
+					Game.act("resolve_event", [Game.pending_events[0], 0])
 				Game.advance_day()
 			_select_fleet(int(fl[0]["id"]))
 	if args.has("node"):
@@ -893,6 +959,104 @@ func _run_automation() -> void:
 	_update_badges()
 	if Game.is_blocked():
 		event_popup._show_next()
+
+
+func _mp_automation() -> void:
+	## Test runs of multiplayer (two copies of the game, one hosting):
+	##   --host --mp-nation=MEN [--mp-start=2] [--mp-speed=3]   hosts; starts once N players have nations
+	##   --join=CODE|auto --mp-nation=SKY [--mp-test]           joins (auto: the code this computer last hosted)
+	## --mp-test makes the client take a loan, try to take one for another nation (refused) and move an
+	## army, and print what it sees.
+	var nm: String = String(args.get("mp-name", "Host" if args.has("host") else "Guest"))
+	_open_lobby()
+	if args.has("host"):
+		var err := Net.host(nm)
+		if err != "":
+			print("[mp-test] host failed: ", err)
+			return
+		if args.has("mp-nation"):
+			Net.pick(String(args["mp-nation"]))
+		var need := int(args.get("mp-start", 1))
+		while Net.taken().size() < need:
+			await get_tree().create_timer(0.2).timeout
+		print("[mp-test] host starting with ", Net.taken())
+		Net.start()
+		Game.set_speed(int(args.get("mp-speed", 3)))
+		if args.has("mp-event"):
+			await get_tree().create_timer(2.0).timeout
+			for t in Net.taken():
+				if t != Game.player_tag:
+					Game._sim_depth += 1
+					Game.fire_dynamic_event({"id": "mp_test", "title": "A Test of the Wires",
+						"text": "The host sends you a gift.", "options": [{"text": "Take it.", "effects": [{"type": "add_treasury", "amount": 77}]}]}, t)
+					Game._sim_depth -= 1
+					Net.mark_dirty()
+					print("[mp-test] host sent an event to ", t)
+		return
+	var code := String(args["join"])
+	if code == "auto":
+		var f := FileAccess.open(Net.CODE_FILE, FileAccess.READ)
+		code = f.get_as_text().strip_edges() if f != null else ""
+	if args.has("mp-badcode"):
+		var c := Net.read_code(code)
+		code = Net.make_code(c["ip"], c["port"], (int(c["key"]) + 1) % 65536)
+	var err2 := Net.join(code, nm)
+	if err2 != "":
+		print("[mp-test] join failed: ", err2)
+		return
+	while Net.players.is_empty() and Net.is_client():
+		await get_tree().create_timer(0.1).timeout
+	if not Net.is_client():
+		print("[mp-test] join failed: ", Net.last_error)
+		return
+	print("[mp-test] in the lobby: ", Net.players)
+	Net.pick(String(args.get("mp-nation", "SKY")))
+	while not Game.started:
+		await get_tree().create_timer(0.1).timeout
+	var tag := Game.player_tag
+	print("[mp-test] client playing %s on %s, treasury %.1f" % [tag, Game.date_string(), float(Game.nations[tag]["treasury"])])
+	if args.has("mp-event"):
+		var waited := 0.0
+		while waited < 12.0:
+			await get_tree().create_timer(0.1).timeout
+			waited += 0.1
+			var evs: Array = Game.my_events()
+			if evs.is_empty():
+				continue
+			var inst: Dictionary = evs[0]
+			if inst["event"].get("id", "") != "mp_test":
+				print("[mp-test] answering ", inst["event"].get("title", ""))
+				Game.act("resolve_event", [inst, 0])
+				continue
+			var t0 := float(Game.nations[tag]["treasury"])
+			print("[mp-test] event arrived: ", inst["event"]["title"], ", popup showing: ", event_popup.visible)
+			Game.act("resolve_event", [inst, 0])
+			await get_tree().create_timer(1.0).timeout
+			print("[mp-test] after answering: treasury %.1f -> %.1f, still pending: %d, popup showing: %s" % [t0, float(Game.nations[tag]["treasury"]), Game.my_events().size(), str(event_popup.visible)])
+			break
+	if args.has("mp-test"):
+		await get_tree().create_timer(1.0).timeout
+		var before := float(Game.nations[tag]["treasury"])
+		var loans: int = Game.nations[tag]["loans"].size()
+		Game.act("eco.take_loan", [tag])
+		Game.act("eco.take_loan", ["MEN" if tag != "MEN" else "SKY"])   # not theirs: the host must refuse
+		await get_tree().create_timer(1.0).timeout
+		print("[mp-test] loans %d -> %d, treasury %.1f -> %.1f" % [loans, Game.nations[tag]["loans"].size(), before, float(Game.nations[tag]["treasury"])])
+		var mine: Array = Game.mil.armies_of(tag)
+		if not mine.is_empty():
+			var a: Dictionary = mine[0]
+			var dest := -1
+			for nb in Game.provinces[int(a["location"])]["connections"]:
+				if Game.provinces[nb]["layer"] == Game.provinces[int(a["location"])]["layer"]:
+					dest = nb
+					break
+			Game.act("mil.move_army", [int(a["id"]), dest])
+			await get_tree().create_timer(1.0).timeout
+			var a2: Dictionary = Game.armies.get(int(a["id"]), {})
+			print("[mp-test] army %d ordered to %d: path %s, location %s" % [int(a["id"]), dest, str(a2.get("path", [])), str(a2.get("location", "?"))])
+		Net.send_chat("hello from the test client")
+		await get_tree().create_timer(0.5).timeout
+		print("[mp-test] date now ", Game.date_string(), ", log: ", Game.log_lines.slice(-6))
 
 
 func _screenshot_after_frames(path: String) -> void:

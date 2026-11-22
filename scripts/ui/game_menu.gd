@@ -35,7 +35,8 @@ func _ready() -> void:
 
 func open() -> void:
 	visible = true
-	Game.set_speed(0)
+	if not Net.online():   # in multiplayer the world keeps going while you're in the menu
+		Game.act("set_speed", [0])
 	refresh()
 
 
@@ -53,7 +54,10 @@ func refresh(msg: String = "") -> void:
 	_box.add_child(HSeparator.new())
 	_box.add_child(UI.label("Load game", 15, UI.GOLD))
 	var saves: Array = Game.list_saves()
-	if saves.is_empty():
+	if Net.online():
+		saves = []
+		_box.add_child(UI.label("Leave the multiplayer game to load a save.", 13, UI.TEXT_DIM))
+	elif saves.is_empty():
 		_box.add_child(UI.label("No saved games yet.", 13, UI.TEXT_DIM))
 	for s in saves.slice(0, 8):
 		var row = HBoxContainer.new()
@@ -65,7 +69,12 @@ func refresh(msg: String = "") -> void:
 		_box.add_child(row)
 	_box.add_child(HSeparator.new())
 	_box.add_child(_big("Settings", func(): settings_pressed.emit()))
-	_box.add_child(_big("Main menu", func(): visible = false; main_menu.emit()))
+	if Net.online():
+		var who := "Close the game for everyone" if Net.is_host() else "Leave the game"
+		_box.add_child(UI.label("Multiplayer: %d players. Join code %s" % [Net.players.size(), Net.code], 13, UI.TEXT_DIM))
+		_box.add_child(_big(who, func(): visible = false; main_menu.emit()))
+	else:
+		_box.add_child(_big("Main menu", func(): visible = false; main_menu.emit()))
 	_box.add_child(_big("Quit to desktop", func(): get_tree().quit()))
 	_msg = UI.label(msg, 13, UI.GOOD)
 	_box.add_child(_msg)

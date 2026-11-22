@@ -40,7 +40,7 @@ func build() -> void:
 				v.add_child(UI.label("Effects: " + fx, 11, UI.GOOD, panel_width - 70))
 			var cost: String = Game.decision_cost_text(tag, d)
 			v.add_child(UI.action("Take decision" + (" (%s)" % cost if cost != "" else ""), why,
-				func(): Game.take_decision(tag, d["id"]); mark_dirty()))
+				func(): Game.act("take_decision", [tag, d["id"]]); mark_dirty()))
 			add(c)
 	var tiers: Array = gov.get("tiers", [])
 	for t in tiers.size():
@@ -62,7 +62,7 @@ func build() -> void:
 			if not is_on:
 				var price = cost if chosen == "" else int(cost / 2)
 				v.add_child(UI.action(("Enact" if chosen == "" else "Switch to this") + " (%d progress)" % price,
-					Game.prog.can_enact(tag, t, r["id"]), func(): Game.prog.enact(tag, t, r["id"]); mark_dirty()))
+					Game.prog.can_enact(tag, t, r["id"]), func(): Game.act("prog.enact", [tag, t, r["id"]]); mark_dirty()))
 			add(c)
 
 
@@ -94,15 +94,15 @@ func _estates(tag: String, n: Dictionary) -> void:
 		var sup: Dictionary = d["support"]
 		var toggle := func():
 			if held:
-				Game.standing.revoke(tag, k)
+				Game.act("standing.revoke", [tag, k])
 			else:
-				Game.standing.grant(tag, k)
+				Game.act("standing.grant", [tag, k])
 			mark_dirty()
 		var why: String = Game.standing.can_revoke(tag, k) if held else Game.standing.can_grant(tag, k)
 		var tip: String = ("Revoking: -20 loyalty, costs 50 %s." % n["power_names"][0]) if held else "+15 loyalty and +35 influence; the crown gets the privilege's bonus too."
 		var row = UI.row([
 			UI.action("Revoke privilege" if held else "Grant privilege", why, toggle, tip),
-			UI.action(sup["name"], Game.standing.can_call(tag, k), func(): Game.standing.call_support(tag, k); mark_dirty(),
+			UI.action(sup["name"], Game.standing.can_call(tag, k), func(): Game.act("standing.call_support", [tag, k]); mark_dirty(),
 				"%s Costs 15 loyalty. Once every ten years." % sup.get("text", ""))])
 		v.add_child(row)
 		add(c)

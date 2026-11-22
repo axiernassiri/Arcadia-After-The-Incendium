@@ -90,7 +90,7 @@ func build() -> void:
 		if status in ["open", "ready"]:
 			v.add_child(UI.label("%d / %d goals" % [met, m.get("conditions", []).size()], 11, UI.TEXT))
 		if status == "ready":
-			v.add_child(UI.button("Claim reward", func(): Game.claim_mission(tag, m["id"]); mark_dirty()))
+			v.add_child(UI.button("Claim reward", func(): Game.act("claim_mission", [tag, m["id"]]); mark_dirty()))
 		elif fx != "" and status != "done":
 			v.add_child(UI.label(fx, 10, UI.TEXT_DIM, CARD.x - 14))
 		canvas.add_child(card)

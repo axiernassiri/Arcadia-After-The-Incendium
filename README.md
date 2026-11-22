@@ -13,6 +13,21 @@ The first time you open the project, Godot imports the map images; that takes a 
 
 To run the automated test on Windows, put the console build of Godot in your Downloads or Desktop folder and double-click `run_tests.bat`.
 
+## Multiplayer
+
+Like EU4, one player hosts and the others join with a code. From the main menu choose **Multiplayer**:
+
+- **Host a game** opens a lobby and shows a join code such as `C1A0-148E-BF8TY`. Share it.
+- **Join a game**: type the host's code and press Join.
+
+In the lobby everyone picks a nation and can chat; the host presses **Start the game**. The host's computer runs the world (and controls nothing else: any player can pause or change the speed), and each player's actions are sent to it and checked. Someone can also join a game that is already running and take over a nation from the AI; if a player leaves, the AI takes their nation back. In a multiplayer game events don't pause the world: they wait in your popup and take their first option after two months. Offers between two players (alliances, marriages, military access, vassalage, peace terms) arrive as events for the other player to accept or refuse. Press **Enter** in game to chat.
+
+**Trying it on one computer in Godot:** open **Debug > Customize Run Instances...**, tick *Enable Multiple Instances*, set it to 2 and press F5. Host in one window and join with its code in the other. (A second host on the same computer uses the next port automatically.)
+
+**Over a network:** the code holds the host's home-network address, so computers on the same network join directly. For friends over the internet, the host types their public address (search "what is my IP") into the lobby to get an **internet code**, and forwards **UDP port 7351** on their router to their computer. (A VPN-style network such as Tailscale or ZeroTier also works, with no port forwarding: type its address into the same box instead.)
+
+Test runs from the command line: `-- --host --mp-nation=MEN --mp-start=2` in one copy and `-- --join=auto --mp-nation=SYL --mp-test` in another (see `_mp_automation` in `scripts/main.gd`).
+
 ## What's in it
 
 **Screens.** A main menu (new game, continue, load, quit), the Incendium opening cutscene, and a nation picker drawn over the live map: click a nation in the list or on the map to see its ruler, government, peoples, army, national ideas and difficulty. In game, Esc opens the menu to save, load, change settings, return to the main menu or quit. **Settings** (also on the main menu): fullscreen, interface size (80 to 150%), pause on important news, edge-scrolling and autosave (every month, every year or never; three rotating slots that show up under Continue).
@@ -177,6 +192,8 @@ xvfb-run godot --path . --rendering-driver opengl3 -- --nation=MEN --soak=40
 The other automation flags are listed at the top of `scripts/main.gd`.
 
 **UI screenshot regression test** (Windows or any desktop, needs Python with Pillow and numpy): `python tools/ui_snapshots.py` plays 18 scenarios (menus, every main window, Skyfall, the world seam, the supply map...), shrinks each screenshot and compares it with `tests/ui_snapshots/baseline/`. More than 1.5% of pixels changing fails the scenario and leaves a red diff image in `tests/ui_snapshots/out/`. After an intended UI change, `python tools/ui_snapshots.py --update` (or `... --update economy` for one) accepts the new look.
+
+The sim test also covers multiplayer: join codes, which actions a player may send (only for their own nation, armies and events), offers between players, and the compressed world update. A real two-copy run: `godot --headless --path . -- --host --mp-nation=MEN --mp-start=2 --mp-event` and, a few seconds later, `godot --headless --path . -- --join=auto --mp-nation=SKY --mp-test --mp-event`; the `[mp-test]` lines show the client's loan, refused action, army order, chat and answered event.
 
 ## Lore notes and placeholders
 

@@ -790,6 +790,44 @@ func _initialize() -> void:
 		snd.play("click")
 
 	# ---------------------------------------------------------------- a long AI game
+	# ---- multiplayer (scripts/net.gd): codes, who may do what, the world sent to clients
+	var net = root.get_node("Net")
+	var code: String = net.make_code("192.168.1.34", 7351, 40000)
+	var back: Dictionary = net.read_code(code.to_lower().replace("-", " "))
+	check(back.get("ip", "") == "192.168.1.34" and int(back.get("port", 0)) == 7351 and int(back.get("key", 0)) == 40000,
+		"a join code reads back (%s -> %s)" % [code, str(back)])
+	check(net.read_code("hello").is_empty() and net.read_code("ABCD-EFGH-JKMN").is_empty(), "nonsense is not a join code")
+	game.new_game("MEN", 4289, ["SYL"])
+	check(game.is_human("SYL") and not game.nations["SYL"]["ai"] and game.nations["SKY"]["ai"], "a second player's nation is not run by the AI")
+	var syl_army: int = int(game.mil.armies_of("SYL")[0]["id"])
+	var men_army: int = int(game.mil.armies_of("MEN")[0]["id"])
+	check(net.check("eco.take_loan", ["SYL"], "SYL") == "" and net.check("eco.take_loan", ["MEN"], "SYL") != "",
+		"a player may only act for their own nation")
+	check(net.check("mil.move_army", [syl_army, 1], "SYL") == "" and net.check("mil.move_army", [men_army, 1], "SYL") != "",
+		"a player may only move their own armies")
+	check(net.check("mil.merge_armies", [[syl_army, men_army]], "SYL") != "", "nor merge someone else's army into theirs")
+	check(net.check("debug_cheat", [], "SYL") != "", "and nothing outside the list of actions")
+	game.dip.act("alliance", "MEN", "SYL")
+	var offer: Array = game.pending_events.filter(func(i): return i["tag"] == "SYL")
+	check(offer.size() == 1 and not game.dip.allied("MEN", "SYL"), "one player's alliance offer to another waits for their answer")
+	if offer.size() == 1:
+		game.resolve_event(offer[0], 0)
+		check(game.dip.allied("MEN", "SYL"), "accepting it makes the alliance")
+	game.player_tag = "MEN"
+	check(game.my_events().all(func(i): return i["tag"] == "MEN"), "each computer only shows its own player's events")
+	var snap: Dictionary = game.snapshot()
+	check(not snap.has("log_lines") and snap.has("humans"), "the world sent to clients leaves out each computer's own log")
+	var packed: Array = net._pack(snap)
+	var raw_size: int = var_to_bytes(snap).size()
+	check(packed[1].size() < raw_size / 3, "the world update is compressed (%d -> %d bytes)" % [raw_size, packed[1].size()])
+	var treasury: float = float(game.nations["SYL"]["treasury"])
+	game.nations["SYL"]["treasury"] = -1.0
+	game.player_tag = "SYL"
+	game.apply_snapshot(net._unpack(packed))
+	check(is_equal_approx(float(game.nations["SYL"]["treasury"]), treasury) and game.player_tag == "SYL", "a client takes the host's world and keeps its own player")
+	game.new_game("SKY")
+	check(game.humans.is_empty(), "a single-player game has no other humans")
+
 	game.new_game("SKY")
 	game.nations["SKY"]["ai"] = true
 	days(365 * 12)

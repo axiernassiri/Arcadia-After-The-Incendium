@@ -59,11 +59,11 @@ func build() -> void:
 	section("Stability")
 	add(UI.row([UI.label("Stability %+d" % int(n["stability"]), 16, UI.GOOD if int(n["stability"]) > 0 else UI.TEXT), UI.spacer(),
 		UI.action("Raise (%d %s)" % [Game.court.stability_cost(tag), names[0]], Game.court.can_raise_stability(tag),
-			func(): Game.court.raise_stability(tag); mark_dirty(), "Stability cost:\n" + Game.mods.breakdown(tag, ["stability_cost_mod"]))]))
+			func(): Game.act("court.raise_stability", [tag]); mark_dirty(), "Stability cost:\n" + Game.mods.breakdown(tag, ["stability_cost_mod"]))]))
 	text("Each point of stability: +5% tax and -1 unrest everywhere. Declaring war without a cause costs 2.", 11, UI.TEXT_DIM)
 	section("War")
 	add(UI.row([UI.label("War exhaustion %.1f" % float(n["war_exhaustion"]), 14, UI.BAD if float(n["war_exhaustion"]) > 2 else UI.TEXT), UI.spacer(),
-		UI.action("Reduce (50 %s)" % names[1], Game.court.can_reduce_we(tag), func(): Game.court.reduce_we(tag); mark_dirty())]))
+		UI.action("Reduce (50 %s)" % names[1], Game.court.can_reduce_we(tag), func(): Game.act("court.reduce_we", [tag]); mark_dirty())]))
 	add(UI.kv("Army tradition", "%d" % int(n["army_tradition"]), "Won battles raise it. Higher tradition gives better generals."))
 	add(UI.kv("Battles won", str(int(n.get("battles_won", 0)))))
 	section("Modifiers in effect")
@@ -95,7 +95,7 @@ func _advisors(tag: String, names: Array) -> void:
 			var at: Dictionary = Game.advisor_data["types"].get(a["type"], {})
 			v.add_child(UI.row([UI.label("%s: %s" % [names[i], a["name"]], 13, UI.GOLD), UI.spacer(),
 				UI.label("%s, skill %d" % [at.get("name", a["type"]), int(a["skill"])], 12),
-				UI.button("Dismiss", func(): Game.court.dismiss(tag, power); mark_dirty(), "Free the seat. The salary stops.")]))
+				UI.button("Dismiss", func(): Game.act("court.dismiss", [tag, power]); mark_dirty(), "Free the seat. The salary stops.")]))
 			v.add_child(UI.label("+%d %s a month · %s · %.1f sanctum a month" % [int(a["skill"]), names[i], Game.mods.describe(at.get("modifiers", {})),
 				Game.court.advisor_salary(tag, int(a["skill"]))], 11, UI.TEXT_DIM, panel_width - 70))
 		var cands = HFlowContainer.new()
@@ -104,7 +104,7 @@ func _advisors(tag: String, names: Array) -> void:
 				continue
 			var ct: Dictionary = Game.advisor_data["types"].get(cand["type"], {})
 			cands.add_child(UI.action("%s %d (%d)" % [ct.get("name", cand["type"]), int(cand["skill"]), Game.court.advisor_cost(tag, int(cand["skill"]))],
-				Game.court.can_hire(tag, int(cand["id"])), func(): Game.court.hire(tag, int(cand["id"])); mark_dirty(),
+				Game.court.can_hire(tag, int(cand["id"])), func(): Game.act("court.hire", [tag, int(cand["id"])]); mark_dirty(),
 				"%s\n%s\nSalary %.1f a month. Hiring replaces the current advisor." % [cand["name"], Game.mods.describe(ct.get("modifiers", {})), Game.court.advisor_salary(tag, int(cand["skill"]))]))
 		v.add_child(cands)
 		add(c)

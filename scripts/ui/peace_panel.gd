@@ -122,7 +122,10 @@ func build() -> void:
 		acc = Game.dip.peace_acceptance(w, me, target, demands)
 	for r in acc[2]:
 		add(UI.kv("  " + String(r[0]), "%+d" % int(r[1]), "", UI.GOOD if float(r[1]) >= 0 else UI.BAD))
-	add(UI.label("They will %s." % ("ACCEPT" if acc[0] else "REFUSE"), 15, UI.GOOD if acc[0] else UI.BAD))
+	if Game.is_human(target):
+		add(UI.label("%s is played by a person: they decide when your offer arrives." % Game.nation_name(target), 14, UI.GOLD, 380))
+	else:
+		add(UI.label("They will %s." % ("ACCEPT" if acc[0] else "REFUSE"), 15, UI.GOOD if acc[0] else UI.BAD))
 	var label = "Offer white peace" if demands.is_empty() else ("Offer these concessions" if give else "Send peace demands")
 	add(UI.button(label, _send))
 	if not give and Game.dip.fully_occupied(w, me, target) and target == Game.dip.enemy_leader(w, me):
@@ -134,50 +137,22 @@ func build() -> void:
 
 
 func _give_acceptance(w: Dictionary, cost: float) -> Array:
-	var their: float = Game.dip.score_for(w, target)
-	var reasons: Array = [["What you offer", cost], ["Their war score", -maxf(0.0, their)]]
-	var we = float(Game.nations[target]["war_exhaustion"])
-	if we > 0.0:
-		reasons.append(["Their war exhaustion", we * 1.5])
-	reasons.append(["Willing to end it", 5.0])
-	var total = 0.0
-	for r in reasons:
-		total += float(r[1])
-	return [total >= 0.0, total, reasons]
+	return Game.dip.give_acceptance(w, target, cost)
 
 
 func _send() -> void:
-	var w: Dictionary = Game.wars.get(war_id, {})
-	if w.is_empty():
+	if not Game.wars.has(war_id):
 		return
-	var me = Game.player_tag
-	var ds: Array = demands.duplicate(true)
-	if ds.is_empty():
-		ds = [{"type": "white"}]
-	if give:
-		if _give_acceptance(w, Game.dip.peace_cost(w, target, me, demands))[0]:
-			Game.dip.enforce_peace(w, target, me, ds)
-			visible = false
-		else:
-			_msg = "%s refused." % Game.nation_name(target)
-	else:
-		if Game.dip.peace_acceptance(w, me, target, demands)[0]:
-			Game.dip.enforce_peace(w, me, target, ds)
-			visible = false
-		else:
-			_msg = "%s refused your terms." % Game.nation_name(target)
+	_msg = String(Game.act("dip.propose_peace", [war_id, Game.player_tag, target, demands.duplicate(true), "give" if give else "demand"]))
+	if _msg == "":
+		visible = false
 	mark_dirty()
 
 
 func _enforce() -> void:
-	var w: Dictionary = Game.wars.get(war_id, {})
-	if w.is_empty():
+	if not Game.wars.has(war_id):
 		return
-	var ds: Array = demands.duplicate(true)
-	if ds.is_empty():
-		ds = [{"type": "white"}]
-	Game.dip.add_opinion(target, Game.player_tag, -25.0, "Enforced peace on us", 0.5)
-	Game.dip.enforce_peace(w, Game.player_tag, target, ds)
+	Game.act("dip.propose_peace", [war_id, Game.player_tag, target, demands.duplicate(true), "force"])
 	visible = false
 
 

@@ -77,9 +77,9 @@ func build() -> void:
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		if mine == "":
-			row.add_child(UI.icon_button("coins", "Collect here", func(): Game.trade.send_merchant(tag, node_name, "collect"); mark_dirty(),
+			row.add_child(UI.icon_button("coins", "Collect here", func(): Game.act("trade.send_merchant", [tag, node_name, "collect"]); mark_dirty(),
 				"Send a merchant to take your share of this node's value as income (with half trade power away from home).", 16))
-			row.add_child(UI.icon_button("trade", "Steer downstream", func(): Game.trade.send_merchant(tag, node_name, "steer"); mark_dirty(),
+			row.add_child(UI.icon_button("trade", "Steer downstream", func(): Game.act("trade.send_merchant", [tag, node_name, "steer"]); mark_dirty(),
 				"Send a merchant to push your share of the value downstream, +%d%%, toward your home node." % int(Game.trade.steer_bonus * 100), 16))
 			for b in row.get_children():
 				var why: String = Game.trade.can_send(tag, node_name, "collect" if "Collect" in b.text else "steer")
@@ -88,7 +88,7 @@ func build() -> void:
 					b.tooltip_text = why
 		else:
 			row.add_child(UI.label("Your merchant is %s." % ("collecting" if mine == "collect" else "steering trade downstream"), 12, UI.INFO))
-			row.add_child(UI.button("Recall", func(): Game.trade.recall_merchant(tag, node_name); mark_dirty()))
+			row.add_child(UI.button("Recall", func(): Game.act("trade.recall_merchant", [tag, node_name]); mark_dirty()))
 		add(row)
 	# provinces
 	section("Biggest trade centres")

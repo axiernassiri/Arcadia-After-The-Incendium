@@ -44,10 +44,10 @@ func build() -> void:
 		if k != home:
 			var row = HBoxContainer.new()
 			if mine == "":
-				row.add_child(UI.action("Collect", Game.trade.can_send(tag, k, "collect"), func(): Game.trade.send_merchant(tag, k, "collect"); mark_dirty()))
-				row.add_child(UI.action("Steer", Game.trade.can_send(tag, k, "steer"), func(): Game.trade.send_merchant(tag, k, "steer"); mark_dirty()))
+				row.add_child(UI.action("Collect", Game.trade.can_send(tag, k, "collect"), func(): Game.act("trade.send_merchant", [tag, k, "collect"]); mark_dirty()))
+				row.add_child(UI.action("Steer", Game.trade.can_send(tag, k, "steer"), func(): Game.act("trade.send_merchant", [tag, k, "steer"]); mark_dirty()))
 			else:
-				row.add_child(UI.button("Recall merchant (%s)" % mine, func(): Game.trade.recall_merchant(tag, k); mark_dirty()))
+				row.add_child(UI.button("Recall merchant (%s)" % mine, func(): Game.act("trade.recall_merchant", [tag, k]); mark_dirty()))
 			v.add_child(row)
 		add(c)
 	section("Market prices")

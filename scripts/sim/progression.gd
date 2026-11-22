@@ -58,8 +58,7 @@ func research(tag: String, track: String) -> bool:
 	if ahead > 0:
 		var deb: Dictionary = g.tech_ahead_debuff.get(track, {})
 		g.add_nation_modifier(tag, "ahead_" + track, deb.get("name", "Ahead of Time"), deb.get("modifiers", {}), g.tech_debuff_years * 12)
-	if tag == g.player_tag:
-		g.post("Researched %s: %s." % [track.to_upper(), level_info(track, n["tech"][i]).get("name", "")])
+	g.tell(tag, "Researched %s: %s." % [track.to_upper(), level_info(track, n["tech"][i]).get("name", "")])
 	g.touch(tag)
 	return true
 
@@ -183,8 +182,7 @@ func take_idea(tag: String, gid: String) -> bool:
 	for ig in g.nations[tag]["idea_groups"]:
 		if ig["id"] == gid:
 			ig["taken"] = int(ig["taken"]) + 1
-			if tag == g.player_tag:
-				g.post("Adopted the idea: %s." % grp["ideas"][int(ig["taken"]) - 1][0])
+			g.tell(tag, "Adopted the idea: %s." % grp["ideas"][int(ig["taken"]) - 1][0])
 	g.touch(tag)
 	return true
 
@@ -227,8 +225,7 @@ func enact(tag: String, tier: int, rid: String) -> bool:
 	else:
 		n["reforms"].append(rid)
 	n["reform_progress"] = float(n["reform_progress"]) - cost
-	if tag == g.player_tag:
-		g.post("Government reform enacted: %s." % reform_name(tag, rid))
+	g.tell(tag, "Government reform enacted: %s." % reform_name(tag, rid))
 	g.touch(tag)
 	return true
 

@@ -73,7 +73,7 @@ func _ready() -> void:
 	_pause.custom_minimum_size = Vector2(36, 30)
 	_pause.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_row.add_child(_pause)
-	var minus = UI.icon_button("minus", "", func(): Game.set_speed(maxi(1, Game.speed - 1)); refresh(), "Slower (1-5)", 12)
+	var minus = UI.icon_button("minus", "", func(): Game.act("set_speed", [maxi(1, Game.speed - 1)]); refresh(), "Slower (1-5)", 12)
 	minus.theme_type_variation = "FlatButton"
 	minus.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_row.add_child(minus)
@@ -96,7 +96,7 @@ func _ready() -> void:
 	_speed = UI.label("", 13, UI.GOLD)
 	_speed.visible = false
 	_row.add_child(_speed)
-	var plus = UI.icon_button("plus", "", func(): Game.set_speed(mini(5, maxi(1, Game.speed) + 1)); refresh(), "Faster (1-5)", 12)
+	var plus = UI.icon_button("plus", "", func(): Game.act("set_speed", [mini(5, maxi(1, Game.speed) + 1)]); refresh(), "Faster (1-5)", 12)
 	plus.theme_type_variation = "FlatButton"
 	plus.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_row.add_child(plus)
@@ -127,7 +127,7 @@ func _stat(panel: String, icon_name: String, tint: Color) -> Label:
 
 
 func _toggle_pause() -> void:
-	Game.set_speed(0 if Game.speed > 0 else maxi(1, _last_speed))
+	Game.act("set_speed", [0 if Game.speed > 0 else maxi(1, _last_speed)])
 	refresh()
 
 

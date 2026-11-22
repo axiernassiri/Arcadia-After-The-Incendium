@@ -119,19 +119,19 @@ func _build_army() -> void:
 			sel = i
 		i += 1
 	ob.select(sel)
-	ob.item_selected.connect(func(idx): Game.mil.assign_leader(army, ob.get_item_id(idx)))
+	ob.item_selected.connect(func(idx): Game.act("mil.assign_leader", [army, ob.get_item_id(idx)]))
 	add(UI.row([UI.label("General:", 13), ob]))
 	var row = HBoxContainer.new()
-	row.add_child(UI.action("Stop", "" if not a["path"].is_empty() and not a["retreating"] else "Not moving.", func(): a["path"] = []; Game.armies_changed.emit()))
+	row.add_child(UI.action("Stop", "" if not a["path"].is_empty() and not a["retreating"] else "Not moving.", func(): Game.act("mil.stop_army", [army])))
 	row.add_child(UI.action("Split", "" if a["regiments"].size() >= 2 and not a["in_battle"] else "Needs 2 regiments, not in battle.",
-		func(): Game.mil.split_army(army)))
+		func(): Game.act("mil.split_army", [army])))
 	var others: Array = []
 	for x in Game.mil.armies_at(int(a["location"])):
 		if x["owner"] == tag and int(x["id"]) != army and not x["in_battle"]:
 			others.append(int(x["id"]))
 	row.add_child(UI.action("Merge", "" if others.size() > 0 and not a["in_battle"] else "No other army of yours here.",
-		func(): Game.mil.merge_armies([army] + others)))
-	row.add_child(UI.action("Disband", "" if not a["in_battle"] else "In battle.", func(): Game.mil.disband_army(army); close()))
+		func(): Game.act("mil.merge_armies", [[army] + others])))
+	row.add_child(UI.action("Disband", "" if not a["in_battle"] else "In battle.", func(): Game.act("mil.disband_army", [army]); close()))
 	add(row)
 
 
@@ -165,7 +165,7 @@ func _build_fleet() -> void:
 	text("Right-click a coastal province to sail there.%s" % (" Airships stay among the sky islands." if f.get("sky", false) else ""), 11, UI.TEXT_DIM)
 	var row = HBoxContainer.new()
 	row.add_child(UI.action("Stop", "" if not f["path"].is_empty() else "Not moving.", func(): f["path"] = []; Game.armies_changed.emit()))
-	row.add_child(UI.button("Disband", func(): Game.mil.disband_fleet(fleet); close()))
+	row.add_child(UI.button("Disband", func(): Game.act("mil.disband_fleet", [fleet]); close()))
 	add(row)
 
 
@@ -209,11 +209,10 @@ func _build_group() -> void:
 		why = "Not while one of them is in battle."
 	var ids: Array = group.duplicate()
 	var merge = UI.action("Merge all", why, func():
-		Game.mil.merge_armies(ids)
+		Game.act("mil.merge_armies", [ids])
 		group_changed.emit([ids[0]]), "Join every selected army into one.")
 	var stop = UI.button("Stop all", func():
 		for id in ids:
-			if Game.armies.has(id) and not Game.armies[id]["retreating"]:
-				Game.armies[id]["path"] = []
-		Game.armies_changed.emit(), "Cancel every march order.")
+			if Game.armies.has(id):
+				Game.act("mil.stop_army", [id]), "Cancel every march order.")
 	add(UI.row([merge, stop]))

@@ -53,7 +53,7 @@ func build() -> void:
 					why = "They want %d sanctum; you can't pay." % int(q["price"])
 				v.add_child(UI.row([UI.label(Game.nation_name(ally), 12, UI.INFO), UI.spacer(),
 					UI.label("wants %d sanctum" % int(q["price"]) if q["accept"] else "refuses", 11, UI.GOLD if q["accept"] else UI.BAD),
-					UI.action("Call to arms", why, func(): Game.post(Game.dip.call_ally(w, tag, ally)); mark_dirty(),
+					UI.action("Call to arms", why, func(): Game.post(Game.act("dip.call_ally", [w, tag, ally])); mark_dirty(),
 						"Allies don't join on their own. They decide by what they think of you, the enemy and their own situation, and want sanctum in return.\n" + "\n".join(lines))]))
 		v.add_child(UI.row([UI.button("Overview", func(): war_selected.emit(int(w["id"])), "Sides, occupations and battles of this war"),
 			UI.action("Negotiate peace", "" if lead or true else "", func(): peace_requested.emit(int(w["id"])))]))

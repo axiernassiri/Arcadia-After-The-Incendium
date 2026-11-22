@@ -37,7 +37,7 @@ func build() -> void:
 		v.add_child(UI.label(Game.prog.unlock_text(nxt, tag), 12, UI.GOOD, panel_width - 60))
 		v.add_child(UI.row([UI.bar(float(n["power"][i]), float(cost), 180.0), UI.label("%d / %d" % [int(n["power"][i]), cost], 12)]))
 		v.add_child(UI.action("Research (%d %s)" % [cost, n["power_names"][i]], Game.prog.can_research(tag, track),
-			func(): Game.prog.research(tag, track); mark_dirty()))
+			func(): Game.act("prog.research", [tag, track]); mark_dirty()))
 		add(c)
 		var later: PackedStringArray = []
 		for k in range(lvl + 2, mini(lvl + 5, Game.prog.max_level(track) + 1)):

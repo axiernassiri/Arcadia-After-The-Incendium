@@ -307,6 +307,7 @@ func setup_world(seed_value: int = 4289) -> void:
 	ledger_history.clear()
 	_doomsday_damage.clear()
 	player_tag = ""
+	humans = {}
 	var defs: Dictionary = nation_defs.get("nations", {})
 	for tag in nations:
 		var n: Dictionary = nations[tag]
@@ -429,11 +430,15 @@ func _nearest_coastal(tag: String, from: int) -> int:
 	return best
 
 
-func new_game(tag: String, seed_value: int = 4289) -> void:
+func new_game(tag: String, seed_value: int = 4289, others: Array = []) -> void:
+	## `others`: the nations the other players of a multiplayer game have picked.
 	setup_world(seed_value)
 	player_tag = tag
+	for t in others:
+		if nations.has(t) and t != tag:
+			humans[t] = true
 	for t in nations:
-		nations[t]["ai"] = (t != tag)
+		nations[t]["ai"] = not is_human(t)
 	started = true
 	post("%s, %s. The Arcadian Era begins." % [date_string(), nations[tag]["short"] if nations.has(tag) else "Observer"])
 	record_ledger()
@@ -498,7 +503,7 @@ func kill_nation(tag: String) -> void:
 	n["subjects"].clear()
 	n["overlord"] = ""
 	post("%s is no more." % n["name"], [tag], "", true)
-	if tag == player_tag:
+	if is_human(tag):
 		fire_dynamic_event({"id": "game_over", "title": "The End of %s" % n["name"],
 			"text": "Our last province has fallen. You can keep watching the world, or load a save from the menu.",
 			"options": [{"text": "So it ends.", "effects": []}]}, tag)
@@ -510,7 +515,7 @@ func revive_nation(tag: String) -> void:
 	var keep_explored: Dictionary = nations[tag]["explored"]
 	nations[tag] = _make_nation(tag, d)
 	nations[tag]["explored"] = keep_explored
-	nations[tag]["ai"] = tag != player_tag
+	nations[tag]["ai"] = not is_human(tag)
 
 
 func capital_of(tag: String) -> int:
@@ -599,8 +604,7 @@ func take_decision(tag: String, id: String) -> bool:
 		n["power"][i] = int(n["power"][i]) - int(pw[i])
 	n["treasury"] = float(n["treasury"]) - float(d.get("cost", {}).get("treasury", 0))
 	apply_effects(d.get("effects", []), tag)
-	if tag == player_tag:
-		post("Decision taken: %s." % d["name"])
+	tell(tag, "Decision taken: %s." % d["name"])
 	touch(tag)
 	nation_changed.emit(tag)
 	return true
@@ -727,7 +731,181 @@ func date_from_index(idx: int) -> String:
 
 
 func is_blocked() -> bool:
+	## Single player: time waits for the player's events. Multiplayer never pauses for one player's
+	## event (like EU4): it waits in their popup, and is answered for them after a while.
+	if Net.online():
+		return false
 	return not pending_events.is_empty()
+
+
+func my_events() -> Array:
+	## The pending events this computer's player has to answer.
+	return pending_events.filter(func(inst): return inst.get("tag", "") == player_tag and not answered.has(int(inst.get("uid", -1))))
+
+
+var answered := {}   # multiplayer client: events already answered, until the host's next world update drops them
+
+
+# ---------------------------------------------------------------- humans and multiplayer
+
+var humans := {}      # tags played by people (multiplayer: every player's nation; single player: none extra)
+var _sim_depth := 0   # > 0 while the host is running the simulation or a player's action
+
+
+func human_tags() -> Array:
+	var out: Array = humans.keys()
+	if player_tag != "" and nations.has(player_tag) and not out.has(player_tag):
+		out.push_front(player_tag)
+	return out
+
+
+func is_human(tag: String) -> bool:
+	return tag != "" and (tag == player_tag or humans.has(tag))
+
+
+func tell(tag: String, text: String) -> void:
+	## A message only for the person playing `tag` (in multiplayer it is sent to their computer).
+	if text == "" or not is_human(tag):
+		return
+	if tag == player_tag:
+		var depth := _sim_depth
+		_sim_depth = 0   # only for this computer, not everyone's
+		post(text)
+		_sim_depth = depth
+	else:
+		Net.tell(tag, text)
+
+
+func tell_any(tags: Array, text: String) -> void:
+	var done := {}
+	for t in tags:
+		if not done.has(t):
+			done[t] = true
+			tell(t, text)
+
+
+func report_battle(tags: Array, report: Dictionary) -> void:
+	for t in tags:
+		if t == player_tag:
+			battle_report.emit(report)
+			break
+	Net.send_battle_report(tags, report)
+
+
+func act(path: String, args: Array = []) -> Variant:
+	## Everything the player does goes through here, so a multiplayer client can send it to the host
+	## instead of running it. Offline (and on the host) it just runs.
+	return Net.request(path, args)
+
+
+func call_path(path: String, args: Array) -> Variant:
+	var parts := path.split(".")
+	var obj: Object = self if parts.size() == 1 else get(parts[0])
+	var method: String = parts[parts.size() - 1]
+	if obj == null or not obj.has_method(method):
+		push_warning("Unknown action " + path)
+		return null
+	_sim_depth += 1
+	var out: Variant = obj.callv(method, args)
+	_sim_depth -= 1
+	return out
+
+
+func set_maintenance(tag: String, key: String, value: float) -> void:
+	if nations.has(tag) and key in ["land", "naval"]:
+		nations[tag]["maintenance"][key] = clampf(value, 0.5, 1.0)
+		touch(tag)
+
+
+func _answer_stale_events() -> void:
+	## Multiplayer: an event nobody answers for two months takes its first option.
+	for inst in pending_events.duplicate():
+		if day_index - int(inst.get("day", day_index)) >= 60:
+			resolve_event(inst, 0)
+			tell(inst["tag"], "No answer to \"%s\": the first option was chosen." % inst["event"].get("title", "an event"))
+
+
+const SNAPSHOT_SKIP := ["log_lines", "world_lines", "player_tag"]
+
+
+func snapshot() -> Dictionary:
+	## The whole game for multiplayer clients: the save state, minus what each computer keeps itself.
+	var s := _state()
+	for k in SNAPSHOT_SKIP:
+		s.erase(k)
+	s["speed"] = speed
+	s["humans"] = humans
+	s["started"] = started
+	return s
+
+
+func apply_snapshot(s: Dictionary) -> void:
+	## A multiplayer client takes the host's world. Its own player, log and world news stay.
+	var old_month := month
+	var old_doom := doomsday_active
+	var old_wars: Array = wars.keys()
+	var was_warned: bool = global_flags.has("eschaton_warned")
+	var old_owners := {}
+	for id in provinces:
+		old_owners[id] = [provinces[id]["owner"], provinces[id]["controller"]]
+	year = s["year"]
+	month = s["month"]
+	day = s["day"]
+	day_index = s["day_index"]
+	speed = int(s.get("speed", 0))
+	humans = s.get("humans", {})
+	doomsday_active = s["doomsday_active"]
+	doomsday_count = s["doomsday_count"]
+	_doomsday_damage = s["doomsday_damage"]
+	nations = s["nations"]
+	provinces = s["provinces"]
+	armies = s["armies"]
+	fleets = s["fleets"]
+	battles = s["battles"]
+	wars = s["wars"]
+	recruit_queue = s["recruit_queue"]
+	next_id = s["next_id"]
+	global_flags = s["global_flags"]
+	pending_events = s["pending_events"]
+	var still := {}
+	for inst in pending_events:
+		if answered.has(int(inst.get("uid", -1))):
+			still[int(inst["uid"])] = true
+	answered = still
+	scheduled = s["scheduled"]
+	fired_once = s["fired_once"]
+	ledger_history = s.get("ledger_history", {})
+	rng.seed = s["rng_seed"]
+	rng.state = s["rng_state"]
+	eco.market = s["market"]
+	eco.history = s["history"]
+	trade.state = s["trade_state"]
+	trade.income = s["trade_income"]
+	_owned_cache.clear()
+	mods.invalidate()
+	dip.rebuild_pairs()
+	var first := not started
+	started = true
+	if first:
+		game_started.emit()
+	date_changed.emit()
+	armies_changed.emit()
+	if wars.keys() != old_wars:
+		war_changed.emit()
+	if old_doom != doomsday_active:
+		doomsday_changed.emit(doomsday_active)
+	if month != old_month and not first:
+		month_ticked.emit()
+	if not was_warned and global_flags.has("eschaton_warned") and not first:
+		eschaton_warning.emit()
+	for id in provinces:
+		var o: Array = old_owners.get(id, [])
+		if o.is_empty() or o[0] != provinces[id]["owner"] or o[1] != provinces[id]["controller"]:
+			province_changed.emit(id)
+	for tag in nations:
+		nation_changed.emit(tag)
+	for inst in my_events():
+		event_fired.emit(inst)
 
 
 func set_speed(s: int) -> void:
@@ -735,8 +913,8 @@ func set_speed(s: int) -> void:
 
 
 func _process(delta: float) -> void:
-	if not started or speed == 0 or is_blocked():
-		return
+	if not started or speed == 0 or is_blocked() or Net.is_client():
+		return   # a multiplayer client shows the host's world; only the host runs time
 	_accum += delta * DAYS_PER_SECOND[speed]
 	var steps := 0
 	while _accum >= 1.0 and steps < 10 and not is_blocked():
@@ -748,6 +926,15 @@ func _process(delta: float) -> void:
 
 
 func advance_day() -> void:
+	_sim_depth += 1
+	_advance_day()
+	_sim_depth -= 1
+	Net.mark_dirty()
+
+
+func _advance_day() -> void:
+	if Net.online():
+		_answer_stale_events()
 	if doomsday_active:
 		end_doomsday()
 	day += 1
@@ -810,10 +997,11 @@ func monthly_tick() -> void:
 	if year >= end_year and not global_flags.has("game_over"):
 		global_flags["game_over"] = true
 		speed = 0
-		if player_tag != "":
-			fire_dynamic_event({"id": "end_of_era", "title": "The Eschaton",
-				"text": "It is %d, five hundred years after the Incendium. Dark energy pulls every atom away from every other: the universe has lived through all its years and gives itself back to the Void. Whatever %s built is recycled into what comes next. Somewhere, the nation on J82wC4 already escaped." % [year, nation_name(player_tag)],
-				"options": [{"text": "Keep playing in the last light.", "effects": []}]}, player_tag)
+		for ht in human_tags():
+			if true:
+				fire_dynamic_event({"id": "end_of_era", "title": "The Eschaton",
+					"text": "It is %d, five hundred years after the Incendium. Dark energy pulls every atom away from every other: the universe has lived through all its years and gives itself back to the Void. Whatever %s built is recycled into what comes next. Somewhere, the nation on J82wC4 already escaped." % [year, nation_name(ht)],
+					"options": [{"text": "Keep playing in the last light.", "effects": []}]}, ht)
 	mods.invalidate()
 	if month == 1:
 		record_ledger()
@@ -854,8 +1042,7 @@ func explore(tag: String, id: int) -> bool:
 	var p: Dictionary = provinces[id]
 	if tag != "SKY" and p["layer"] == "sky" and nations.has("SKY"):
 		dip.add_opinion("SKY", tag, -5.0, "Mapped our islands", 0.25)  # Skyfall forbids mapping and cameras
-	if tag == player_tag:
-		post("Explorers have mapped %s." % p["name"])
+	tell(tag, "Explorers have mapped %s." % p["name"])
 	province_changed.emit(id)
 	touch(tag)
 	return true
@@ -950,8 +1137,9 @@ func start_doomsday() -> void:
 		post("ENTITIES POUR THROUGH THE PORTAL: %d regiments of things from beyond are loose in Skyfall!" % regs)
 		for tag in affected:
 			fire_event("entity_invasion", tag)
-	if player_tag != "" and not (player_tag in affected):
-		post("The anomalies stay in Skyfall. %s has no one there, so the Black Moon passes us by." % nation_name(player_tag))
+	for ht in human_tags():
+		if not (ht in affected):
+			tell(ht, "The anomalies stay in Skyfall. %s has no one there, so the Black Moon passes us by." % nation_name(ht))
 	doomsday_changed.emit(true)
 	for tag in affected:
 		for eid in events:
@@ -1007,7 +1195,7 @@ func _event_applies(e: Dictionary, tag: String) -> bool:
 	if f == "others":
 		return tag != "MEN" and tag != "SKY"
 	if f == "player":
-		return tag == player_tag
+		return is_human(tag)
 	return f == tag
 
 
@@ -1108,12 +1296,16 @@ func fire_dynamic_event(e: Dictionary, tag: String) -> void:
 
 
 func _fire(e: Dictionary, tag: String) -> void:
-	var inst := {"event": e, "tag": tag, "date": date_string()}
-	if nations[tag]["ai"]:
+	var inst := {"event": e, "tag": tag, "date": date_string(), "day": day_index}
+	if nations[tag]["ai"] and not is_human(tag):
+		inst["ai"] = true
 		resolve_event(inst, _ai_pick_option(e))
 	else:
+		next_id += 1
+		inst["uid"] = next_id
 		pending_events.append(inst)
-		event_fired.emit(inst)
+		if tag == player_tag:
+			event_fired.emit(inst)   # another player's event reaches them with the next snapshot
 
 
 func _ai_pick_option(e: Dictionary) -> int:
@@ -1128,7 +1320,16 @@ func _ai_pick_option(e: Dictionary) -> int:
 	return best
 
 
+func event_by_uid(uid: int) -> Dictionary:
+	for inst in pending_events:
+		if int(inst.get("uid", -1)) == uid:
+			return inst
+	return {}
+
+
 func resolve_event(inst: Dictionary, option_index: int) -> void:
+	if not inst.get("ai", false) and not pending_events.has(inst):
+		return   # already answered (twice-clicked, or answered for them)
 	var opts: Array = inst["event"].get("options", [])
 	pending_events.erase(inst)
 	if option_index >= 0 and option_index < opts.size():
@@ -1180,7 +1381,7 @@ func describe_effects(effects: Array, tag: String) -> String:
 				parts.append("claims on all of %s" % nation_name(e["tag"]) if e.has("tag") else "claim on %s" % e.get("province", ""))
 			"spawn_leader":
 				parts.append("a new general")
-			"set_flag", "clear_flag", "fire_event", "message", "join_war", "refuse_call", "accept_peace":
+			"set_flag", "clear_flag", "fire_event", "message", "join_war", "refuse_call", "accept_peace", "accept_proposal", "decline_proposal":
 				pass
 			"add_core":
 				parts.append("core on %s" % e.get("province", ""))
@@ -1287,6 +1488,10 @@ func apply_effects(effects: Array, tag: String) -> void:
 				if nations.has(caller):
 					dip.set_both(tag, caller, "alliance", false)
 					dip.add_opinion(caller, tag, -50.0, "Refused our call to arms", 1.0)
+			"accept_proposal":
+				dip.accept_proposal(e.get("action", ""), e.get("from", ""), tag)
+			"decline_proposal":
+				tell(e.get("from", ""), "%s declined your proposal." % nation_name(tag))
 			"accept_peace":
 				var pw: Dictionary = wars.get(int(e.get("war", -1)), {})
 				if not pw.is_empty():
@@ -1537,7 +1742,7 @@ func claim_mission(tag: String, mission_id: String) -> bool:
 			nations[tag]["missions_done"][mission_id] = true
 			apply_effects(m.get("rewards", []), tag)
 			standing.add_prestige(tag, 5.0)
-			if tag == player_tag or nations[tag]["government"] != "boar_tribe":
+			if is_human(tag) or nations[tag]["government"] != "boar_tribe":
 				post("%s completes the mission: %s." % [nations[tag]["short"], m["title"]], [tag])
 			touch(tag)
 			return true
@@ -1649,6 +1854,9 @@ func load_game(slot: String) -> String:
 	trade.state = s["trade_state"]
 	trade.income = s["trade_income"]
 	_merge_world(fresh_provinces, fresh_nations, fresh_tags, ver)
+	humans = {}
+	for t in nations:   # other players' nations in a multiplayer save go back to the AI
+		nations[t]["ai"] = not is_human(t)
 	speed = 0
 	_owned_cache.clear()
 	mods.invalidate()
@@ -1709,6 +1917,10 @@ func _merge_world(fresh_provinces: Dictionary, fresh_nations: Dictionary, fresh_
 # ---------------------------------------------------------------- misc
 
 func post(text: String, tags: Array = [], major: String = "", near: bool = false) -> void:
+	if text == "":
+		return
+	if _sim_depth > 0:
+		Net.broadcast_post(text, tags, major, near)   # the host's world news reaches every player
 	## Log a message. `tags` are the nations it is about: if none of them matter to the player
 	## (themselves, allies, subjects, overlord, enemies, neighbours), it goes to the world news
 	## instead of the main log, like EU4's message filters. `major` (a short title) asks the UI to

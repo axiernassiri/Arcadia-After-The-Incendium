@@ -324,7 +324,7 @@ func _peace(tag: String) -> void:
 				terms = [{"type": "gold", "pct": 0.5}]
 			g.dip.enforce_peace(w, tag, enemy, terms)
 			return
-		if enemy == g.player_tag:
+		if g.is_human(enemy):
 			# occasionally offer the player terms
 			if ws >= 25.0 and g.rng.randf() < 0.15 and not demands.is_empty():
 				g.dip.offer_peace(w, tag, enemy, demands)
