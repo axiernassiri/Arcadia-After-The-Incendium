@@ -171,6 +171,55 @@
           {"id": "eclipse_rites", "name": "Eclipse Rites", "modifiers": {"production_mod": 0.15, "tax_mod": 0.10}, "text": "Offerings at every eclipse."}]}
       ]
     },
+    "fuar_throne": {
+      "name": "High Throne", "type": "monarchy", "rank": "Kingdom", "text": "The High King of Fuarland rules from Fuar Hold, sworn to by the banner-lords of the north.",
+      "modifiers": {"land_force_limit": 3, "manpower_mod": 0.10},
+      "tiers": [
+        {"name": "The Banner Lords", "reforms": [
+          {"id": "sworn_banners", "name": "Sworn Banners", "modifiers": {"land_morale": 0.10}, "text": "Every lord rides when the High King calls."},
+          {"id": "winter_levies", "name": "Winter Levies", "modifiers": {"manpower_mod": 0.15}, "text": "The long winters leave time for drilling."},
+          {"id": "throne_lands", "name": "Throne Lands", "modifiers": {"tax_mod": 0.10}, "text": "The richest valleys belong to the Throne."}]},
+        {"name": "The Northern Realm", "reforms": [
+          {"id": "hold_castles", "name": "Hold Castles", "modifiers": {"fort_defense": 0.20}, "text": "Stone holds in every pass."},
+          {"id": "conquest_charter", "name": "Charter of Conquest", "modifiers": {"core_cost_mod": -0.15}, "text": "What the banners take, the Throne keeps."},
+          {"id": "skald_halls", "name": "Skald Halls", "modifiers": {"unrest": -1, "legitimacy_gain": 0.5}, "text": "The songs of the High Kings are sung in every hall."}]},
+        {"name": "Fuarland Ascendant", "reforms": [
+          {"id": "iron_crown", "name": "The Iron Crown", "modifiers": {"monthly_mil": 1}, "text": "The High King answers to no one."},
+          {"id": "great_council", "name": "Great Council", "modifiers": {"stability_cost_mod": -0.15, "tax_mod": 0.05}, "text": "Lords and towns counsel the Throne."},
+          {"id": "warlord_kings", "name": "Warlord Kings", "modifiers": {"leader_shock": 1, "leader_fire": 1}, "text": "Kings who lead from the front."}]}
+      ]
+    },
+    "star_conclave": {
+      "name": "Star Conclave", "type": "theocracy", "rank": "Conclave", "text": "A conclave of astronomers rules Stellaris and picks a new First Astronomer when the old one dies.",
+      "modifiers": {"tech_cost_mod": -0.10, "monthly_dip": 1},
+      "tiers": [
+        {"name": "The Observatories", "reforms": [
+          {"id": "star_charts", "name": "Star Charts", "modifiers": {"idea_cost_mod": -0.10}, "text": "Every observation recorded and shared."},
+          {"id": "signal_towers", "name": "Signal Towers", "modifiers": {"diplomatic_reputation": 1}, "text": "Light signals carry the Conclave's word across the plains."},
+          {"id": "academy_cities", "name": "Academy Cities", "modifiers": {"production_mod": 0.10}, "text": "Every city keeps a school of reason."}]},
+        {"name": "The Conclave of Reason", "reforms": [
+          {"id": "calculated_war", "name": "Calculated War", "modifiers": {"discipline": 0.05}, "text": "Battles are won at the drawing board."},
+          {"id": "open_archives", "name": "Open Archives", "modifiers": {"tech_cost_mod": -0.10}, "text": "Knowledge belongs to all Stellarins."},
+          {"id": "orbit_guard", "name": "Orbit Guard", "modifiers": {"artillery_power": 0.15, "fort_defense": 0.10}, "text": "Engineers in every fort."}]},
+        {"name": "Walkers of the Starpath", "reforms": [
+          {"id": "first_astronomer", "name": "Sovereign Astronomer", "modifiers": {"monthly_adm": 1}, "text": "The First Astronomer's word is law."},
+          {"id": "republic_of_minds", "name": "Republic of Minds", "modifiers": {"unrest": -1, "stability_cost_mod": -0.15}, "text": "Every scholar has a voice."}]}
+      ]
+    },
+    "herd_assembly": {
+      "name": "Herd Assembly", "type": "republic", "term_years": 5, "rank": "Nation", "text": "The herds of the Llama Nation elect a Lead Llama every five years in a great gathering on the high pastures.",
+      "modifiers": {"cavalry_power": 0.15, "trade_efficiency": 0.05},
+      "tiers": [
+        {"name": "The Gathering", "reforms": [
+          {"id": "caravan_herds", "name": "Caravan Herds", "modifiers": {"trade_power_mod": 0.15}, "text": "Every caravan on the Yellow Road needs llamas."},
+          {"id": "high_pastures", "name": "High Pastures", "modifiers": {"manpower_mod": 0.15}, "text": "The highlands feed great herds."},
+          {"id": "herd_council", "name": "Council of Elders", "modifiers": {"unrest": -1}, "text": "The oldest llamas settle every quarrel."}]},
+        {"name": "The Nation of the Herds", "reforms": [
+          {"id": "mountain_riders", "name": "Mountain Riders", "modifiers": {"cavalry_power": 0.10, "land_morale": 0.05}, "text": "No cavalry climbs like ours."},
+          {"id": "wool_trade", "name": "The Wool Trade", "modifiers": {"production_mod": 0.10, "tax_mod": 0.05}, "text": "Finest wool in the world."},
+          {"id": "pass_forts", "name": "Pass Forts", "modifiers": {"fort_defense": 0.20}, "text": "Hold the passes and the highlands are safe."}]}
+      ]
+    },
     "abyssal_throne": {
       "name": "Abyssal Throne", "type": "monarchy", "rank": "Kingdom", "text": "Oceania's tide-kings rule from a throne on the sea floor, long-lived and patient.",
       "modifiers": {"fort_defense": 0.10, "legitimacy_gain": 0.5},

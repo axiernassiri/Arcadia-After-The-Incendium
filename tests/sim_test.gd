@@ -42,7 +42,10 @@ func _initialize() -> void:
 
 	# ---------------------------------------------------------------- the world
 	check(game.provinces.size() >= 120, "%d provinces loaded" % game.provinces.size())
-	check(game.nations.size() == 17, "17 nations: %s" % [game.nations.keys()])
+	check(game.nations.size() == 20, "20 nations: %s" % [game.nations.keys()])
+	for fw in ["FUA", "STE", "LLA"]:
+		check(game.owned(fw).size() >= 5 and game.provinces[game.capital_of(fw)]["region"].ends_with("Incognita"), "%s holds part of Terra Incognito (%d provinces)" % [fw, game.owned(fw).size()])
+	check(game.missions_for("FUA").size() == 9 and game.missions_for("FUA")[0]["nation"] == "FARWORLD" and game.missions_for("SYL")[0]["nation"] == "STATE", "far-world nations get their own missions, not the pig states'")
 	check(game.provinces.size() >= 300 and game.owned("AYM").size() > 0 and game.owned("SLK").size() > 0 and game.owned("OCE").size() > 0 and game.owned("SAT").size() == 8, "the whole world: %d provinces, with Combustion Ayam, SILK, Oceania and the Satian Union" % game.provinces.size())
 	var dev_of := {}
 	for id in game.provinces:

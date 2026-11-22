@@ -2041,6 +2041,246 @@
      "amount": 10
     }
    ]
+  },
+  {
+   "id": "far_coasts",
+   "nation": "FARWORLD",
+   "column": 0,
+   "row": 0,
+   "title": "Chart the Coasts",
+   "requires": [],
+   "text": "Our ships have never sailed far. Map the lands around us.",
+   "conditions": [
+    {
+     "type": "explored_count",
+     "layer": "ground",
+     "at_least": 25
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_power",
+     "index": 1,
+     "amount": 50
+    }
+   ]
+  },
+  {
+   "id": "far_horizon",
+   "nation": "FARWORLD",
+   "column": 0,
+   "row": 1,
+   "title": "Beyond the Horizon",
+   "requires": [
+    "far_coasts"
+   ],
+   "text": "There is more to the world than our shores. Keep sailing.",
+   "conditions": [
+    {
+     "type": "explored_count",
+     "layer": "ground",
+     "at_least": 60
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "far_horizon",
+     "name": "Beyond the Horizon",
+     "modifiers": {
+      "trade_efficiency": 0.1
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "far_mainland",
+   "nation": "FARWORLD",
+   "column": 0,
+   "row": 2,
+   "title": "The Pig Lord's Continent",
+   "requires": [
+    "far_horizon"
+   ],
+   "text": "Travellers speak of a great continent of pigs in the east, and islands in the sky above it. Find it.",
+   "conditions": [
+    {
+     "type": "explored",
+     "province": "Mentos"
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "far_mainland",
+     "name": "News from the Mainland",
+     "modifiers": {
+      "diplomatic_reputation": 1,
+      "tech_cost_mod": -0.05
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "far_foundations",
+   "nation": "FARWORLD",
+   "column": 1,
+   "row": 0,
+   "title": "Foundations",
+   "requires": [],
+   "text": "Markets, temples and workshops: the bones of a real nation.",
+   "conditions": [
+    {
+     "type": "buildings_at_least",
+     "at_least": 4
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_treasury",
+     "amount": 100
+    }
+   ]
+  },
+  {
+   "id": "far_heartland",
+   "nation": "FARWORLD",
+   "column": 1,
+   "row": 1,
+   "title": "A Thriving Heartland",
+   "requires": [
+    "far_foundations"
+   ],
+   "text": "Grow our land until it can feed armies and fleets.",
+   "conditions": [
+    {
+     "type": "total_dev_at_least",
+     "at_least": 90
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "far_heartland",
+     "name": "Thriving Heartland",
+     "modifiers": {
+      "production_mod": 0.1
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "far_wonder",
+   "nation": "FARWORLD",
+   "column": 1,
+   "row": 2,
+   "title": "Wonder of the Far World",
+   "requires": [
+    "far_heartland"
+   ],
+   "text": "Build until the mainland has heard of us.",
+   "conditions": [
+    {
+     "type": "buildings_at_least",
+     "at_least": 15
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "far_wonder",
+     "name": "Wonder of the Far World",
+     "modifiers": {
+      "tax_mod": 0.1,
+      "unrest": -1
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "far_defenders",
+   "nation": "FARWORLD",
+   "column": 2,
+   "row": 0,
+   "title": "Defenders of the Homeland",
+   "requires": [],
+   "text": "The unknown lands are full of rivals. Raise an army.",
+   "conditions": [
+    {
+     "type": "regiments_at_least",
+     "at_least": 8
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_army_tradition",
+     "amount": 10
+    },
+    {
+     "type": "spawn_leader"
+    }
+   ]
+  },
+  {
+   "id": "far_expansion",
+   "nation": "FARWORLD",
+   "column": 2,
+   "row": 1,
+   "title": "Expansion",
+   "requires": [
+    "far_defenders"
+   ],
+   "text": "Claim more of the continent before someone else does.",
+   "conditions": [
+    {
+     "type": "provinces_owned_at_least",
+     "at_least": 15
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "far_expansion",
+     "name": "Settled Frontier",
+     "modifiers": {
+      "core_cost_mod": -0.15
+     },
+     "months": -1
+    }
+   ]
+  },
+  {
+   "id": "far_masters",
+   "nation": "FARWORLD",
+   "column": 2,
+   "row": 2,
+   "title": "Masters of the Far World",
+   "requires": [
+    "far_expansion"
+   ],
+   "text": "Rule the lands beyond the ocean.",
+   "conditions": [
+    {
+     "type": "provinces_owned_at_least",
+     "at_least": 30
+    }
+   ],
+   "rewards": [
+    {
+     "type": "add_modifier",
+     "id": "far_masters",
+     "name": "Masters of the Far World",
+     "modifiers": {
+      "land_morale": 0.1,
+      "diplomatic_reputation": 1
+     },
+     "months": -1
+    }
+   ]
   }
  ]
 }

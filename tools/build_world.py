@@ -94,6 +94,13 @@ NATIONS = {
                 religion="The Long Road", dev=(5, 9), capital_name="Silkgate"),
     "OCE": dict(regions=["Oceania"], capital_near=OCEANIA_CENTRE, culture="Oceanian", ethnicity="Oceanian",
                 religion="The Deep", dev=(5, 8), capital_name="Leviathan Throne"),
+    # the other peoples of the "Ayam universe" in Arcadia - The Eschaton, on Terra Incognito
+    "FUA": dict(regions=["Northern Incognita"], capital_near=(560, 330), count=9, culture="Fuarlander", ethnicity="Fuarlander",
+                religion="The Old Fires", dev=(6, 10), capital_name="Fuar Hold"),
+    "STE": dict(regions=["Eastern Incognita"], capital_near=(900, 620), count=8, culture="Stellarin", ethnicity="Stellarin",
+                religion="The Starpath", dev=(5, 9), capital_name="Stellara"),
+    "LLA": dict(regions=["Western Incognita"], capital_near=(280, 500), count=6, culture="Llaman", ethnicity="Llama",
+                religion="The Long Road", dev=(4, 7), capital_name="Highpasture"),
     # the Satian Union (Arcadia - The Eschaton: "improved, but still below a Type 1"): all the Satian Islands
     "SAT": dict(regions=["Satian Islands"], capital_near=(1850, 925), culture="Satian", ethnicity="Satian",
                 religion="The Tidewheel", dev=(3, 6), capital_name="Satia"),

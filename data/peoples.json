@@ -46,9 +46,12 @@
     },
     "Incognitan": {
       "name": "Incognitan",
-      "colour": "#c9b26b",
+      "colour": "#d4a017",
       "cultures": [
-        "Silken"
+        "Silken",
+        "Fuarlander",
+        "Stellarin",
+        "Llaman"
       ]
     },
     "Abyssal": {
@@ -107,7 +110,16 @@
       "colour": "#e8a020"
     },
     "Silken": {
-      "colour": "#c9b26b"
+      "colour": "#d4a017"
+    },
+    "Fuarlander": {
+      "colour": "#8a5cc0"
+    },
+    "Stellarin": {
+      "colour": "#3a6fd8"
+    },
+    "Llaman": {
+      "colour": "#e9a3c9"
     },
     "Oceanian": {
       "colour": "#2aa6a0"
@@ -161,6 +173,21 @@
       "colour": "#7ccfa8",
       "breathes": "ground",
       "text": "The island folk of the Satian Islands (placeholder)."
+    },
+    "Fuarlander": {
+      "colour": "#7a52a8",
+      "breathes": "ground",
+      "text": "The tall, hardy folk of Fuarland, at home in the cold of northern Terra Incognito (placeholder)."
+    },
+    "Stellarin": {
+      "colour": "#5a8ae0",
+      "breathes": "ground",
+      "text": "The Stellarins of the eastern plains, a people of watchers and thinkers (placeholder)."
+    },
+    "Llama": {
+      "colour": "#e6d2a8",
+      "breathes": "ground",
+      "text": "Llamas of the western highlands: sure-footed, woolly, and not to be insulted."
     }
   },
   "religions": {
@@ -227,6 +254,22 @@
         "unrest": -1
       },
       "text": "The Satian faith in the turning of the tides: what goes out comes back (placeholder)."
+    },
+    "The Old Fires": {
+      "colour": "#b0502a",
+      "modifiers": {
+        "land_morale": 0.10,
+        "manpower_mod": 0.05
+      },
+      "text": "Fuarland's ancestral faith: hearth-fires kept burning through the long winters, one for every fallen warrior (placeholder)."
+    },
+    "The Starpath": {
+      "colour": "#7aa8ff",
+      "modifiers": {
+        "tech_cost_mod": -0.05,
+        "idea_cost_mod": -0.05
+      },
+      "text": "The Stellarin belief that the stars are a road, and that a people who learn enough will one day walk it (placeholder)."
     }
   },
   "rebels": {

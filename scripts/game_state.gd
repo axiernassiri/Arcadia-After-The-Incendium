@@ -1509,7 +1509,10 @@ func missions_for(tag: String) -> Array:
 			has_own = true
 			break
 	if not has_own:
-		key = "TRIBE" if nations.has(tag) and pop.culture_group(nations[tag]["culture"]) == "Wild Boar" else "STATE"
+		# the boars have their tribal tree, the pig states that broke from the Empire theirs; nations of
+		# the far side of the world get a tree about finding their place in it
+		var group: String = pop.culture_group(nations[tag]["culture"]) if nations.has(tag) else ""
+		key = "TRIBE" if group == "Wild Boar" else ("STATE" if group == "Porcine" else "FARWORLD")
 	var out: Array = []
 	for m in missions:
 		if m.get("nation", "") == key:

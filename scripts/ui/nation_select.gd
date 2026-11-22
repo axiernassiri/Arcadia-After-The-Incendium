@@ -161,6 +161,10 @@ func _build_detail() -> void:
 
 
 func _notes(tag: String) -> Array:
+	## "Things to know": a nation's own notes from data/nations.json if it has them, else by who they are.
+	var own: Array = Game.nation_defs.get("nations", {}).get(tag, {}).get("notes", [])
+	if own.size() > 0:
+		return own
 	match tag:
 		"MEN":
 			return ["The Black Moon can't touch you unless you land in Skyfall.",
@@ -168,7 +172,7 @@ func _notes(tag: String) -> Array:
 				"Allied with Skyfall. Exploring Skyfall annoys them: they forbid cameras."]
 		"SKY":
 			return ["Every leap year the Black Moon damages your islands, and time reverses the next day.",
-				"Your people can't breathe the mainland air without masks: units there suffer, and you can't settle there until you have them.",
+				"Your people can't breathe the mainland air: your armies need oxygen masks (Military technology 3, or your own breathing-mask trials) to go down the Holy Waterfall.",
 				"Your fleets are airships and stay among the sky islands. The Holy Waterfall is the only way down."]
 		"BLM":
 			return ["Skyfall wants you gone. A 12-year truce holds at the start: use it.",
@@ -177,5 +181,8 @@ func _notes(tag: String) -> Array:
 	if Game.pop.culture_group(Game.nations[tag]["culture"]) == "Porcine":
 		return ["You broke away from the Holy Empire during the Incendium. Menslosia claims your land and wants it back.",
 			"Find allies, build forts, and call your allies when war comes: they won't join on their own."]
-	return ["A boar nation. The pigs of Menslosia want your land: find allies among the other boars.",
-		"Hordes and tribes can raise Boar Raiders and reform their government over time."]
+	if Game.pop.culture_group(Game.nations[tag]["culture"]) == "Wild Boar":
+		return ["A boar nation. The pigs of Menslosia want your land: find allies among the other boars.",
+			"Hordes and tribes can raise Boar Raiders and reform their government over time."]
+	return ["Far from the mainland, on the other side of the world. Explore, find your neighbours, and grow.",
+		"Your own mission tree is about charting the world and making your name in it."]

@@ -4,7 +4,7 @@ extends Node
 ##
 ## Automation flags (after `--` on the command line), used by tests and screenshots:
 ##   --nation=TAG          start immediately as that nation (skips the menus)
-##   --select-screen       open on the nation select screen    --menu   stay on the main menu    --intro  the cutscene
+##   --select-screen [--pick=TAG]  open on the nation select screen    --menu   stay on the main menu    --intro  the cutscene
 ##   --days=N              advance N days after starting (events answered with option 1)
 ##   --until-doomsday      advance until the Black Moon rises
 ##   --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"  --at=x,y (a map point)
@@ -211,6 +211,8 @@ func _ready() -> void:
 		intro.play()
 	elif args.has("select-screen"):
 		_open_select()
+		if args.has("pick"):   # --pick=TAG: show that nation on the select screen
+			nation_select.pick(String(args["pick"]))
 	if args.has("soak"):
 		get_tree().create_timer(float(args["soak"])).timeout.connect(func():
 			print("soak finished at ", Game.date_string())

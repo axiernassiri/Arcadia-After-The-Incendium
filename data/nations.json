@@ -1026,13 +1026,18 @@
       "flags": [],
       "playable": true,
       "difficulty": "Normal",
-      "blurb": "Chickens of the burning ring-isle, the most inventive people of the southern sea. Their combustion engines and kilns burn day and night. Few in number and far from everyone, they hold the Ayam Sea and look north at the mainland with interest."
+      "blurb": "Chickens of the burning ring-isle, the most inventive people of the southern sea. Their combustion engines and kilns burn day and night. Few in number and far from everyone, they hold the Ayam Sea and look north at the mainland with interest.",
+      "notes": [
+        "The most advanced nation in the world at the start: use your technology lead.",
+        "Your ring-isle is small and far from everyone. Pelari and the Satian Islands are your neighbours; the Satian Union starts friendly.",
+        "Your fleet is your lifeline: the Ayam Sea trade node is yours to dominate."
+      ]
     },
     "SLK": {
       "name": "SILK",
       "short": "SILK",
       "adjective": "Silken",
-      "colour": "#c9b26b",
+      "colour": "#d4a017",
       "government": "merchant_republic",
       "capital": "Silkgate",
       "ideas": "SLK",
@@ -1088,7 +1093,12 @@
       "flags": [],
       "playable": true,
       "difficulty": "Hard",
-      "blurb": "The merchant houses of the Yellow Road, the caravan route across the heart of Terra Incognito. Rich, clever and lightly armed, surrounded by an unknown continent waiting to be claimed."
+      "blurb": "The merchant houses of the Yellow Road, the caravan route across the heart of Terra Incognito. Rich, clever and lightly armed, surrounded by an unknown continent waiting to be claimed.",
+      "notes": [
+        "Rich but lightly armed, in the middle of Terra Incognito: Fuarland to the north, Stellaris to the east, the Llama Nation to the west.",
+        "Stellaris and the Llama Nation like you; Fuarland eyes your markets.",
+        "You collect the Terra Incognito trade node: send your merchants and grow the Yellow Road."
+      ]
     },
     "OCE": {
       "name": "Oceania",
@@ -1149,7 +1159,12 @@
       "flags": [],
       "playable": true,
       "difficulty": "Hard",
-      "blurb": "A kingdom under the Deep Blue, beneath the southern sea. Oceanians breathe water: they need oxygen masks to walk on land, and land-dwellers need them to come down to the sunken cities."
+      "blurb": "A kingdom under the Deep Blue, beneath the southern sea. Oceanians breathe water: they need oxygen masks to walk on land, and land-dwellers need them to come down to the sunken cities.",
+      "notes": [
+        "You breathe water: your armies need oxygen masks (Military technology 3) to go ashore, and land-dwellers need them to reach you.",
+        "Few nations can attack you in the deep, but you can't easily attack them either.",
+        "Terra Incognito's southern coast is closest. Pearls and crystals are your wealth."
+      ]
     },
     "SAT": {
       "name": "Satian Union",
@@ -1220,7 +1235,247 @@
       "flags": [],
       "playable": true,
       "difficulty": "Very hard",
-      "blurb": "A union of island towns on the Satian Islands, at the far south-eastern edge of the world. Poorer and humbler than their Ayam neighbours, the Satians trade, fish and argue in their island assembly, and dream of the day they catch up."
+      "blurb": "A union of island towns on the Satian Islands, at the far south-eastern edge of the world. Poorer and humbler than their Ayam neighbours, the Satians trade, fish and argue in their island assembly, and dream of the day they catch up.",
+      "notes": [
+        "The smallest and poorest nation of the far world: grow your economy before anything else.",
+        "Combustion Ayam is your rich neighbour and starts friendly. Learn from it (or fear it).",
+        "Pelari, next door, is uncolonised: an easy first colony."
+      ]
+    },
+    "FUA": {
+      "name": "High Throne of Fuarland",
+      "short": "Fuarland",
+      "adjective": "Fuarlander",
+      "colour": "#8a5cc0",
+      "government": "fuar_throne",
+      "capital": "Fuar Hold",
+      "ideas": "FUA",
+      "culture": "Fuarlander",
+      "accepted_cultures": [],
+      "religion": "The Old Fires",
+      "ethnicity": "Fuarlander",
+      "legitimacy": 85,
+      "ruler": {
+        "name": "High King Varn",
+        "adm": 3,
+        "dip": 2,
+        "mil": 5,
+        "age": 39,
+        "dynasty": "Varnhal"
+      },
+      "heir": {
+        "name": "Prince Orrin",
+        "adm": 2,
+        "dip": 3,
+        "mil": 3,
+        "age": 14
+      },
+      "ruler_names": [
+        "Varn",
+        "Orrin",
+        "Hesk",
+        "Brannoc",
+        "Sigra",
+        "Tovald"
+      ],
+      "power_names": [
+        "Law",
+        "Banner",
+        "Steel"
+      ],
+      "treasury": 90,
+      "manpower": 5000,
+      "stability": 1,
+      "tech": [
+        1,
+        1,
+        2
+      ],
+      "army": {
+        "location": "Fuar Hold",
+        "inf": 5,
+        "cav": 2,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Northern Incognita",
+        "Central Incognita",
+        "Northern Ice"
+      ],
+      "known_extra": [],
+      "relations": {
+        "STE": {
+          "opinion": -40,
+          "rival": true
+        },
+        "LLA": {
+          "opinion": -20
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "A hard northern kingdom of Terra Incognito, ruled from the High Throne at Fuar Hold below the frozen peaks. Fuarland has the biggest army on the continent and the appetite to use it: the lore says it will one day swallow the Llama Nation.",
+      "notes": [
+        "The strongest army on Terra Incognito. The Llama Nation's highlands lie to the south-west, ripe for conquest.",
+        "Stellaris is your rival: its astronomers out-think you, so beat them before they out-build you.",
+        "Your High Throne gives a bigger army and loyal nobles; your ideas favour shock troops and winter war."
+      ]
+    },
+    "STE": {
+      "name": "Stellaris",
+      "short": "Stellaris",
+      "adjective": "Stellarin",
+      "colour": "#3a6fd8",
+      "government": "star_conclave",
+      "capital": "Stellara",
+      "ideas": "STE",
+      "culture": "Stellarin",
+      "accepted_cultures": [],
+      "religion": "The Starpath",
+      "ethnicity": "Stellarin",
+      "legitimacy": 80,
+      "ruler": {
+        "name": "First Astronomer Iolen",
+        "adm": 4,
+        "dip": 3,
+        "mil": 1,
+        "age": 61,
+        "dynasty": "Iolen"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Iolen",
+        "Vega",
+        "Arcturo",
+        "Lyra",
+        "Deneb",
+        "Mira"
+      ],
+      "power_names": [
+        "Reason",
+        "Signal",
+        "Orbit"
+      ],
+      "treasury": 110,
+      "manpower": 3000,
+      "stability": 1,
+      "tech": [
+        2,
+        2,
+        1
+      ],
+      "army": {
+        "location": "Stellara",
+        "inf": 3,
+        "cav": 0,
+        "art": 1
+      },
+      "fleet": {
+        "location": "Stellara",
+        "light": 2,
+        "transport": 1
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Eastern Incognita",
+        "Central Incognita",
+        "Southern Shoals"
+      ],
+      "known_extra": [],
+      "relations": {
+        "FUA": {
+          "opinion": -40,
+          "rival": true
+        },
+        "SLK": {
+          "opinion": 30
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "The star-readers of eastern Terra Incognito, ruled by a conclave of astronomers from the observatory city of Stellara. They watch the sky more closely than anyone in the world, and believe the stars are a road the Stellarins will one day walk.",
+      "notes": [
+        "The cleverest nation on the continent: technology and ideas come cheaper to you than to anyone.",
+        "Fuarland is your rival and has the bigger army. SILK, next door, likes you: an alliance protects you.",
+        "Your conclave picks a new First Astronomer when the old one dies: no heirs, no regencies."
+      ]
+    },
+    "LLA": {
+      "name": "Llama Nation",
+      "short": "Llama Nation",
+      "adjective": "Llaman",
+      "colour": "#e9a3c9",
+      "government": "herd_assembly",
+      "capital": "Highpasture",
+      "ideas": "LLA",
+      "culture": "Llaman",
+      "accepted_cultures": [],
+      "religion": "The Long Road",
+      "ethnicity": "Llama",
+      "legitimacy": 70,
+      "ruler": {
+        "name": "Lead Llama Paca",
+        "adm": 2,
+        "dip": 4,
+        "mil": 2,
+        "age": 33,
+        "dynasty": "Andesh"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Paca",
+        "Quito",
+        "Alpa",
+        "Suri",
+        "Huari",
+        "Cusi"
+      ],
+      "power_names": [
+        "Herd",
+        "Trail",
+        "Spit"
+      ],
+      "treasury": 70,
+      "manpower": 3500,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Highpasture",
+        "inf": 3,
+        "cav": 2,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Western Incognita",
+        "Central Incognita",
+        "Farwest Isles"
+      ],
+      "known_extra": [],
+      "relations": {
+        "SLK": {
+          "opinion": 50
+        },
+        "FUA": {
+          "opinion": -30
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "The herds of the western highlands of Terra Incognito, who carry the caravans of the Yellow Road and elect a Lead Llama every five years. Sure-footed, stubborn and proud. The lore says Fuarland will one day swallow them: they intend to prove it wrong.",
+      "notes": [
+        "Fuarland's armies are bigger than yours. Hold the highlands, and find allies fast.",
+        "SILK shares your faith in the Long Road and likes you: its caravans need your herds.",
+        "Your Herd Assembly elects a new Lead Llama every five years. Llama cavalry is the best in the far world."
+      ]
     }
   },
   "unowned_colour": "#b9b29b",
