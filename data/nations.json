@@ -169,10 +169,18 @@
         "transport": 2
       },
       "known_layers": [
-        "sky",
-        "ground"
+        "sky"
       ],
-      "known_regions": [],
+      "known_regions": [
+        "Mentos",
+        "Frost Reach",
+        "Sylvania",
+        "Midrea",
+        "Eurome",
+        "Western Archipelago",
+        "Southwest Island",
+        "Southern Isles"
+      ],
       "known_extra": [],
       "relations": {
         "MEN": {
@@ -190,12 +198,12 @@
       ],
       "playable": true,
       "difficulty": "Normal",
-      "blurb": "Flying islands that fell into Arcadia in the Universal Merge, ruled by an ageless Napoleon. From above the clouds Skyfall sees the whole continent. Few provinces, strong armies, airships, and the burden of holding the Doomsday Barrier against the Black Moon and its cultists."
+      "blurb": "Flying islands that fell into Arcadia in the Universal Merge, ruled by an ageless Napoleon. From above the clouds Skyfall sees the whole continent. Few provinces, strong armies, airships, and the burden of holding the Doomsday Barrier against the Black Moon and the VAGA cultists."
     },
     "BLM": {
-      "name": "Order of the Black Moon",
-      "short": "Black Moon",
-      "adjective": "Moonsworn",
+      "name": "VAGA",
+      "short": "VAGA",
+      "adjective": "Vagan",
       "colour": "#5a3a78",
       "government": "black_moon_cult",
       "capital": "Moonfall Rock",
@@ -951,6 +959,268 @@
       "playable": true,
       "difficulty": "Very hard",
       "blurb": "Pearl-diving boars of the Southern Isles, just off Unity."
+    },
+    "AYM": {
+      "name": "Combustion Ayam",
+      "short": "Combustion Ayam",
+      "adjective": "Ayam",
+      "colour": "#e8a020",
+      "government": "technocracy",
+      "capital": "Ayam Prime",
+      "ideas": "AYM",
+      "culture": "Ayam",
+      "accepted_cultures": [],
+      "religion": "Combustion Creed",
+      "ethnicity": "Chicken",
+      "legitimacy": 80,
+      "ruler": {
+        "name": "High Engineer Plume",
+        "adm": 4,
+        "dip": 2,
+        "mil": 4,
+        "age": 38,
+        "dynasty": "Kiln"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Plume",
+        "Ember",
+        "Spur",
+        "Wattle",
+        "Flare",
+        "Brood"
+      ],
+      "power_names": [
+        "Engineering",
+        "Commerce",
+        "Firepower"
+      ],
+      "treasury": 120,
+      "manpower": 4000,
+      "stability": 1,
+      "tech": [
+        2,
+        2,
+        2
+      ],
+      "army": {
+        "location": "Ayam Prime",
+        "inf": 4,
+        "cav": 0,
+        "art": 1
+      },
+      "fleet": {
+        "location": "Ayam Prime",
+        "heavy": 1,
+        "light": 2,
+        "transport": 2
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Combustion Ayam",
+        "Pelari",
+        "Satian Islands"
+      ],
+      "known_extra": [],
+      "relations": {},
+      "flags": [],
+      "playable": true,
+      "difficulty": "Normal",
+      "blurb": "Chickens of the burning ring-isle, the most inventive people of the southern sea. Their combustion engines and kilns burn day and night. Few in number and far from everyone, they hold the Ayam Sea and look north at the mainland with interest."
+    },
+    "SLK": {
+      "name": "SILK",
+      "short": "SILK",
+      "adjective": "Silken",
+      "colour": "#c9b26b",
+      "government": "merchant_republic",
+      "capital": "Silkgate",
+      "ideas": "SLK",
+      "culture": "Silken",
+      "accepted_cultures": [],
+      "religion": "The Long Road",
+      "ethnicity": "Incognitan",
+      "legitimacy": 70,
+      "ruler": {
+        "name": "Weaver-Consul Ash",
+        "adm": 3,
+        "dip": 5,
+        "mil": 1,
+        "age": 47,
+        "dynasty": "Loom"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Ash",
+        "Veil",
+        "Thread",
+        "Saffron",
+        "Loom",
+        "Warp"
+      ],
+      "power_names": [
+        "Charter",
+        "Caravan",
+        "Guard"
+      ],
+      "treasury": 150,
+      "manpower": 3000,
+      "stability": 1,
+      "tech": [
+        1,
+        2,
+        1
+      ],
+      "army": {
+        "location": "Silkgate",
+        "inf": 3,
+        "cav": 2,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Central Incognita",
+        "Northern Incognita",
+        "Eastern Incognita"
+      ],
+      "known_extra": [],
+      "relations": {},
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "The merchant houses of the Yellow Road, the caravan route across the heart of Terra Incognito. Rich, clever and lightly armed, surrounded by an unknown continent waiting to be claimed."
+    },
+    "OCE": {
+      "name": "Oceania",
+      "short": "Oceania",
+      "adjective": "Oceanian",
+      "colour": "#2aa6a0",
+      "government": "abyssal_throne",
+      "capital": "Leviathan Throne",
+      "ideas": "OCE",
+      "culture": "Oceanian",
+      "accepted_cultures": [],
+      "religion": "The Deep",
+      "ethnicity": "Oceanian",
+      "legitimacy": 75,
+      "ruler": {
+        "name": "Tide-Queen Fathom",
+        "adm": 3,
+        "dip": 2,
+        "mil": 3,
+        "age": 120,
+        "dynasty": "Brine"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Fathom",
+        "Brine",
+        "Kelp",
+        "Nacre",
+        "Murk",
+        "Coral"
+      ],
+      "power_names": [
+        "Tide",
+        "Current",
+        "Pressure"
+      ],
+      "treasury": 80,
+      "manpower": 3500,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        2
+      ],
+      "army": {
+        "location": "Leviathan Throne",
+        "inf": 4,
+        "cav": 0,
+        "art": 0
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Oceania",
+        "Southern Incognita"
+      ],
+      "known_extra": [],
+      "relations": {},
+      "flags": [],
+      "playable": true,
+      "difficulty": "Hard",
+      "blurb": "A kingdom under the Deep Blue, beneath the southern sea. Oceanians breathe water: they need oxygen masks to walk on land, and land-dwellers need them to come down to the sunken cities."
+    },
+    "SAT": {
+      "name": "Satian Union",
+      "short": "Satian Union",
+      "adjective": "Satian",
+      "colour": "#4fb08a",
+      "government": "merchant_republic",
+      "capital": "Satia",
+      "ideas": "SAT",
+      "culture": "Satian",
+      "accepted_cultures": [],
+      "religion": "The Tidewheel",
+      "ethnicity": "Satian",
+      "legitimacy": 65,
+      "ruler": {
+        "name": "Speaker Ondo",
+        "adm": 2,
+        "dip": 3,
+        "mil": 1,
+        "age": 44,
+        "dynasty": "Sato"
+      },
+      "heir": {},
+      "ruler_names": [
+        "Ondo",
+        "Mira",
+        "Kesh",
+        "Talu",
+        "Rena",
+        "Isso"
+      ],
+      "power_names": [
+        "Assembly",
+        "Harbour",
+        "Watch"
+      ],
+      "treasury": 60,
+      "manpower": 2000,
+      "stability": 0,
+      "tech": [
+        1,
+        1,
+        1
+      ],
+      "army": {
+        "location": "Satia",
+        "inf": 2,
+        "cav": 0,
+        "art": 0
+      },
+      "fleet": {
+        "location": "Satia",
+        "light": 2,
+        "transport": 1
+      },
+      "known_layers": [],
+      "known_regions": [
+        "Satian Islands",
+        "Pelari",
+        "Combustion Ayam"
+      ],
+      "known_extra": [],
+      "relations": {
+        "AYM": {
+          "opinion": 25
+        }
+      },
+      "flags": [],
+      "playable": true,
+      "difficulty": "Very hard",
+      "blurb": "A union of island towns on the Satian Islands, at the far south-eastern edge of the world. Poorer and humbler than their Ayam neighbours, the Satians trade, fish and argue in their island assembly, and dream of the day they catch up."
     }
   },
   "unowned_colour": "#b9b29b",

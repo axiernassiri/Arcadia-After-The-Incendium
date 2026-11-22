@@ -2254,8 +2254,8 @@
      }
     ]
    },
-   "title": "Black Moon Preachers",
-   "text": "Preachers of the Black Moon are spreading their faith in the markets of Eden.",
+   "title": "VAGA Preachers",
+   "text": "Preachers of VAGA are spreading their faith in the markets of Eden.",
    "options": [
     {
      "text": "Arrest them.",
@@ -2457,7 +2457,7 @@
     "conditions": []
    },
    "title": "The Eclipse Rites",
-   "text": "Under a dark sky the Order of the Black Moon holds its rites.",
+   "text": "Under a dark sky VAGA holds its rites.",
    "options": [
     {
      "text": "Feed the fervour.",
@@ -4083,7 +4083,7 @@
     ]
    },
    "title": "The Moonblade",
-   "text": "An assassin of the Black Moon was caught in the halls of Eden's Crown, a black knife in hand.",
+   "text": "A VAGA assassin was caught in the halls of Eden's Crown, a black knife in hand.",
    "options": [
     {
      "text": "Execute him publicly.",
@@ -4694,7 +4694,7 @@
     "conditions": []
    },
    "title": "The Festival of Light",
-   "text": "To answer the Black Moon cult, the priests of Eden hold a festival of light across every island.",
+   "text": "To answer the VAGA cult, the priests of Eden hold a festival of light across every island.",
    "options": [
     {
      "text": "Light every island!",

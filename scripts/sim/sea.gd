@@ -11,6 +11,7 @@ var g: Node
 var _grid = {}             # layer -> {"w": cols, "h": rows, "water": PackedByteArray, "img": Image}
 var _ports = {}            # pid -> Vector2i cell
 var _routes = {}           # "a-b" -> {"points": PackedVector2Array, "length": float}
+var _wrap_img: Image = null  # the ground index image: its columns loop east-west (the world wraps)
 
 
 func _init(game: Node) -> void:
@@ -28,6 +29,8 @@ func build() -> void:
 		var img: Image = tex.get_image()
 		if img.is_compressed():
 			img.decompress()
+		if layer == "ground":
+			_wrap_img = img
 		var cols = img.get_width() / STEP
 		var rows = img.get_height() / STEP
 		var water = PackedByteArray()
@@ -72,6 +75,8 @@ func build() -> void:
 func _id_at(img: Image, pos: Vector2) -> int:
 	var x = int(pos.x)
 	var y = int(pos.y)
+	if img == _wrap_img:   # the world loops east-west
+		x = posmod(x, img.get_width())
 	if x < 0 or y < 0 or x >= img.get_width() or y >= img.get_height():
 		return -1
 	var c = img.get_pixel(x, y)
@@ -88,6 +93,8 @@ func _centre(cell: Vector2i) -> Vector2:
 
 func _water(layer: String, cell: Vector2i) -> bool:
 	var gr: Dictionary = _grid[layer]
+	if layer == "ground":
+		cell.x = posmod(cell.x, int(gr["w"]))
 	if cell.x < 0 or cell.y < 0 or cell.x >= int(gr["w"]) or cell.y >= int(gr["h"]):
 		return false
 	return gr["water"][cell.y * int(gr["w"]) + cell.x] == 1
@@ -132,6 +139,8 @@ func route(a: int, b: int) -> Dictionary:
 	var layer: String = g.provinces[a]["layer"]
 	if _ports.has(a) and _ports.has(b) and layer == g.provinces[b]["layer"] and _grid.has(layer):
 		var cells = _astar(layer, _ports[a], _ports[b])
+		if layer == "ground":
+			cells = _unwrap_cells(cells, int(_grid[layer]["w"]))
 		if not cells.is_empty():
 			var pts = _smooth(layer, cells)
 			var length = 0.0
@@ -196,6 +205,8 @@ func _astar(layer: String, from: Vector2i, to: Vector2i) -> Array:
 		var base: float = cost[cur]
 		for d in DIRS:
 			var n: Vector2i = cc + d
+			if layer == "ground":
+				n.x = posmod(n.x, w)   # sail off one edge of the world, come back on the other
 			if not _water(layer, n):
 				continue
 			if d.x != 0 and d.y != 0 and (not _water(layer, cc + Vector2i(d.x, 0)) or not _water(layer, cc + Vector2i(0, d.y))):
@@ -207,6 +218,8 @@ func _astar(layer: String, from: Vector2i, to: Vector2i) -> Array:
 				back[ni] = cur
 				var hx = float(absi(n.x - to.x))
 				var hy = float(absi(n.y - to.y))
+				if layer == "ground":   # the shortest way may be round the back of the world
+					hx = minf(hx, float(w) - hx)
 				g.mil._heap_push(heap, [nc + maxf(hx, hy) + 0.41421 * minf(hx, hy), ni])
 	if not found:
 		return []
@@ -247,4 +260,21 @@ func _smooth(layer: String, cells: Array) -> PackedVector2Array:
 			j += 1
 		out.append(pts[j])
 		i = j
+	return out
+
+
+func _unwrap_cells(cells: Array, w: int) -> Array:
+	## A* works in wrapped columns; give the path continuous ones (they may run past the map's edge),
+	## so the route is drawn and sailed the short way across the seam.
+	var out: Array = []
+	var prev := Vector2i(-99999, 0)
+	for c in cells:
+		var cc: Vector2i = c
+		if prev.x != -99999:
+			while cc.x - prev.x > w / 2:
+				cc.x -= w
+			while prev.x - cc.x > w / 2:
+				cc.x += w
+		out.append(cc)
+		prev = cc
 	return out

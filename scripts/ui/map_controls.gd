@@ -7,11 +7,11 @@ signal layer_selected(layer: String)
 const UI = preload("res://scripts/ui/ui_util.gd")
 const MODE_LABELS := {"political": "Political", "diplomacy": "Diplomatic", "development": "Development",
 	"goods": "Goods", "trade": "Trade", "region": "Regions", "culture": "Culture", "religion": "Religion",
-	"ethnicity": "Ethnicity", "unrest": "Unrest", "terrain": "Terrain", "autonomy": "Autonomy"}
+	"ethnicity": "Ethnicity", "unrest": "Unrest", "terrain": "Terrain", "autonomy": "Autonomy", "supply": "Supply limit"}
 
 const MODE_ICONS := {"political": "flag", "diplomacy": "envelope", "development": "house", "goods": "coins",
 	"trade": "trade", "region": "map", "culture": "scroll", "religion": "sun", "ethnicity": "person", "unrest": "flame",
-	"terrain": "mountain", "autonomy": "seal"}
+	"terrain": "mountain", "autonomy": "seal", "supply": "helmet"}
 
 var _mode_buttons = {}
 var _mode_label: Label
@@ -35,13 +35,14 @@ func _ready() -> void:
 	_mode_label = UI.heading("", 13)
 	v.add_child(_mode_label)
 	var grid = GridContainer.new()
-	grid.columns = 6
+	grid.columns = 7
 	grid.add_theme_constant_override("h_separation", 3)
 	grid.add_theme_constant_override("v_separation", 3)
 	var keys := ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="]   # Shift + these, see main.gd MODE_KEYS
 	var ki := 0
 	for m in MODE_LABELS:
-		var b = UI.icon_button(MODE_ICONS[m], "", func(): mode_selected.emit(m), "%s map mode (Shift+%s)" % [MODE_LABELS[m], keys[ki]], 18)
+		var hint: String = " (Shift+%s)" % keys[ki] if ki < keys.size() else ""
+		var b = UI.icon_button(MODE_ICONS[m], "", func(): mode_selected.emit(m), "%s map mode%s" % [MODE_LABELS[m], hint], 18)
 		ki += 1
 		b.toggle_mode = true
 		b.custom_minimum_size = Vector2(36, 32)

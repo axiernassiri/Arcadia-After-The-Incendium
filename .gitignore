@@ -1,3 +1,4 @@
 .godot/
 *.import
 export/
+tests/ui_snapshots/out/

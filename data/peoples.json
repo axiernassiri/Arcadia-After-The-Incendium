@@ -36,6 +36,34 @@
       "cultures": [
         "Moonsworn"
       ]
+    },
+    "Galline": {
+      "name": "Galline",
+      "colour": "#e8a020",
+      "cultures": [
+        "Ayam"
+      ]
+    },
+    "Incognitan": {
+      "name": "Incognitan",
+      "colour": "#c9b26b",
+      "cultures": [
+        "Silken"
+      ]
+    },
+    "Abyssal": {
+      "name": "Abyssal",
+      "colour": "#2aa6a0",
+      "cultures": [
+        "Oceanian"
+      ]
+    },
+    "Satian": {
+      "name": "Satian",
+      "colour": "#4fb08a",
+      "cultures": [
+        "Satian"
+      ]
     }
   },
   "cultures": {
@@ -74,6 +102,18 @@
     },
     "Moonsworn": {
       "colour": "#5a3a78"
+    },
+    "Ayam": {
+      "colour": "#e8a020"
+    },
+    "Silken": {
+      "colour": "#c9b26b"
+    },
+    "Oceanian": {
+      "colour": "#2aa6a0"
+    },
+    "Satian": {
+      "colour": "#4fb08a"
     }
   },
   "ethnicities": {
@@ -101,6 +141,26 @@
       "colour": "#fff4c0",
       "breathes": "sky",
       "text": "Angels of Skyfall."
+    },
+    "Chicken": {
+      "colour": "#f0c060",
+      "breathes": "ground",
+      "text": "The chickens of Combustion Ayam: small, quick and endlessly inventive."
+    },
+    "Incognitan": {
+      "colour": "#b89a70",
+      "breathes": "ground",
+      "text": "The peoples of Terra Incognito (placeholder)."
+    },
+    "Oceanian": {
+      "colour": "#3ab8c0",
+      "breathes": "water",
+      "text": "People of the Deep Blue. They breathe water and need oxygen masks on land."
+    },
+    "Satian": {
+      "colour": "#7ccfa8",
+      "breathes": "ground",
+      "text": "The island folk of the Satian Islands (placeholder)."
     }
   },
   "religions": {
@@ -135,6 +195,38 @@
         "doomsday_resistance": 1.0
       },
       "text": "Worship of the Doomsday Portal and the Black Moon that opens it. The anomalies spare the faithful."
+    },
+    "Combustion Creed": {
+      "colour": "#e86a20",
+      "modifiers": {
+        "tech_cost_mod": -0.05,
+        "artillery_power": 0.10
+      },
+      "text": "Combustion Ayam's faith in the eternal flame and the engine that harnesses it."
+    },
+    "The Long Road": {
+      "colour": "#d8c070",
+      "modifiers": {
+        "trade_efficiency": 0.10,
+        "diplomatic_reputation": 1
+      },
+      "text": "The caravan faith of the Yellow Road: every journey is a prayer (placeholder)."
+    },
+    "The Deep": {
+      "colour": "#1a6a80",
+      "modifiers": {
+        "manpower_mod": 0.10,
+        "fort_defense": 0.15
+      },
+      "text": "Reverence for the dark water and what sleeps in it (placeholder)."
+    },
+    "The Tidewheel": {
+      "colour": "#5ac0b0",
+      "modifiers": {
+        "trade_efficiency": 0.05,
+        "unrest": -1
+      },
+      "text": "The Satian faith in the turning of the tides: what goes out comes back (placeholder)."
     }
   },
   "rebels": {

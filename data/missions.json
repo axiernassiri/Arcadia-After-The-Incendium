@@ -1200,7 +1200,7 @@
    "requires": [
     "sky_wings"
    ],
-   "text": "The Order of the Black Moon hides on its own island chain. Find out what they are planning.",
+   "text": "VAGA hides on its own island chain. Find out what they are planning.",
    "conditions": [
     {
      "type": "explored",
@@ -1260,7 +1260,7 @@
    "nation": "SKY",
    "column": 2,
    "row": 3,
-   "title": "Crush the Black Moon",
+   "title": "Crush VAGA",
    "requires": [
     "sky_generalship"
    ],

@@ -17,6 +17,7 @@ signal game_started
 signal armies_changed
 signal war_changed
 signal battle_report(report: Dictionary)   # a land battle the player fought in has ended
+signal eschaton_warning                     # a year before the end: the red eye of J82wC4
 
 const START_YEAR := 4289
 const MONTH_NAMES := ["January", "February", "March", "April", "May", "June", "July",
@@ -29,7 +30,8 @@ const EVENT_FREQ_NATION := 0.6      # share of a nation-specific event's written
 const EVENT_FREQ_SHARED := 0.4      # ... and of an event shared by many nations ("all", "tribes"...)
 const EVENT_COOLDOWN_DAYS := 365 * 5
 const SAVE_DIR := "user://saves"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3   # 3: the whole world (331 provinces, 16 nations)
+const OLDEST_SAVE := 2     # older versions are migrated on load (see _merge_world)
 
 const Modifiers = preload("res://scripts/sim/modifiers.gd")
 const Economy = preload("res://scripts/sim/economy.gd")
@@ -41,6 +43,7 @@ const Military = preload("res://scripts/sim/military.gd")
 const Diplomacy = preload("res://scripts/sim/diplomacy.gd")
 const AI = preload("res://scripts/sim/ai.gd")
 const Sea = preload("res://scripts/sim/sea.gd")
+const Standing = preload("res://scripts/sim/standing.gd")
 
 # calendar
 var year := START_YEAR
@@ -66,6 +69,8 @@ var tech_ahead_debuff := {}
 var tech_debuff_years := 10
 var end_year := 4789
 var advisor_data := {}
+var estate_data := {}
+var age_data := {}
 var decision_data: Array = []
 var idea_data := {}
 var building_data := {}
@@ -113,6 +118,7 @@ var mil: Military
 var dip: Diplomacy
 var sea: Sea
 var ai: AI
+var standing: Standing   # prestige, the Great Power ranking, estates
 
 
 func _init() -> void:
@@ -125,6 +131,7 @@ func _init() -> void:
 	mil = Military.new(self)
 	dip = Diplomacy.new(self)
 	ai = AI.new(self)
+	standing = Standing.new(self)
 
 
 func _ready() -> void:
@@ -164,6 +171,8 @@ func load_data() -> void:
 	tech_debuff_years = int(tech.get("debuff_years", 10))
 	end_year = int(tech.get("end_year", 4789))
 	advisor_data = _read_json("res://data/advisors.json")
+	estate_data = _read_json("res://data/estates.json")
+	age_data = _read_json("res://data/ages.json")
 	idea_data = _read_json("res://data/ideas.json")
 	building_data = _read_json("res://data/buildings.json").get("buildings", {})
 	unit_data = _read_json("res://data/units.json")
@@ -785,6 +794,7 @@ func monthly_tick() -> void:
 	pop.monthly_cores()
 	mil.monthly()
 	dip.monthly()
+	standing.monthly()
 	eco.monthly_colonies()
 	eco.update_prices()
 	for tag in nations:
@@ -792,13 +802,18 @@ func monthly_tick() -> void:
 			ai.monthly(tag)
 	_check_monthly_events()
 	_entity_pressure()
+	# a year before the end, the watchers on J82wC4 send their warning (the UI flashes the red eye)
+	if year == end_year - 1 and not global_flags.has("eschaton_warned"):
+		global_flags["eschaton_warned"] = true
+		post("Something vast opens its eye beyond the edge of the world. The stars are going out, one by one.")
+		eschaton_warning.emit()
 	if year >= end_year and not global_flags.has("game_over"):
 		global_flags["game_over"] = true
 		speed = 0
 		if player_tag != "":
-			fire_dynamic_event({"id": "end_of_era", "title": "The End of an Era",
-				"text": "It is %d. Five hundred years have passed since the Incendium. Whatever comes next, the age of %s is written in the histories." % [year, nation_name(player_tag)],
-				"options": [{"text": "Keep playing.", "effects": []}]}, player_tag)
+			fire_dynamic_event({"id": "end_of_era", "title": "The Eschaton",
+				"text": "It is %d, five hundred years after the Incendium. Dark energy pulls every atom away from every other: the universe has lived through all its years and gives itself back to the Void. Whatever %s built is recycled into what comes next. Somewhere, the nation on J82wC4 already escaped." % [year, nation_name(player_tag)],
+				"options": [{"text": "Keep playing in the last light.", "effects": []}]}, player_tag)
 	mods.invalidate()
 	if month == 1:
 		record_ledger()
@@ -1518,6 +1533,7 @@ func claim_mission(tag: String, mission_id: String) -> bool:
 		if m["id"] == mission_id and mission_state(tag, m) == "ready":
 			nations[tag]["missions_done"][mission_id] = true
 			apply_effects(m.get("rewards", []), tag)
+			standing.add_prestige(tag, 5.0)
 			if tag == player_tag or nations[tag]["government"] != "boar_tribe":
 				post("%s completes the mission: %s." % [nations[tag]["short"], m["title"]], [tag])
 			touch(tag)
@@ -1587,9 +1603,19 @@ func load_game(slot: String) -> String:
 	f.get_var()
 	var s: Variant = f.get_var()
 	f.close()
-	if not (s is Dictionary) or int(s.get("version", 0)) != SAVE_VERSION:
-		return "This save is from an older version of the game."
-	load_data()
+	if not (s is Dictionary):
+		return "This save is damaged."
+	var ver := int(s.get("version", 0))
+	if ver > SAVE_VERSION:
+		return "This save is from a newer version of the game."
+	if ver < OLDEST_SAVE:
+		return "This save is too old to load (version %d; this game reads %d to %d)." % [ver, OLDEST_SAVE, SAVE_VERSION]
+	# a fresh world from the current data: its map geometry always wins, and the save takes whatever
+	# it lacks (provinces and nations added since it was made) from it
+	setup_world()
+	var fresh_provinces := provinces
+	var fresh_nations := nations
+	var fresh_tags: Array = nations.keys()
 	year = s["year"]
 	month = s["month"]
 	day = s["day"]
@@ -1619,6 +1645,7 @@ func load_game(slot: String) -> String:
 	eco.history = s["history"]
 	trade.state = s["trade_state"]
 	trade.income = s["trade_income"]
+	_merge_world(fresh_provinces, fresh_nations, fresh_tags, ver)
 	speed = 0
 	_owned_cache.clear()
 	mods.invalidate()
@@ -1630,6 +1657,50 @@ func load_game(slot: String) -> String:
 	doomsday_changed.emit(doomsday_active)
 	armies_changed.emit()
 	return ""
+
+
+const GEOMETRY_KEYS := ["centre", "area", "connections", "coastal", "layer"]
+
+
+func _merge_world(fresh_provinces: Dictionary, fresh_nations: Dictionary, fresh_tags: Array, ver: int) -> void:
+	## Bring a loaded save up to date with the current map and data (save migration).
+	## Province geometry (centres, borders, sea lanes) always comes from the current map files.
+	## Provinces the save doesn't know are added as they start. A nation the save doesn't know (the new
+	## world's, for a save from before the world map; the Satian Union, added later) joins with its
+	## starting army and fleet, and takes its home provinces if nobody has claimed them in the meantime.
+	var added := false
+	for id in fresh_provinces:
+		if provinces.has(id):
+			for k in GEOMETRY_KEYS:
+				provinces[id][k] = fresh_provinces[id][k]
+		else:
+			provinces[id] = fresh_provinces[id]
+	var defs: Dictionary = nation_defs.get("nations", {})
+	for tag in fresh_tags:
+		if nations.has(tag):
+			continue
+		added = true
+		nations[tag] = fresh_nations[tag]
+		for id in fresh_provinces:
+			if fresh_provinces[id]["owner"] == tag and provinces[id]["owner"] == "" and provinces[id].get("colony", {}).is_empty():
+				provinces[id] = fresh_provinces[id]
+		_owned_cache.clear()
+		var d: Dictionary = defs.get(tag, {})
+		var ad: Dictionary = d.get("army", {})
+		var apid := int(province_ids_by_name.get(ad.get("location", ""), -1))
+		if apid >= 0:
+			mil.spawn_army(tag, apid, int(ad.get("inf", 2)), int(ad.get("cav", 0)), int(ad.get("art", 0)))
+		var fd: Dictionary = d.get("fleet", {})
+		var fpid := int(province_ids_by_name.get(fd.get("location", ""), -1))
+		if fpid >= 0:
+			var counts := {}
+			for k in ["heavy", "light", "transport"]:
+				if fd.has(k):
+					counts[k] = int(fd[k])
+			mil.spawn_fleet(tag, fpid, counts)
+		post("%s joins the world." % nations[tag]["name"], [tag])
+	if added:
+		trade.monthly()   # new trade nodes and new traders
 
 
 # ---------------------------------------------------------------- misc
@@ -1651,6 +1722,16 @@ func post(text: String, tags: Array = [], major: String = "", near: bool = false
 	message_posted.emit(text)
 	if major != "" and started and (tags.is_empty() or player_tag in tags):
 		major_news.emit(major, text)
+
+
+func eschaton_corruption() -> float:
+	## How far the world has decayed toward the Eschaton: nothing until the last year, then a quarter
+	## at once (with the eye) rising to all of it. Worked out from the date, so loading a save gets it right.
+	if year < end_year - 1:
+		return 0.0
+	if year >= end_year:
+		return 1.0
+	return 0.25 + 0.75 * float(month - 1) / 12.0
 
 
 func record_ledger() -> void:

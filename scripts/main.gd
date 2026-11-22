@@ -7,7 +7,7 @@ extends Node
 ##   --select-screen       open on the nation select screen    --menu   stay on the main menu    --intro  the cutscene
 ##   --days=N              advance N days after starting (events answered with option 1)
 ##   --until-doomsday      advance until the Black Moon rises
-##   --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"
+##   --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"  --at=x,y (a map point)
 ##   --select="Province"   select a province     --panel=economy|trade|tech|ideas|government|court|military|diplomacy|peoples|missions
 ##   --country=TAG         open a nation's diplomacy view      --war=TAG  declare war on TAG first
 ##   --army                select the player's first army   --group  select all of them    --entities  spawn entities at the portal and select them
@@ -23,7 +23,7 @@ const UI = preload("res://scripts/ui/ui_util.gd")
 const MapView = preload("res://scripts/map_view.gd")
 const MapCamera = preload("res://scripts/map_camera.gd")
 const Settings = preload("res://scripts/settings.gd")
-const PANELS := ["court", "government", "economy", "production", "trade", "tech", "ideas", "military", "diplomacy", "peoples", "missions", "ledger"]
+const PANELS := ["court", "government", "economy", "production", "trade", "tech", "ideas", "military", "diplomacy", "peoples", "missions", "ledger", "ages"]
 const PANEL_SCRIPTS := {
 	"court": "res://scripts/ui/court_panel.gd", "government": "res://scripts/ui/government_panel.gd",
 	"economy": "res://scripts/ui/economy_panel.gd", "production": "res://scripts/ui/production_panel.gd", "trade": "res://scripts/ui/trade_panel.gd",
@@ -31,9 +31,10 @@ const PANEL_SCRIPTS := {
 	"military": "res://scripts/ui/military_panel.gd", "diplomacy": "res://scripts/ui/diplomacy_panel.gd",
 	"peoples": "res://scripts/ui/peoples_panel.gd", "missions": "res://scripts/ui/missions_panel.gd",
 	"ledger": "res://scripts/ui/ledger_panel.gd",
+	"ages": "res://scripts/ui/ages_panel.gd",
 }
 const SHORTCUTS := {KEY_C: "court", KEY_G: "government", KEY_E: "economy", KEY_B: "production", KEY_T: "trade", KEY_R: "tech",
-	KEY_I: "ideas", KEY_L: "military", KEY_O: "diplomacy", KEY_P: "peoples", KEY_M: "missions", KEY_J: "ledger"}
+	KEY_I: "ideas", KEY_L: "military", KEY_O: "diplomacy", KEY_P: "peoples", KEY_M: "missions", KEY_J: "ledger", KEY_K: "ages"}
 # Shift + the number row picks a map mode, in the order of the map-mode buttons
 const MODE_KEYS := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUAL]
 
@@ -65,6 +66,7 @@ var outliner
 var war_panel
 var battle_report
 var search_box
+var eschaton_eye
 var hover_label: Label
 var state := "menu"
 var args := {}
@@ -77,11 +79,13 @@ func _ready() -> void:
 	Game.setup_world()
 	map = MapView.new()
 	add_child(map)
+	map.ignore_mouse = args.has("screenshot")   # screenshots must not depend on where the cursor is
 	camera = MapCamera.new()
 	camera.bounds = Rect2(Vector2.ZERO, map.map_size)
-	camera.focus = Vector2(1000, 560)
+	camera.focus = map.map_size / 2.0   # fit_bounds shows the whole world, centred
 	add_child(camera)  # after the map so it sees input first
 	camera.zoom_changed.connect(map.set_camera_zoom)
+	camera.wrap_width = map.wrap_width()   # the world loops east-west
 	map.set_camera_zoom(camera.zoom.x)
 
 	hud = CanvasLayer.new()
@@ -139,6 +143,7 @@ func _ready() -> void:
 	settings_panel = _add("res://scripts/ui/settings_panel.gd")
 	main_menu.settings_pressed.connect(settings_panel.open)
 	game_menu.settings_pressed.connect(settings_panel.open)
+	eschaton_eye = _add("res://scripts/ui/eschaton_eye.gd")   # last, so it covers everything
 	alerts.open_panel.connect(open_panel)
 	alerts.go_to_province.connect(focus_province)
 	alerts.open_peace.connect(_open_peace)
@@ -152,7 +157,11 @@ func _ready() -> void:
 	map.box_selected.connect(_select_group)
 	army_panel.group_changed.connect(_select_group)
 	map.fleet_clicked.connect(_select_fleet)
-	map.layer_changed.connect(func(l): map_controls.set_state(map.mode, l))
+	map.layer_changed.connect(func(l):
+		map_controls.set_state(map.mode, l)
+		camera.bounds = Rect2(Vector2.ZERO, map.map_size)   # each layer has its own size
+		camera.wrap_width = map.wrap_width()                # the world loops, the sky doesn't
+		camera.position = camera.position.clamp(camera.bounds.position, camera.bounds.end))
 	province_panel.go_to_province.connect(focus_province)
 	province_panel.country_clicked.connect(_open_country)
 	province_panel.army_clicked.connect(_select_army)
@@ -186,6 +195,11 @@ func _ready() -> void:
 	game_menu.loaded.connect(_after_load)
 	Game.month_ticked.connect(_update_badges)
 	Game.month_ticked.connect(_autosave)
+	Game.war_changed.connect(_update_music)
+	Game.game_started.connect(_update_music)
+	Game.doomsday_changed.connect(func(on): if on and state == "game": UI.sfx("doom"))
+	_update_music()
+	Game.month_ticked.connect(func(): _set_corruption(Game.eschaton_corruption()))
 	Game.nation_changed.connect(func(_t): _update_badges())
 	_set_state("menu")
 
@@ -217,6 +231,7 @@ func _add(script_path: String) -> Control:
 
 func _set_state(s: String) -> void:
 	state = s
+	_update_music()
 	var in_game := s == "game"
 	for c in [top_bar, tab_bar, map_controls, log_panel, alerts, outliner]:
 		c.visible = in_game
@@ -244,6 +259,10 @@ func _open_select() -> void:
 	nation_select.open()   # after fit_bounds, so it doesn't undo the focus on the first nation
 
 
+func _set_corruption(amount: float) -> void:
+	map.set_corruption(amount)
+
+
 func _focus_nation(tag: String) -> void:
 	var cap: int = Game.capital_of(tag)
 	if cap < 0:
@@ -262,6 +281,7 @@ func start_game(tag: String) -> void:
 
 
 func _after_start() -> void:
+	_set_corruption(Game.eschaton_corruption())   # a loaded game near the end is already corrupted
 	var cap: int = Game.capital_of(Game.player_tag)
 	map.set_layer(Game.provinces[cap]["layer"] if cap >= 0 else "ground")
 	map.set_mode("political")
@@ -291,6 +311,15 @@ func _after_load() -> void:
 	news_popup.clear()
 	_set_state("game")
 	_after_start()
+
+
+func _update_music() -> void:
+	## War music while the player is at war, otherwise the calm theme (menus too).
+	var snd = get_tree().root.get_node_or_null("Sound")
+	if snd == null:
+		return
+	var at_war: bool = state == "game" and Game.player_tag != "" and Game.nations.has(Game.player_tag) and Game.dip.at_war_any(Game.player_tag)
+	snd.music("war" if at_war else "peace")
 
 
 func _autosave() -> void:
@@ -436,7 +465,10 @@ func _on_right_click(id: int) -> void:
 	if map.selected_army >= 0 and Game.armies.has(map.selected_army) and Game.armies[map.selected_army]["owner"] == Game.player_tag:
 		if not Game.mil.move_army(map.selected_army, id):
 			var sel_army: Dictionary = Game.armies[map.selected_army]
-			if Game.mil.zoc_blocked(sel_army, id):
+			var mask_why: String = _mask_block(sel_army, id)
+			if mask_why != "":
+				Game.post("%s can't go to %s. %s" % [sel_army["name"], Game.provinces[id]["name"], mask_why])
+			elif Game.mil.zoc_blocked(sel_army, id):
 				Game.post("%s can't march past an enemy fort to reach %s: besiege the fort first, or go around (zone of control)." % [
 					sel_army["name"], Game.provinces[id]["name"]])
 			else:
@@ -459,6 +491,11 @@ func _select_army(id: int) -> void:
 		return
 	map.select_army(id)
 	army_panel.show_army(id)
+
+
+func _mask_block(a: Dictionary, dest: int) -> String:
+	## The oxygen-mask reason, when the march would take an army into air it can't breathe.
+	return Game.mil.layer_block_reason(String(a["owner"]), dest)
 
 
 func _toggle_in_group(id: int) -> void:
@@ -534,7 +571,9 @@ func _update_march_preview(id: int) -> void:
 	var a: Dictionary = Game.armies[aid]
 	var path: Array = Game.mil.find_path(a, id)
 	if path.is_empty():
-		var why := "Blocked by an enemy fort (zone of control)" if Game.mil.zoc_blocked(a, id) else "Can't get there"
+		var why := _mask_block(a, id)
+		if why == "":
+			why = "Blocked by an enemy fort (zone of control)" if Game.mil.zoc_blocked(a, id) else "Can't get there"
 		map.set_preview([Game.provinces[id]["centre"]], why, false)
 		return
 	var days := 0.0
@@ -779,6 +818,9 @@ func _run_automation() -> void:
 		map.set_camera_zoom(z)
 	if args.has("focus"):
 		camera.position = Game.provinces[int(Game.province_ids_by_name[args["focus"]])]["centre"]
+	if args.has("at"):   # --at=x,y: centre the camera on a map point (0,0 is where all four seams meet)
+		var xy: PackedStringArray = String(args["at"]).split(",")
+		camera.position = Vector2(float(xy[0]), float(xy[1]))
 	if args.has("select"):
 		var id := int(Game.province_ids_by_name.get(args["select"], -1))
 		map.set_layer(Game.provinces[id]["layer"])
@@ -812,6 +854,12 @@ func _run_automation() -> void:
 		settings_panel.open()
 	if args.has("news"):
 		Game.major_news.emit("War Declared", "Snowtusk declares war on Menslosia: Snowtusk Conquest of Menslosia.")
+	if args.has("eschaton"):   # jump to half a year before the end and flash the eye
+		Game.year = Game.end_year - 1
+		Game.month = 7
+		_set_corruption(Game.eschaton_corruption())
+		if str(args["eschaton"]) != "map":   # --eschaton=map: just the corrupted map, no eye
+			eschaton_eye.flash()
 	if args.has("howto"):
 		help_overlay.visible = true
 	if args.has("warview"):
@@ -846,6 +894,7 @@ func _run_automation() -> void:
 
 
 func _screenshot_after_frames(path: String) -> void:
+	get_viewport().gui_disable_input = true   # no tooltips from wherever the cursor happens to be
 	for i in 30:
 		await get_tree().process_frame
 	var img := get_viewport().get_texture().get_image()

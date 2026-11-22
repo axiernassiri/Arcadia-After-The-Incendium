@@ -287,6 +287,25 @@ func can_act(action: String, from: String, to: String) -> String:
 				return "Needs %d %s power." % [cost, n["power_names"][1]]
 		"war":
 			return can_declare(from, to)
+		"guarantee":
+			if r.get("guarantee", false):
+				return ""
+			if at_war(from, to):
+				return "You are at war."
+			if g.nation_dev(to) > g.nation_dev(from):
+				return "You can only guarantee weaker nations."
+		"warn":
+			if r.get("warned", false):
+				return ""
+			if at_war(from, to):
+				return "You are at war."
+		"support_rebels":
+			if at_war(from, to):
+				return "You are already at war: fight them instead."
+			if float(n["treasury"]) < SUPPORT_REBELS_COST:
+				return "Needs %d sanctum." % int(SUPPORT_REBELS_COST)
+			if g.day_index - int(r.get("rebels_day", -9999)) < 365:
+				return "Once a year."
 	return ""
 
 
@@ -369,7 +388,61 @@ func act(action: String, from: String, to: String) -> String:
 		"war":
 			declare_war(from, to)
 			return "You declared war on %s." % nm
+		"guarantee":
+			r["guarantee"] = not r.get("guarantee", false)
+			if r["guarantee"]:
+				add_opinion(to, from, 25.0, "Guaranteed our independence", 0.0)
+			else:
+				add_opinion(to, from, -25.0, "Abandoned their guarantee", 0.5)
+			g.touch(from)
+			return ("You guarantee the independence of %s: you will join any war declared on them." if r["guarantee"] else "You no longer guarantee %s.") % nm
+		"warn":
+			r["warned"] = not r.get("warned", false)
+			if r["warned"]:
+				add_opinion(to, from, -20.0, "Warned us", 0.5)
+			g.touch(from)
+			return ("You warned %s: attack any of your neighbours and you will join the war." if r["warned"] else "You withdrew your warning to %s.") % nm
+		"support_rebels":
+			g.nations[from]["treasury"] = float(g.nations[from]["treasury"]) - SUPPORT_REBELS_COST
+			r["rebels_day"] = g.day_index
+			var restless: Array = g.owned(to).duplicate()
+			restless.sort_custom(func(a, b): return float(g.provinces[a].get("unrest", 0.0)) > float(g.provinces[b].get("unrest", 0.0)))
+			for pid in restless.slice(0, 3):
+				g.provinces[pid]["rebel_progress"] = minf(100.0, float(g.provinces[pid]["rebel_progress"]) + 20.0)
+				g.add_province_modifier(pid, "foreign_agitators", "Foreign agitators", {"local_unrest": 3}, 24)
+			add_opinion(to, from, -40.0, "Supported rebels against us", 0.5)
+			g.touch(from)
+			g.touch(to)
+			return "Your agents are arming the malcontents of %s (+3 unrest and more rebel support in three provinces, for two years)." % nm
 	return ""
+
+
+const SUPPORT_REBELS_COST := 60.0
+
+
+func guarantors_of(tag: String) -> Array:
+	var out: Array = []
+	for t in g.nations:
+		if t != tag and g.nations[t]["alive"] and g.nations[t]["relations"].has(tag) and g.nations[t]["relations"][tag].get("guarantee", false):
+			out.append(t)
+	return out
+
+
+func _honour_guarantees(w: Dictionary, attacker: String, target: String) -> void:
+	## EU4: guarantors defend the target; a nation that warned the attacker defends its neighbour.
+	var joiners: Array = guarantors_of(target)
+	for t in g.nations:
+		if t == attacker or t == target or not g.nations[t]["alive"]:
+			continue
+		if g.nations[t]["relations"].has(attacker) and g.nations[t]["relations"][attacker].get("warned", false) and borders(t, target):
+			joiners.append(t)
+	for t in joiners:
+		if allied(t, attacker) or war_side(w, t) != "":
+			continue
+		_join(w, t, "defenders")
+		if war_side(w, t) == "defenders":
+			g.post("%s honours its word and joins %s against %s." % [g.nation_name(t), g.nation_name(target), g.nation_name(attacker)],
+				[t, target, attacker], "", true)
 
 
 func make_vassal(overlord: String, vassal: String) -> void:
@@ -399,7 +472,7 @@ func casus_belli(a: String, b: String) -> Array:
 	if g.court.gov_type(b) in ["tribe", "horde"] and not (g.court.gov_type(a) in ["tribe", "horde"]) and borders(a, b):
 		out.append({"id": "tribal_conquest", "name": "Tribal Conquest", "mult": 0.6})
 	if a == "SKY" and b == "BLM" or a == "BLM" and b == "SKY":
-		out.append({"id": "holy_war", "name": "War of the Black Moon", "mult": 0.6})
+		out.append({"id": "holy_war", "name": "War against VAGA", "mult": 0.6})
 	for pid in g.owned(b):
 		if g.nations[a]["claims"].has(pid) or g.provinces[pid]["cores"].has(a):
 			out.append({"id": "claim", "name": "Reconquest of Claims", "mult": 0.75})
@@ -462,6 +535,7 @@ func declare_war(a: String, b: String, cb: Dictionary = {}) -> Dictionary:
 	# allies are not called automatically: the war leader has to ask them, and pay their price
 	if g.nations[b]["ai"]:
 		ai_call_allies(w, b)
+	_honour_guarantees(w, a, b)
 	if b == g.player_tag and allies_of(b).size() > 0:
 		g.post("Call your allies to arms from the Diplomacy panel: they won't join by themselves.")
 	rebuild_pairs()
@@ -796,6 +870,9 @@ func enforce_peace(w: Dictionary, demander: String, target: String, demands: Arr
 	g.post("Peace in %s: %s %s." % [w["name"], g.nation_name(target), "gives " + ", ".join(parts) if parts.size() > 0 else "makes a white peace"], [demander, target], "Peace" if demander != g.player_tag else "")
 	if ae_dev > 0.0:
 		add_aggressive_expansion(demander, target, ae_dev, ae_mult)
+	if parts.size() > 0:   # a won peace brings prestige; giving in costs it
+		g.standing.add_prestige(demander, minf(25.0, 5.0 + ae_dev * 0.4))
+		g.standing.add_prestige(target, -10.0)
 	# a coalition that wins its war has done its job: it disbands and its members forgive
 	if w["cb"].get("id", "") == "coalition" and war_side(w, demander) == "attackers" and target == w["defenders"][0] and parts.size() > 0:
 		disband_coalition(target, w["attackers"])

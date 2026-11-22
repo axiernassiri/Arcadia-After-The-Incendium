@@ -11,6 +11,7 @@ const EDGE := 6.0   # px from the window edge that starts edge-scrolling (when e
 const Settings = preload("res://scripts/settings.gd")
 
 var bounds := Rect2(0, 0, 2000, 1092)
+var wrap_width := 0.0          # > 0: the map loops east-west every this many pixels (main.gd sets it per layer)
 var focus := Vector2.INF       # where fit_bounds centres the view
 var _press_pos := Vector2.ZERO
 var _pressing := false
@@ -26,7 +27,7 @@ func fit_bounds() -> void:
 	var vp := get_viewport_rect().size
 	var z := minf(vp.x / bounds.size.x, (vp.y - 120.0) / bounds.size.y) * 1.25
 	zoom = Vector2(z, z)
-	position = focus if focus != Vector2.INF else bounds.get_center()
+	position = focus if focus != Vector2.INF and bounds.has_point(focus) else bounds.get_center()
 	zoom_changed.emit(z)
 
 
@@ -90,4 +91,8 @@ func _zoom_at(factor: float, screen_pos: Vector2) -> void:
 
 
 func _clamp() -> void:
-	position = position.clamp(bounds.position, bounds.end)
+	if wrap_width > 0.0:
+		# east-west the world loops: keep x inside one copy (the copies either side look the same)
+		position = Vector2(fposmod(position.x, wrap_width), clampf(position.y, bounds.position.y, bounds.end.y))
+	else:
+		position = position.clamp(bounds.position, bounds.end)

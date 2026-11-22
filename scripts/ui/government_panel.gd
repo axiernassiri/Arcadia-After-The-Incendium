@@ -20,6 +20,7 @@ func build() -> void:
 	var prog = float(n["reform_progress"])
 	add(UI.kv("Reform progress", "%.1f (+%.2f a month)" % [prog, Game.prog.reform_gain(tag)],
 		"Builds up every month, faster with more development. Spend it to enact reforms."))
+	_estates(tag, n)
 	var decisions: Array = Game.decisions_for(tag)
 	if decisions.size() > 0:
 		section("Decisions")
@@ -63,3 +64,45 @@ func build() -> void:
 				v.add_child(UI.action(("Enact" if chosen == "" else "Switch to this") + " (%d progress)" % price,
 					Game.prog.can_enact(tag, t, r["id"]), func(): Game.prog.enact(tag, t, r["id"]); mark_dirty()))
 			add(c)
+
+
+func _estates(tag: String, n: Dictionary) -> void:
+	## EU4-style estates: loyalty, influence, a privilege to grant or revoke, and support to call on.
+	section("Estates")
+	text("Loyal estates (60+) help the realm, disloyal ones (under 30) hurt it, and an estate with a privilege (50+ influence) that stays disloyal for half a year throws the realm into disorder.", 11, UI.TEXT_DIM)
+	var defs: Dictionary = Game.standing.estate_defs()
+	for k in defs:
+		var d: Dictionary = defs[k]
+		var e: Dictionary = Game.standing.estates(tag)[k]
+		var loy: float = float(e["loyalty"])
+		var inf: float = Game.standing.influence(tag, k)
+		var col: Color = UI.GOOD if loy >= 60.0 else (UI.BAD if loy < 30.0 else UI.GOLD)
+		var c = UI.card(col, 6)
+		var v = VBoxContainer.new()
+		c.add_child(v)
+		v.add_child(UI.row([UI.icon(d.get("icon", "person"), 18, col), UI.heading(d["name"], 15), UI.spacer(),
+			UI.label("influence %d" % int(inf), 12, UI.TEXT_DIM)]))
+		v.add_child(UI.label(d.get("text", ""), 11, UI.TEXT_DIM, panel_width - 70))
+		v.add_child(UI.row([UI.label("Loyalty %d" % int(loy), 13, col), UI.bar(loy, 100.0, 180.0, col)]))
+		var effect: Dictionary = d.get("bonus", {}) if loy >= 60.0 else (d.get("malus", {}) if loy < 30.0 else {})
+		if not effect.is_empty():
+			v.add_child(UI.mod_box(effect, n["power_names"], panel_width - 70))
+		var priv: Dictionary = d["privilege"]
+		var held: bool = e["privilege"]
+		v.add_child(UI.label("Privilege: %s%s — %s" % [priv["name"], " (granted)" if held else "",
+			Game.mods.describe(priv.get("modifiers", {}), n["power_names"])], 11, UI.GOOD if held else UI.TEXT, panel_width - 70))
+		var sup: Dictionary = d["support"]
+		var toggle := func():
+			if held:
+				Game.standing.revoke(tag, k)
+			else:
+				Game.standing.grant(tag, k)
+			mark_dirty()
+		var why: String = Game.standing.can_revoke(tag, k) if held else Game.standing.can_grant(tag, k)
+		var tip: String = ("Revoking: -20 loyalty, costs 50 %s." % n["power_names"][0]) if held else "+15 loyalty and +35 influence; the crown gets the privilege's bonus too."
+		var row = UI.row([
+			UI.action("Revoke privilege" if held else "Grant privilege", why, toggle, tip),
+			UI.action(sup["name"], Game.standing.can_call(tag, k), func(): Game.standing.call_support(tag, k); mark_dirty(),
+				"%s Costs 15 loyalty. Once every ten years." % sup.get("text", ""))])
+		v.add_child(row)
+		add(c)

@@ -9,6 +9,9 @@ const DEFAULTS := {
 	"fullscreen": false,
 	"ui_scale": 1.0,            # 0.8 .. 1.5, scales every window and the HUD
 	"edge_scroll": false,       # pan when the mouse touches the screen edge
+	"master_volume": 0.8,       # 0..1, applied by the Sound autoload
+	"music_volume": 0.5,
+	"sfx_volume": 0.8,
 }
 const AUTOSAVE_SLOTS := 3
 

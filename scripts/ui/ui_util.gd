@@ -182,8 +182,19 @@ static func button(text: String, callback: Callable, tooltip: String = "") -> Bu
 	b.text = text
 	b.tooltip_text = tooltip
 	b.focus_mode = Control.FOCUS_NONE
+	b.pressed.connect(func(): sfx("click", -6.0))
 	b.pressed.connect(callback)
 	return b
+
+
+static func sfx(sound_name: String, volume_db: float = 0.0) -> void:
+	## Play a sound effect through the Sound autoload (quietly does nothing if it isn't there).
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return
+	var s = tree.root.get_node_or_null("Sound")
+	if s != null:
+		s.play(sound_name, volume_db)
 
 
 static func action(text: String, why: String, callback: Callable, tooltip: String = "") -> Button:

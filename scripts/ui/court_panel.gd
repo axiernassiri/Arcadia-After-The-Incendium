@@ -49,6 +49,13 @@ func build() -> void:
 		lname, Game.court.legitimacy_gain(tag), "\nA republic elects a new leader every %d years." % int(Game.prog.government(tag).get("term_years", 4)) if Game.court.gov_type(tag) == "republic" else ""], 15,
 		UI.BAD if leg < 50.0 else (UI.GOOD if leg >= 80.0 else UI.TEXT)), UI.bar(leg, 100.0, 140.0, UI.BAD if leg < 50.0 else UI.GOLD)]))
 	_advisors(tag, names)
+	section("Standing")
+	var pr: float = Game.standing.prestige(tag)
+	var rk: int = Game.standing.rank(tag)
+	add(UI.kv("Prestige", "%+d" % int(pr), "Won battles, won peace deals and missions raise it; lost ones lower it. It fades 5% a year.\nEach 10 prestige: +1% morale and +0.2 diplomatic reputation.", UI.GOOD if pr > 0 else (UI.BAD if pr < 0 else UI.TEXT)))
+	add(UI.kv("World rank", "#%d%s" % [rk, "  (Great Power)" if Game.standing.is_great_power(tag) else ""],
+		"Ranked by development, prestige and army. The top %d are Great Powers: +1 diplomatic reputation, +2 force limit." % Game.standing.GREAT_POWERS,
+		UI.GOLD if Game.standing.is_great_power(tag) else UI.TEXT))
 	section("Stability")
 	add(UI.row([UI.label("Stability %+d" % int(n["stability"]), 16, UI.GOOD if int(n["stability"]) > 0 else UI.TEXT), UI.spacer(),
 		UI.action("Raise (%d %s)" % [Game.court.stability_cost(tag), names[0]], Game.court.can_raise_stability(tag),

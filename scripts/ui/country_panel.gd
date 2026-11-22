@@ -96,6 +96,18 @@ func build() -> void:
 	_act("rival", "End rivalry" if r["rival"] else "Declare rival", "", "Rivals hate each other. Gives a casus belli to humiliate them.")
 	_act("claim", "Fabricate a claim (25 %s)" % Game.nations[me]["power_names"][1], "", "A claim gives a casus belli and makes that province cheaper in peace deals.")
 	_act("insult", "Insult (10 %s)" % Game.nations[me]["power_names"][1], "", "-50 opinion.")
+	_act("guarantee", "Revoke guarantee" if r.get("guarantee", false) else "Guarantee independence", "",
+		"You will join any war declared on them. They like you for it (+25 opinion).")
+	_act("warn", "Withdraw warning" if r.get("warned", false) else "Warn", "",
+		"If they declare war on any of your neighbours, you join the war against them. They won't like it (-20 opinion).")
+	_act("support_rebels", "Support rebels (%d sanctum)" % int(Game.dip.SUPPORT_REBELS_COST), "",
+		"Arm the malcontents in their three most restless provinces: +3 unrest and more rebel support for two years. -40 opinion. Once a year.")
+	var gs: Array = Game.dip.guarantors_of(tag)
+	if gs.size() > 0:
+		var gn: PackedStringArray = []
+		for t2 in gs:
+			gn.append(Game.nations[t2]["short"])
+		text("Guaranteed by: " + ", ".join(gn), 12, UI.INFO)
 	if o["overlord"] == me:
 		_act("integrate", "Integrate vassal (%d %s)" % [Game.dip.integrate_cost(tag), Game.nations[me]["power_names"][1]], "")
 	elif o["overlord"] == "":

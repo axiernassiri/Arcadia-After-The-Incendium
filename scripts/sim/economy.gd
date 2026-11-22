@@ -420,12 +420,16 @@ func breathes(tag: String, pid: int) -> String:
 	## "" if the nation's people can live in this province, otherwise why not.
 	var eth: String = g.nations[tag]["ethnicity"]
 	var air: String = g.peoples["ethnicities"].get(eth, {}).get("breathes", "ground")
-	var layer: String = g.provinces[pid]["layer"]
-	if air == "sky" and layer == "ground" and not g.nations[tag]["flags"].has("breathing_masks"):
-		return "Skyfallins can't breathe the mainland air without masks."
-	if air == "ground" and layer == "sky":
+	var here: String = g.mil.province_air(g.provinces[pid])
+	if air == here:
+		return ""
+	if air == "sky" and here == "ground":
+		return "" if g.mil.has_masks(tag) else "Skyfallins can't breathe the mainland air without masks."
+	if here == "sky":
 		return "Only Skyfallins can live on the skylands."
-	return ""
+	if here == "water":
+		return "Only Oceanians can live in the deep."
+	return "" if g.mil.has_masks(tag) else "Oceanians can't live on dry land without masks."
 
 
 func can_colonize(tag: String, pid: int) -> String:

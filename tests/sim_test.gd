@@ -42,7 +42,8 @@ func _initialize() -> void:
 
 	# ---------------------------------------------------------------- the world
 	check(game.provinces.size() >= 120, "%d provinces loaded" % game.provinces.size())
-	check(game.nations.size() == 13, "13 nations: %s" % [game.nations.keys()])
+	check(game.nations.size() == 17, "17 nations: %s" % [game.nations.keys()])
+	check(game.provinces.size() >= 300 and game.owned("AYM").size() > 0 and game.owned("SLK").size() > 0 and game.owned("OCE").size() > 0 and game.owned("SAT").size() == 8, "the whole world: %d provinces, with Combustion Ayam, SILK, Oceania and the Satian Union" % game.provinces.size())
 	var dev_of := {}
 	for id in game.provinces:
 		var o: String = game.provinces[id]["owner"]
@@ -81,7 +82,7 @@ func _initialize() -> void:
 	for t in ["SNT", "SAL", "DRF", "CRL", "CDH"]:
 		check(game.owned(t).size() > 0 and pop_group(t) == "Wild Boar", "boar nation %s (%s) holds %d provinces" % [t, game.court.gov_type(t), game.owned(t).size()])
 	check(game.court.gov_type("SNT") == "horde" and game.court.gov_type("BAY") == "republic" and game.court.gov_type("BLM") == "theocracy", "tribes are hordes, kingdoms, republics and a cult")
-	check(game.owned("BLM").size() >= 4 and game.provinces[game.capital_of("BLM")]["layer"] == "sky", "the Order of the Black Moon holds its sky islands")
+	check(game.owned("BLM").size() >= 4 and game.provinces[game.capital_of("BLM")]["layer"] == "sky", "VAGA holds its sky islands")
 	var forts := 0
 	for id in game.owned("MEN"):
 		if game.provinces[id]["buildings"].has("fort"):
@@ -337,7 +338,12 @@ func _initialize() -> void:
 	check(100.0 / game.mil.siege_rate([with_art], fort_pid) < siege_days, "artillery speeds sieges up")
 	game.armies.erase(besiegers["id"])
 	game.armies.erase(with_art["id"])
-	# zone of control
+	# zone of control (on a fresh map: earlier wars in this test may have taken Snowtusk's forts)
+	game.new_game("MEN")
+	for id in game.owned("SNT"):
+		if game.provinces[id]["buildings"].has("fort"):
+			fort_pid = id
+			break
 	var zw: Dictionary = game.dip.declare_war("MEN", "SNT")
 	check(game.mil.in_zoc("MEN", fort_pid), "a hostile fort's own province is in its zone of control")
 	var cache = {}
@@ -347,23 +353,36 @@ func _initialize() -> void:
 			zoc_count += 1
 	check(zoc_count > 0, "the fort controls %d neighbouring provinces" % zoc_count)
 	# find a move the zone forbids: from a controlled province to somewhere far from the return province
+	# (any enemy fort will do: sea lanes to nearby islets open a way around some of them, so if
+	# Snowtusk's forts don't show it, try another mainland neighbour's)
 	var blocked_move = false
 	var fort_ok = true
-	for z in game.provinces[fort_pid]["connections"]:
-		if not game.mil.in_zoc("MEN", z, cache) or game.mil.hostile_fort("MEN", z):
+	var zoc_forts: Array = game.owned("SNT").duplicate()
+	for zoc_enemy in ["CDH", "SYL", "EUR"]:
+		if game.dip.declare_war("MEN", zoc_enemy).is_empty():
 			continue
-		for r in game.provinces[z]["connections"]:
-			if game.mil.in_zoc("MEN", r, cache):
+		cache.clear()
+		zoc_forts.append_array(game.owned(zoc_enemy))
+	for fp in zoc_forts:
+		if not game.mil.hostile_fort("MEN", fp):
+			continue
+		for z in game.provinces[fp]["connections"]:
+			if not game.mil.in_zoc("MEN", z, cache) or game.mil.hostile_fort("MEN", z):
 				continue
-			if not game.mil.zoc_step_ok("MEN", z, fort_pid, r, r, cache):
-				fort_ok = false
-			for y in game.provinces[z]["connections"]:
-				if y != r and not game.mil.zoc_step_ok("MEN", z, y, r, r, cache):
-					blocked_move = true
+			for r in game.provinces[z]["connections"]:
+				if game.mil.in_zoc("MEN", r, cache):
+					continue
+				if fp == fort_pid and not game.mil.zoc_step_ok("MEN", z, fort_pid, r, r, cache):
+					fort_ok = false
+				for y in game.provinces[z]["connections"]:
+					if y != r and not game.mil.zoc_step_ok("MEN", z, y, r, r, cache):
+						blocked_move = true
 	check(fort_ok, "an army in a zone of control may always march on the fort")
 	check(blocked_move, "a zone of control forbids marching past the fort")
 	# EU4 stack wipes and overruns
 	var here: int = game.owned("SNT")[0]
+	for old_army in game.mil.armies_at(here):   # just the two armies below
+		game.armies.erase(old_army["id"])
 	var big: Dictionary = game.mil.spawn_army("MEN", here, 20, 0, 0)
 	var tiny: Dictionary = game.mil.spawn_army("SNT", here, 1, 0, 0)
 	days(1)
@@ -598,6 +617,174 @@ func _initialize() -> void:
 		game.day_index += game.EVENT_COOLDOWN_DAYS + 1
 		check(not game.event_on_cooldown(ev_any, "MEN"), "and can come back after five years")
 		game.day_index -= game.EVENT_COOLDOWN_DAYS + 1
+
+	# ---------------------------------------------------------------- the world loops east-west
+	var wr_w: float = float(game.map_meta["ground"]["width"])
+	var wr_east := -1
+	var wr_west := -1
+	for id in game.provinces:
+		var p: Dictionary = game.provinces[id]
+		if p["layer"] != "ground" or not p["coastal"] or "underwater" in p["flags"] or not game.sea.has_port(id):
+			continue
+		if wr_east < 0 or p["centre"].x > game.provinces[wr_east]["centre"].x:
+			wr_east = id
+		if wr_west < 0 or p["centre"].x < game.provinces[wr_west]["centre"].x:
+			wr_west = id
+	var wr_route: Dictionary = game.sea.route(wr_east, wr_west)
+	var wr_direct: float = game.provinces[wr_east]["centre"].x - game.provinces[wr_west]["centre"].x
+	check(not wr_route.is_empty() and float(wr_route["length"]) < wr_direct, "a fleet sails from %s to %s across the seam (%.0f px, not %.0f the long way)" % [
+		game.provinces[wr_east]["name"], game.provinces[wr_west]["name"], float(wr_route.get("length", 0.0)), wr_direct])
+	var wr_cross := false
+	for id in game.provinces:
+		for nb in game.provinces[id]["connections"]:
+			if absf(game.provinces[id]["centre"].x - game.provinces[nb]["centre"].x) > wr_w / 2.0:
+				wr_cross = true
+	check(wr_cross, "sea lanes cross the seam, so armies with transports can sail round the world")
+
+	# ---------------------------------------------------------------- oxygen masks for the waterfall
+	game.new_game("MEN")
+	var ox_ground: int = pid("Equator Isle")
+	var ox_sky: int = pid("Holy Waterfall of Eden")
+	var ox_men: Dictionary = game.mil.spawn_army("MEN", ox_ground, 2, 0, 0)
+	check(game.mil.find_path(ox_men, ox_sky).is_empty() and game.mil.layer_block_reason("MEN", ox_sky) != "", "without oxygen masks Menslosia can't climb into Skyfall")
+	game.nations["MEN"]["tech"][2] = 3
+	check(not game.mil.find_path(ox_men, ox_sky).is_empty(), "with military technology 3 it can")
+	var ox_sky_army: Dictionary = game.mil.spawn_army("SKY", ox_sky, 2, 0, 0)
+	game.nations["SKY"]["flags"].erase("breathing_masks")
+	game.nations["SKY"]["tech"][2] = 1
+	check(game.mil.find_path(ox_sky_army, ox_ground).is_empty(), "Skyfall can't descend to the mainland without masks")
+	game.nations["SKY"]["flags"]["breathing_masks"] = true
+	check(not game.mil.find_path(ox_sky_army, ox_ground).is_empty(), "its breathing-mask trials let it descend")
+	check(game.mil.sky_nation("BLM") and not game.mil.sky_nation("MEN"), "VAGA counts as a sky nation, Menslosia doesn't")
+
+	# ---------------------------------------------------------------- estates, prestige and Great Powers
+	game.new_game("MEN")
+	var es: Dictionary = game.standing.estates("MEN")
+	check(es.size() == 3, "Menslosia has %d estates" % es.size())
+	var es_loy: float = game.standing.loyalty("MEN", "guilds")
+	check(game.standing.grant("MEN", "guilds") and game.standing.loyalty("MEN", "guilds") > es_loy and game.standing.influence("MEN", "guilds") >= 50.0,
+		"granting the Guilds their charters raises their loyalty and influence")
+	check(game.mods.nat("MEN", "trade_efficiency") > 0.0, "and the crown gets the privilege's trade efficiency")
+	game.nations["MEN"]["power"][0] = 100
+	check(game.standing.revoke("MEN", "guilds") and int(game.nations["MEN"]["power"][0]) == 50, "revoking it costs 50 power")
+	game.standing.estates("MEN")["clans"]["loyalty"] = 70.0
+	var es_mp: int = int(game.nations["MEN"]["manpower"])
+	check(game.standing.call_support("MEN", "clans") and int(game.nations["MEN"]["manpower"]) > es_mp, "the War Clans raise extra manpower when called")
+	check(game.standing.can_call("MEN", "clans") != "", "and can't be called again for ten years")
+	game.standing.estates("MEN")["faithful"]["privilege"] = true
+	game.standing.estates("MEN")["faithful"]["loyalty"] = 10.0
+	var es_stab: int = int(game.nations["MEN"]["stability"])
+	for i in 6:
+		game.standing.monthly()
+	check(int(game.nations["MEN"]["stability"]) < es_stab, "an empowered, angry estate throws the realm into disorder")
+	var pr0: float = game.standing.prestige("MEN")
+	game.standing.add_prestige("MEN", 30.0)
+	check(game.standing.prestige("MEN") > pr0 and game.mods.nat("MEN", "land_morale") > 0.0, "prestige raises morale")
+	game.standing.update_ranking()
+	check(game.standing.is_great_power("MEN") and game.standing.rank("MEN") >= 1, "Menslosia is a Great Power (#%d)" % game.standing.rank("MEN"))
+
+	# ---------------------------------------------------------------- ages
+	game.new_game("MEN")
+	check(game.standing.current_age().get("id", "") == "ashes", "the game begins in the Age of Ashes")
+	var ag_sp: float = game.standing.splendor("MEN")
+	game.standing.monthly()
+	check(game.standing.splendor("MEN") > ag_sp, "splendor builds up every month")
+	game.nations["MEN"]["splendor"] = 1000.0
+	check(game.standing.take_ability("MEN", "rebuilders") and game.mods.nat("MEN", "build_cost_mod") < 0.0, "an age ability (Rebuilders) cuts construction cost")
+	check(game.standing.can_take_ability("MEN", "rebuilders") != "", "and can't be taken twice")
+	game.nations["MEN"]["battles_won"] = 10
+	game.standing.monthly()
+	check(game.standing.objective_done("MEN", "ashes", "victories"), "winning battles fulfils an age objective")
+	game.year = 4400
+	game.mods.invalidate()
+	check(game.standing.current_age().get("id", "") == "machines" and game.mods.nat("MEN", "build_cost_mod") >= 0.0, "a century on comes the Age of Machines, and the old ability lapses")
+	game.year = 4289
+
+	# ---------------------------------------------------------------- guarantees, warnings, rebels
+	game.new_game("MEN")
+	check(game.dip.act("guarantee", "MEN", "CDH") != "" and game.dip.guarantors_of("CDH").has("MEN"), "Menslosia guarantees Cinderhoof")
+	var gw: Dictionary = game.dip.declare_war("SNT", "CDH")
+	check(not gw.is_empty() and game.dip.war_side(gw, "MEN") == "defenders", "and joins when Snowtusk attacks it")
+	game.new_game("MEN")
+	game.dip.act("warn", "MEN", "SNT")
+	var ww: Dictionary = {}
+	for t in game.nations:
+		if t != "MEN" and t != "SNT" and game.dip.borders("MEN", t) and game.dip.can_declare("SNT", t) == "" and not game.dip.allied("MEN", t):
+			ww = game.dip.declare_war("SNT", t)
+			if not ww.is_empty():
+				break
+	check(not ww.is_empty() and game.dip.war_side(ww, "MEN") == "defenders", "a warned Snowtusk attacking Menslosia's neighbour finds Menslosia against it")
+	game.nations["MEN"]["treasury"] = 200.0
+	var rb_before := 0.0
+	for pid in game.owned("SYL"):
+		rb_before += float(game.provinces[pid]["rebel_progress"])
+	game.dip.act("support_rebels", "MEN", "SYL")
+	var rb_after := 0.0
+	for pid in game.owned("SYL"):
+		rb_after += float(game.provinces[pid]["rebel_progress"])
+	check(rb_after > rb_before and game.dip.can_act("support_rebels", "MEN", "SYL") != "", "supporting Sylvania's rebels stirs them up (once a year)")
+
+	# ---------------------------------------------------------------- loading a save from before the world map
+	game.new_game("MEN")
+	var mg_state: Dictionary = game._state()
+	mg_state["version"] = 2
+	for t in ["AYM", "SLK", "OCE"]:
+		mg_state["nations"].erase(t)
+	for aid in mg_state["armies"].keys():
+		if mg_state["armies"][aid]["owner"] in ["AYM", "SLK", "OCE"]:
+			mg_state["armies"].erase(aid)
+	for fid in mg_state["fleets"].keys():
+		if mg_state["fleets"][fid]["owner"] in ["AYM", "SLK", "OCE"]:
+			mg_state["fleets"].erase(fid)
+	for pid in mg_state["provinces"].keys():
+		if int(pid) > 140:
+			mg_state["provinces"].erase(pid)
+	var mg_mentos: int = pid("Mentos")
+	mg_state["provinces"][mg_mentos]["centre"] = Vector2(1, 1)   # the old map's coordinates were different
+	DirAccess.make_dir_recursive_absolute(game.SAVE_DIR)
+	var mg_f := FileAccess.open("%s/_migration_test.save" % game.SAVE_DIR, FileAccess.WRITE)
+	mg_f.store_var({"name": "_migration_test"})
+	mg_f.store_var(mg_state)
+	mg_f.close()
+	var mg_err: String = game.load_game("_migration_test")
+	game.delete_save("_migration_test")
+	check(mg_err == "", "a version 2 save loads (%s)" % (mg_err if mg_err != "" else "ok"))
+	# a save from before the Satian Union existed: its islands were unclaimed then
+	game.new_game("MEN")
+	var sat_state: Dictionary = game._state().duplicate(true)
+	sat_state["nations"].erase("SAT")
+	for aid in sat_state["armies"].keys():
+		if sat_state["armies"][aid]["owner"] == "SAT":
+			sat_state["armies"].erase(aid)
+	for fid in sat_state["fleets"].keys():
+		if sat_state["fleets"][fid]["owner"] == "SAT":
+			sat_state["fleets"].erase(fid)
+	for spid in sat_state["provinces"]:
+		if sat_state["provinces"][spid]["owner"] == "SAT":
+			sat_state["provinces"][spid]["owner"] = ""
+			sat_state["provinces"][spid]["controller"] = ""
+			sat_state["provinces"][spid]["cores"] = {}
+	var sat_f := FileAccess.open("%s/_satian_test.save" % game.SAVE_DIR, FileAccess.WRITE)
+	sat_f.store_var({"name": "_satian_test"})
+	sat_f.store_var(sat_state)
+	sat_f.close()
+	var sat_err: String = game.load_game("_satian_test")
+	game.delete_save("_satian_test")
+	check(sat_err == "" and game.nations.has("SAT") and game.owned("SAT").size() == 8 and game.mil.armies_of("SAT").size() > 0,
+		"a save from before the Satian Union gains it, with its islands and army")
+	check(game.nations.has("AYM") and game.owned("SLK").size() > 0 and game.mil.armies_of("OCE").size() > 0, "and gains the new world's nations, with their armies")
+	check(game.provinces.size() >= 300 and game.provinces[mg_mentos]["centre"] != Vector2(1, 1), "and the current map's provinces and positions")
+
+	# ---------------------------------------------------------------- sound
+	var snd = root.get_node_or_null("Sound")
+	check(snd != null, "the Sound autoload is there")
+	if snd != null:
+		for nm in ["click", "open", "event", "war", "battle", "doom", "music_peace", "music_war"]:
+			check(load("res://assets/audio/%s.wav" % nm) is AudioStreamWAV, "sound %s loads" % nm)
+		snd.music("war")
+		var mp: AudioStreamPlayer = snd._music[snd._current]
+		check(mp.stream != null and mp.stream.loop_mode == AudioStreamWAV.LOOP_FORWARD, "the war music plays on a loop")
+		snd.play("click")
 
 	# ---------------------------------------------------------------- a long AI game
 	game.new_game("SKY")

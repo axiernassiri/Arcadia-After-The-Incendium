@@ -64,6 +64,8 @@ func _show_next() -> void:
 		if fx != "":
 			_box.add_child(UI.label("      " + fx, 12, UI.TEXT_DIM, WIDTH - 40))
 	if not visible:
+		UI.sfx("doom" if doom else ("war" if war else "event"))
+	if not visible:
 		modulate.a = 0.0
 		create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT).tween_property(self, "modulate:a", 1.0, 0.3)
 	visible = true

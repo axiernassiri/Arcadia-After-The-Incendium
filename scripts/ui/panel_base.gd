@@ -58,6 +58,7 @@ func _on_visibility() -> void:
 	if not visible:
 		return
 	mark_dirty()
+	UI.sfx("open", -8.0)
 	# a short fade and settle, so windows don't pop in
 	if _tween:
 		_tween.kill()

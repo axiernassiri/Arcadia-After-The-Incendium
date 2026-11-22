@@ -19,7 +19,10 @@ To run the automated test on Windows, put the console build of Godot in your Dow
 
 **The map** is traced from the Holy Empire of Menslosia lore map: Mentos (the capital) in the north, Sylvania and the Bay of Pigs in the west, Midrea and the Space Observatory in the middle, the Eurome farms in the south, the Western Archipelago mines, the Southwest Island, the Southern Isles, and a lone islet on the equator. 119 mainland provinces plus 21 Skyfall islands (five of them the Black Moon Isles), joined only by the Holy Waterfall of Eden, which now reaches the ground at Equator Isle. Midrea's White Haze starts hidden.
 
-**Nations.** 13, all playable, all starting at 0 stability. The Holy Empire of Menslosia is still the strongest (215 development) but no longer swallows the continent: after the Incendium, Sylvania, the Merchant Republic of the Bay, the Euromean Grain League, the Duchy of Ryefield and the Midrean Technocracy broke away. Skyfall (115) rules the sky, develops 25% cheaper with +10% tax and production while it holds no land on the Arcadian continent, and sits on the richest trade node (goods worth 75% more there), opposed by the Order of the Black Moon, cultists on their own island chain who worship the Doomsday Portal (few troops, little money, high morale). The boars are now different kinds of nation: the Snowtusk and Cinderhoof hordes, the Driftboar Kingdom, the Saltjaw League (a republic) and the Coralsnout Tribe.
+**The world.** The mainland sits in the east of a whole world traced from the world map (`map/source/world_map.png`) by `tools/build_world.py`: Terra Incognito (an unknown continent in the west, in five regions), the northern and southern ice, scattered isles, the ring-isle of Combustion Ayam, Pelari, the Satian Islands, and Oceania under the Deep Blue. 328 provinces in all; most of the new world starts unexplored and uncolonised. The map **loops east-west**: pan past the eastern ocean and you come round to Terra Incognito. Fleets sail across the seam, and two ocean crossings let armies with transports do the same.
+
+**Nations.** 17, all playable, all starting at 0 stability. Four are new on the far side of the world: **Combustion Ayam** (an inventive chicken technocracy on its burning ring-isle), **SILK** (merchant houses of the Yellow Road across Terra Incognito), **Oceania** (a kingdom under the sea) and the **Satian Union** (a modest island republic on the Satian Islands, next to Pelari and Combustion Ayam).
+ The Holy Empire of Menslosia is still the strongest (215 development) but no longer swallows the continent: after the Incendium, Sylvania, the Merchant Republic of the Bay, the Euromean Grain League, the Duchy of Ryefield and the Midrean Technocracy broke away. Skyfall (115) rules the sky, develops 25% cheaper with +10% tax and production while it holds no land on the Arcadian continent, and sits on the richest trade node (goods worth 75% more there), opposed by VAGA, cultists on their own island chain who worship the Doomsday Portal (few troops, little money, high morale). The boars are now different kinds of nation: the Snowtusk and Cinderhoof hordes, the Driftboar Kingdom, the Saltjaw League (a republic) and the Coralsnout Tribe.
 
 **Systems** (EU4 equivalents in brackets):
 - **Economy in sanctum**: tax, production, trade and mine income; army, navy, fort, administration, advisor, colony, missionary and loan-interest expenses; maintenance sliders; loans and bankruptcy. Money is tight and everything costs about twice what it used to. Forts are scattered through every nation (the capital's is free, the rest cost upkeep).
@@ -35,8 +38,8 @@ To run the automated test on Windows, put the console build of Godot in your Dow
 - **Development** costs more in rough terrain (mountains, tundra, volcanic, anomalous) and less on farmland.
 - **Buildings** (construction): marketplace, temple, courthouse, workshop, granary, university, dock, trade depot, shipyard, harbour, barracks, fort. They cost sanctum, take months, and need tech and free building slots.
 - **Technology**: administrative, diplomatic and military tracks of 25 levels spread 20 years apart over a ~500-year game (4289 to 4789). Base cost 600; each year ahead of time adds 10% and gives a 10-year 'ahead of time' penalty.
-- **Ideas**: national ideas for Menslosia, Skyfall, the Black Moon, the pig states, hordes and tribes, plus 15 idea groups drawn from the lore (Green Power, Sty Administration, Lotus Devotion, Haze Expeditions, Waterfall Commerce, Incendium Lessons, Anomaly Studies, Unity Doctrine, Barrier Lore, Wings of Eden...). The first slot comes with the first tech level.
-- **Government reforms**: slow to earn (reform progress is half what it was, and tiers cost 75 each); tiers of reforms per government (Holy Pig Monarchy, Edenic Monarchy, pig and boar kingdoms, merchant and farmers' republics, the Technocracy, boar hordes and tribes, the Black Moon cult), paid with reform progress.
+- **Ideas**: national ideas for Menslosia, Skyfall, VAGA, the pig states, hordes and tribes, plus 15 idea groups drawn from the lore (Green Power, Sty Administration, Lotus Devotion, Haze Expeditions, Waterfall Commerce, Incendium Lessons, Anomaly Studies, Unity Doctrine, Barrier Lore, Wings of Eden...). The first slot comes with the first tech level.
+- **Government reforms**: slow to earn (reform progress is half what it was, and tiers cost 75 each); tiers of reforms per government (Holy Pig Monarchy, Edenic Monarchy, pig and boar kingdoms, merchant and farmers' republics, the Technocracy, boar hordes and tribes, the VAGA cult), paid with reform progress.
 - **Modifiers**: every bonus is a named modifier, summed from government, reforms, tech, ideas, religion, buildings, stability and timed event modifiers. The Court panel lists them all.
 - **Rulers and heirs**: rulers age and die, heirs are born and inherit, regency councils step in. Napoleon is ageless.
 - **Cultures, religions and ethnicities**: 10 cultures in 3 culture groups, 3 faiths, 5 peoples (Pig, Pigman, Boar, Human, Angel). Unaccepted cultures, other faiths and foreign peoples cause unrest. You can accept cultures, convert culture and send missionaries.
@@ -52,6 +55,15 @@ To run the automated test on Windows, put the console build of Godot in your Dow
 - **War overview and battle reports**: every war has an overview (from the Outliner or the Diplomacy panel) with the war score split into battles and occupation, both sides with their strength and war exhaustion, occupied provinces and a list of battles. After each land battle you fight, a report shows the terrain, generals, losses and who is left standing; it closes by itself.
 - **Ledger (J)**: every nation in a sortable table (provinces, development, income, treasury, regiments, ships, tech, stability, opinion of you), and graphs of development, income, regiments and provinces since 4289 (one point each 1 January).
 - **March preview and search**: with an army selected, hovering a province draws the route with the days it takes and how many provinces on the way can't feed it. Ctrl+F finds any explored province or nation.
+- **Oxygen masks**: Skyfall and VAGA live above the clouds and Oceania under the sea. Anyone else needs oxygen masks (Military technology 3, Field Guns) to march up the Holy Waterfall or down into the deep, and the sky and sea nations need them to come down to (or up onto) dry land. Skyfall's own breathing-mask trials also count.
+- **The Eschaton**: a year before the end (4788) a red eye, the warning of J82wC4, flashes over the screen, and the map grows ever more corrupted until the Eschaton itself in 4789.
+- **Estates** (Government window): the Faithful, the Guilds and the War Clans, each with loyalty and influence. Loyal estates help, disloyal ones hurt; grant or revoke their privilege, or call on them once every ten years. An empowered, angry estate throws the realm into disorder.
+- **Prestige and Great Powers**: prestige rises with won battles, peace deals and missions and fades 5% a year; it adds morale and diplomatic reputation. Nations are ranked by development, prestige and army (see the Ledger and the Court); the top five are Great Powers.
+- **Ages (K)**: five ages of a century, from the Age of Ashes after the Incendium through the Age of Machines, the Age of the Grid and the Age of Stars to the Age of the Last Light before the Eschaton (`data/ages.json`). Each has five objectives (+200 splendor each, once) and four abilities that splendor buys (600 each) for the rest of the age. Every nation earns 2 splendor a month, 3 as a Great Power; the AI spends it too.
+- **More diplomacy**: guarantee a weaker nation's independence (you join any war declared on it; Great Powers do this for friendly neighbours), warn a nation (attack one of your neighbours and you join against it), and support rebels in a rival (60 sanctum: +3 unrest and more rebel support in its three most restless provinces for two years).
+- **Sound**: calm ambient music in peacetime and a darker march at war (they crossfade), and effects for clicks, windows, events, wars, battles and the Black Moon. Everything is synthesised by `tools/make_audio.py` (no samples); master, music and effect volumes are in Settings.
+- **Old saves** are migrated when they load: the map's geometry always comes from the current map files, and saves from before the world map gain the new lands and nations.
+- **Supply-limit map mode**: how many regiments each province feeds; with an army selected, where it would starve.
 - **War and diplomacy**: casus belli (Tribal Conquest, claims, rivals, the Great War), war declarations, calls to arms (allies only join when you call them; they weigh opinion, the enemy and their own situation and ask for sanctum), war score from battles and occupations, and peace deals (provinces, a share of a year's income, vassalage, annexation, white peace, concessions). The AI is harder to talk into peace, and once you occupy every province of the enemy you can enforce peace. Also opinions with reasons, alliances, royal marriages, military access, rivals, fabricated claims, vassals and integration, and truces.
 - **The Black Moon**: on 29 February of every leap year the Doomsday Barrier falls. It only touches nations with land or armies in Skyfall: Menslosia is untouched unless it has landed there. The next day time reverses and the damage is undone. Sometimes entities from beyond come through the portal and stay: an army that raids Skyfall and can seize the portal itself.
 - **Missions**: Menslosia has 25 in five columns (rebuilding the heartland; Midrea and the Technocracy; breaking the boar hordes; the seas and islands; claiming then reclaiming the breakaway states). Skyfall has 20 in four (the Barrier and the portal; Eden's economy; the Black Moon; the world below the waterfall). The Black Moon, the pig states and the boar nations have their own trees.
@@ -80,7 +92,7 @@ The UI follows one art direction, *After the Incendium*: charred slate panels wi
 | Space | Pause or resume (the pips by the date show the speed) |
 | 1 to 5 | Game speed |
 | Tab | Switch between the mainland and Skyfall |
-| C, G, E, B, T, R, I, L, O, P, M, J | Court, Government, Economy, Production, Trade, Technology, Ideas, Military, Diplomacy (O), Peoples, Missions, Ledger (J) |
+| C, G, E, B, T, R, I, L, O, P, M, J, K | Court, Government, Economy, Production, Trade, Technology, Ideas, Military, Diplomacy (O), Peoples, Missions, Ledger (J), Ages (K) |
 | Shift+1 … Shift+0, Shift+-, Shift+= | Map modes, in the order of the map-mode buttons |
 | Ctrl+F | Find a province or nation |
 | F1 | How to play |
@@ -121,6 +133,8 @@ scripts/
 shaders/map.gdshader  Province colouring, borders, occupation stripes, selection, the Doomsday tint
 tests/sim_test.gd     Headless test of every system
 tools/                trace_lore_map.py (lore map to masks), generate_map.py (masks to provinces)
+                      build_world.py (the world map around the mainland: new lands, provinces, sea lanes)
+                      make_audio.py (music and sound effects), ui_snapshots.py (screenshot regression test)
 run_tests.bat/.ps1    Windows: run the test by double-clicking
 ```
 
@@ -161,6 +175,8 @@ xvfb-run godot --path . --rendering-driver opengl3 -- --nation=MEN --soak=40
 ```
 
 The other automation flags are listed at the top of `scripts/main.gd`.
+
+**UI screenshot regression test** (Windows or any desktop, needs Python with Pillow and numpy): `python tools/ui_snapshots.py` plays 18 scenarios (menus, every main window, Skyfall, the world seam, the supply map...), shrinks each screenshot and compares it with `tests/ui_snapshots/baseline/`. More than 1.5% of pixels changing fails the scenario and leaves a red diff image in `tests/ui_snapshots/out/`. After an intended UI change, `python tools/ui_snapshots.py --update` (or `... --update economy` for one) accepts the new look.
 
 ## Lore notes and placeholders
 

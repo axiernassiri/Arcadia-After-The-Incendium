@@ -7,6 +7,9 @@
     "Eurome":              {"downstream": ["Midrea", "Bay of Pigs"], "text": "Grain and wine from the farms."},
     "Western Archipelago": {"downstream": ["Bay of Pigs"], "text": "Ore, gems and salt from the mines."},
     "Southern Sea":        {"downstream": ["Eurome"], "text": "Pearls and fish from the Southern Isles."},
+    "Terra Incognito":     {"downstream": ["Western Archipelago"], "text": "The Yellow Road: silk, spices and timber from the unknown continent, shipped east across the ocean."},
+    "Ayam Sea":            {"downstream": ["Southern Sea"], "text": "Combustion Ayam's engines and glass, and the pearls of Pelari and the Satian Islands."},
+    "Deep Blue":           {"downstream": ["Terra Incognito"], "text": "Pearls and crystals from the sunken cities of Oceania."},
     "Skyfall":             {"downstream": ["Arcadian Sea"], "value_mult": 1.75, "base_value": 1.0, "text": "Core Energy and holy relics, down the Holy Waterfall. The richest node in Arcadia for its size: goods here are worth 75% more, and the Waterfall Exchange adds 1 sanctum of trade every month."}
   },
   "home_bonus": 0.10,

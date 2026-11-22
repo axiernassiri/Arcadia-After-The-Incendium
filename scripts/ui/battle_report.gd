@@ -33,6 +33,7 @@ func _process(delta: float) -> void:
 
 
 func show_report(r: Dictionary) -> void:
+	UI.sfx("battle")
 	_pid = int(r["pid"])
 	var won: bool = Game.player_tag in r["winners"]
 	UI.clear(_box)

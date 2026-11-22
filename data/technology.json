@@ -461,7 +461,9 @@
     "level": 3,
     "year": 4329,
     "name": "Field Guns",
-    "units": "Line Infantry"
+    "units": "Line Infantry",
+    "oxygen_masks": true,
+    "text": "Oxygen masks: our armies can climb the Holy Waterfall into Skyfall (or, for sky nations, descend to the mainland)."
    },
    {
     "level": 4,

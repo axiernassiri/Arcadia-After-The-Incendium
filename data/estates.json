@@ -1,0 +1,29 @@
+{
+ "_note": "Estates, like EU4. Every nation has these three. loyalty (0-100) drifts toward 50, plus 15 while the estate holds its privilege. influence is 20, plus 35 with the privilege. Loyal estates (60+) give their bonus, disloyal ones (under 30) their malus. An estate with 50+ influence and under 30 loyalty disrupts the realm (stability -1, at most once every two years). Granting the privilege gives the crown its modifiers too; revoking it costs 50 of the first power type. Calling on an estate (once every ten years) gives its support and costs 15 loyalty.",
+ "estates": {
+  "faithful": {
+   "name": "The Faithful", "icon": "sun",
+   "text": "Priests, temples and the devout.",
+   "bonus": {"stability_cost_mod": -0.10, "unrest": -1},
+   "malus": {"unrest": 1.5},
+   "privilege": {"name": "Temple Lands", "modifiers": {"legitimacy_gain": 0.5, "tolerance_own": 1}},
+   "support": {"name": "Call for devotion", "text": "+1 stability.", "stability": 1}
+  },
+  "guilds": {
+   "name": "The Guilds", "icon": "coins",
+   "text": "Merchants, craftsmen and moneylenders.",
+   "bonus": {"production_mod": 0.10, "trade_efficiency": 0.05},
+   "malus": {"tax_mod": -0.10},
+   "privilege": {"name": "Guild Charters", "modifiers": {"trade_efficiency": 0.10, "build_cost_mod": -0.05}},
+   "support": {"name": "Ask for a loan-free levy", "text": "Six months of income at once.", "income_months": 6}
+  },
+  "clans": {
+   "name": "The War Clans", "icon": "swords",
+   "text": "Old fighting families, generals and veterans.",
+   "bonus": {"manpower_mod": 0.10, "land_morale": 0.05},
+   "malus": {"land_morale": -0.10},
+   "privilege": {"name": "Martial Rights", "modifiers": {"land_force_limit": 3, "leader_shock": 1}},
+   "support": {"name": "Raise the war bands", "text": "+25% of your maximum manpower.", "manpower_share": 0.25}
+  }
+ }
+}

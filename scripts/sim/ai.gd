@@ -271,6 +271,10 @@ func _diplomacy(tag: String, war: bool) -> void:
 				and (g.dip.rel(tag, other)["alliance"] or g.dip.borders(tag, other)) and not g.dip.at_war(tag, other) \
 				and not g.dip.rel(tag, other)["improving"] and g.rng.randf() < 0.2:
 			g.dip.act("improve", tag, other)
+		# Great Powers protect weaker friends next door (EU4's guarantees)
+		if g.rng.randf() < 0.01 and g.standing.is_great_power(tag) and not g.dip.rel(tag, other).get("guarantee", false) \
+				and g.dip.opinion(tag, other) >= 40.0 and g.dip.can_act("guarantee", tag, other) == "" and g.dip.borders(tag, other):
+			g.dip.act("guarantee", tag, other)
 	if war or tribe:
 		return
 	if int(n["stability"]) < 0 or float(n["treasury"]) < 0.0 or float(n["war_exhaustion"]) > 3.0:
@@ -291,6 +295,9 @@ func _diplomacy(tag: String, war: bool) -> void:
 		var enemy_str = g.mil.nation_strength(other)
 		for al in g.dip.allies_of(other):
 			enemy_str += g.mil.nation_strength(al)
+		for gt in g.dip.guarantors_of(other):   # a guarantee makes a weak target much less tempting
+			if gt != tag:
+				enemy_str += g.mil.nation_strength(gt)
 		var ratio = g.mil.nation_strength(tag) / maxf(0.5, enemy_str)
 		if ratio > best_ratio:
 			best_ratio = ratio

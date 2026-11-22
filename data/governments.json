@@ -159,7 +159,7 @@
       ]
     },
     "black_moon_cult": {
-      "name": "Cult of the Black Moon", "type": "theocracy", "rank": "Order", "text": "Priests of the Doomsday Portal. When the prophet dies, the order chooses another.",
+      "name": "The VAGA Cult", "type": "theocracy", "rank": "Order", "text": "Priests of the Doomsday Portal. When the prophet dies, the order chooses another.",
       "modifiers": {"land_morale": 0.20, "doomsday_resistance": 1.0, "manpower_mod": -0.20, "tax_mod": -0.15},
       "tiers": [
         {"name": "The Prophet", "reforms": [
@@ -169,6 +169,24 @@
         {"name": "The Coming Night", "reforms": [
           {"id": "zealot_hosts", "name": "Zealot Hosts", "modifiers": {"land_morale": 0.15, "manpower_mod": 0.15}, "text": "Every believer takes up arms."},
           {"id": "eclipse_rites", "name": "Eclipse Rites", "modifiers": {"production_mod": 0.15, "tax_mod": 0.10}, "text": "Offerings at every eclipse."}]}
+      ]
+    },
+    "abyssal_throne": {
+      "name": "Abyssal Throne", "type": "monarchy", "rank": "Kingdom", "text": "Oceania's tide-kings rule from a throne on the sea floor, long-lived and patient.",
+      "modifiers": {"fort_defense": 0.10, "legitimacy_gain": 0.5},
+      "tiers": [
+        {"name": "The Tide Court", "reforms": [
+          {"id": "tide_council", "name": "Tide Council", "modifiers": {"unrest": -1}, "text": "The great families of the reefs advise the throne."},
+          {"id": "pressure_guard", "name": "Pressure Guard", "modifiers": {"land_morale": 0.10}, "text": "Soldiers bred to the crushing deep."},
+          {"id": "pearl_tithe", "name": "Pearl Tithe", "modifiers": {"tax_mod": 0.10}, "text": "Every pearl bed owes the throne its share."}]},
+        {"name": "The Sunken Realm", "reforms": [
+          {"id": "mask_foundries", "name": "Mask Foundries", "modifiers": {"production_mod": 0.10}, "text": "Water-masks so Oceanians can walk the shore."},
+          {"id": "current_roads", "name": "Current Roads", "modifiers": {"reinforce_speed": 0.15, "trade_power_mod": 0.05}, "text": "Warm currents carry armies and trade alike."},
+          {"id": "deep_archive", "name": "The Deep Archive", "modifiers": {"tech_cost_mod": -0.05}, "text": "Memory older than the Incendium."}]},
+        {"name": "Rise of the Deep", "reforms": [
+          {"id": "tidal_absolutism", "name": "Tidal Absolutism", "modifiers": {"monthly_mil": 1}, "text": "The tide obeys the throne."},
+          {"id": "reef_parliament", "name": "Reef Parliament", "modifiers": {"unrest": -1, "tax_mod": 0.05}, "text": "Every reef sends a voice to the throne."},
+          {"id": "leviathan_lords", "name": "Leviathan Lords", "modifiers": {"leader_shock": 1, "leader_fire": 1}, "text": "Generals who ride the great beasts."}]}
       ]
     }
   }

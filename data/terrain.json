@@ -14,6 +14,8 @@
     "anomalous": {"name": "Anomalous", "dev_cost": 0.50,  "move": 1.5, "defence": 1, "supply": 3, "build_slots": 1},
     "fortress":  {"name": "Fortress Isle", "dev_cost": 0.30, "move": 1.0, "defence": 2, "supply": 6, "build_slots": 3},
     "skyland":   {"name": "Skyland",   "dev_cost": 0.10,  "move": 1.0, "defence": 1, "supply": 6, "build_slots": 3},
-    "wasteland": {"name": "Wasteland", "dev_cost": 0.50,  "move": 1.5, "defence": 0, "supply": 2, "build_slots": 1}
+    "wasteland": {"name": "Wasteland", "dev_cost": 0.50,  "move": 1.5, "defence": 0, "supply": 2, "build_slots": 1},
+    "glacier":   {"name": "Glacier",   "dev_cost": 0.80,  "move": 2.0, "defence": 1, "supply": 1, "build_slots": 1},
+    "abyss":     {"name": "Abyss",     "dev_cost": 0.30,  "move": 1.2, "defence": 2, "supply": 5, "build_slots": 2}
   }
 }

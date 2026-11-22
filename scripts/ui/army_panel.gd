@@ -64,7 +64,7 @@ func _build_army() -> void:
 	var owner_col: Color = Game.owner_colour(tag)
 	add(UI.row([UI.swatch(owner_col), UI.label(Game.nation_name(tag), 14, UI.GOLD)]))
 	if tag == "ENT":
-		text("Things from beyond the Doomsday Portal. They answer to no one, fight anyone in Skyfall except the Order of the Black Moon, and slowly fade away (2% of their number a month).", 12, UI.DOOM)
+		text("Things from beyond the Doomsday Portal. They answer to no one, fight anyone in Skyfall except VAGA, and slowly fade away (2% of their number a month).", 12, UI.DOOM)
 	if tag == "REB":
 		var rb: Dictionary = a["rebel"]
 		text("%s rising against %s from %s." % [Game.peoples.get("rebels", {}).get(rb.get("type", ""), {}).get("name", "Rebels"),

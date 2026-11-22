@@ -177,6 +177,16 @@ func _build(tag: String) -> void:
 	var st: int = int(n["stability"])
 	if st != 0:
 		src.append(["Stability %+d" % st, {"tax_mod": 0.05 * st, "unrest": -1.0 * st}])
+	# prestige, Great Power status and the estates (scripts/sim/standing.gd)
+	var pr: float = float(n.get("prestige", 0.0))
+	if absf(pr) >= 1.0:
+		src.append(["Prestige %+d" % int(pr), {"land_morale": pr / 1000.0, "diplomatic_reputation": pr / 50.0}])
+	if g.standing != null and g.standing.ranking.has(tag) and g.standing.is_great_power(tag):
+		src.append(["Great Power (#%d)" % g.standing.rank(tag), {"diplomatic_reputation": 1.0, "land_force_limit": 2}])
+	if g.standing != null and not g.estate_data.is_empty():
+		src.append_array(g.standing.estate_modifier_sources(tag))
+	if g.standing != null and not g.age_data.is_empty():
+		src.append_array(g.standing.age_modifier_sources(tag))
 	# timed and event modifiers
 	for m in n["modifiers"]:
 		src.append([m.get("name", m.get("id", "Modifier")), m.get("mods", {})])

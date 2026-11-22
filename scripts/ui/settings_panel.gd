@@ -64,6 +64,10 @@ func refresh() -> void:
 	scale_row.add_child(s)
 	_box.add_child(scale_row)
 
+	_box.add_child(UI.heading("Sound", 15))
+	_box.add_child(_volume("Master volume", "master_volume"))
+	_box.add_child(_volume("Music", "music_volume"))
+	_box.add_child(_volume("Effects", "sfx_volume"))
 	_box.add_child(UI.heading("Game", 15))
 	_box.add_child(_check("Pause on important news (wars, peace, bankruptcy)", "pause_on_news", false))
 	_box.add_child(_check("Pan the map when the mouse touches the screen edge", "edge_scroll", false))
@@ -97,3 +101,25 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if visible and event.pressed and event.keycode == KEY_ESCAPE:
 		close()
 		get_viewport().set_input_as_handled()
+
+
+func _volume(title: String, key: String) -> HBoxContainer:
+	## A 0-100% slider for one of the Sound autoload's buses; changes are heard at once.
+	var row := HBoxContainer.new()
+	var lbl = UI.label("%s  %d%%" % [title, int(round(float(Settings.get_value(key)) * 100))], 14)
+	lbl.custom_minimum_size.x = 170
+	row.add_child(lbl)
+	var s := HSlider.new()
+	s.min_value = 0.0
+	s.max_value = 1.0
+	s.step = 0.05
+	s.value = float(Settings.get_value(key))
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.value_changed.connect(func(v):
+		lbl.text = "%s  %d%%" % [title, int(round(v * 100))]
+		Settings.set_value(key, v)
+		var snd = get_tree().root.get_node_or_null("Sound")
+		if snd != null:
+			snd.apply_volume())
+	row.add_child(s)
+	return row

@@ -124,6 +124,64 @@ func army_leader(a: Dictionary) -> Dictionary:
 
 # ---------------------------------------------------------------- strength and costs
 
+func sky_nation(tag: String) -> bool:
+	## Skyfall and VAGA: nations whose capital is above the clouds.
+	var cap: int = g.capital_of(tag)
+	return cap >= 0 and g.provinces[cap]["layer"] == "sky"
+
+
+func has_masks(tag: String) -> bool:
+	## Oxygen masks come from a technology (any level marked "oxygen_masks"), or from Skyfall's own
+	## breathing-mask trials (the breathing_masks flag).
+	if not g.nations.has(tag):
+		return false
+	var n: Dictionary = g.nations[tag]
+	if n["flags"].has("breathing_masks"):
+		return true
+	for i in g.TRACKS.size():
+		for t in g.tech_data.get(g.TRACKS[i], []):
+			if t.get("oxygen_masks", false) and int(t["level"]) <= int(n["tech"][i]):
+				return true
+	return false
+
+
+func mask_tech_name() -> String:
+	for i in g.TRACKS.size():
+		for t in g.tech_data.get(g.TRACKS[i], []):
+			if t.get("oxygen_masks", false):
+				return "%s technology %d (%s)" % [["Administrative", "Diplomatic", "Military"][i], int(t["level"]), t.get("name", "")]
+	return "oxygen masks"
+
+
+static func province_air(p: Dictionary) -> String:
+	## What you breathe there: "sky" above the clouds, "water" in Oceania's sunken provinces, else "ground".
+	if p["layer"] == "sky":
+		return "sky"
+	return "water" if "underwater" in p["flags"] else "ground"
+
+
+func home_air(tag: String) -> String:
+	## Skyfall and VAGA live above the clouds, Oceania under the sea, everyone else on the ground.
+	if sky_nation(tag):
+		return "sky"
+	var eth: String = g.nations[tag].get("ethnicity", "")
+	return "water" if g.peoples.get("ethnicities", {}).get(eth, {}).get("breathes", "ground") == "water" else "ground"
+
+
+func layer_block_reason(tag: String, to: int) -> String:
+	## Why `tag`'s armies can't go to province `to` for lack of oxygen masks, or "" if they can:
+	## up the Holy Waterfall into Skyfall, down from it, into Oceania's deep, or out of it onto land.
+	if special(tag) or not g.nations.has(tag) or has_masks(tag):
+		return ""
+	var air: String = province_air(g.provinces[to])
+	if air == home_air(tag):
+		return ""   # home air
+	match air:
+		"sky": return "Needs oxygen masks to breathe in Skyfall: %s." % mask_tech_name()
+		"water": return "Needs oxygen masks to go down into the deep: %s." % mask_tech_name()
+	return "Needs oxygen masks to breathe the open air: %s." % mask_tech_name()
+
+
 static func special(tag: String) -> bool:
 	## Rebels and the entities from the Doomsday Portal are not nations.
 	return tag == "REB" or tag == "ENT"
@@ -565,6 +623,8 @@ func edge_days(a: Dictionary, from: int, to: int) -> float:
 		return -1.0
 	if not can_enter(tag, to):
 		return -1.0
+	if layer_block_reason(tag, to) != "":
+		return -1.0   # can't breathe there without oxygen masks (Skyfall, the deep, or dry land for Oceania)
 	var terr = float(g.terrain_data.get(g.provinces[to]["terrain"], {}).get("move", 1.0))
 	var base = 8.0 * terr
 	match via:
@@ -579,6 +639,8 @@ func edge_days(a: Dictionary, from: int, to: int) -> float:
 		"waterfall":
 			if tag == "ENT":
 				return -1.0   # the things from the portal stay in Skyfall
+			if layer_block_reason(tag, to) != "":
+				return -1.0   # no oxygen masks yet
 			return 14.0
 		"air":
 			var flies: bool = tag == "ENT" or (not special(tag) and g.nations[tag]["ethnicity"] in ["Human", "Angel"])
@@ -1137,6 +1199,12 @@ func _end_battle(b: Dictionary, winners: Array, losers: Array) -> void:
 		", ".join(names_l), int(lw), int(ll), ", wiping them out" if wiped else ""]
 	if g.player_tag in win_tags or g.player_tag in lose_tags:
 		g.post(text)
+	# prestige for the victors, shame for the beaten (more for a bigger battle)
+	var glory := minf(6.0, 1.0 + ll / 2500.0)
+	for t in win_tags:
+		g.standing.add_prestige(t, glory)
+	for t in lose_tags:
+		g.standing.add_prestige(t, -glory * 0.6)
 	# the war overview lists each war's battles
 	report["wiped"] = wiped
 	if not win_tags.is_empty() and not lose_tags.is_empty():

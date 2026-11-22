@@ -3,8 +3,8 @@ extends "res://scripts/ui/panel_base.gd"
 ## have grown since the Incendium (one point each 1 January, from Game.ledger_history).
 
 const COLS := [
-	["Nation", "name"], ["Prov.", "provinces"], ["Dev.", "dev"], ["Income", "income"], ["Treasury", "treasury"],
-	["Regiments", "regs"], ["Ships", "ships"], ["Tech", "tech"], ["Stab.", "stability"], ["Opinion", "opinion"]]
+	["Rank", "rank"], ["Nation", "name"], ["Prov.", "provinces"], ["Dev.", "dev"], ["Income", "income"], ["Treasury", "treasury"],
+	["Regiments", "regs"], ["Ships", "ships"], ["Tech", "tech"], ["Stab.", "stability"], ["Prestige", "prestige"], ["Opinion", "opinion"]]
 const METRICS := [["Development", 1], ["Monthly income", 2], ["Regiments", 3], ["Provinces", 4]]
 
 var mode = "table"
@@ -45,7 +45,7 @@ func _rows() -> Array:
 		out.append({"tag": t, "name": n["short"], "provinces": Game.owned(t).size(), "dev": Game.nation_dev(t),
 			"income": float(n.get("last_income", 0.0)), "treasury": float(n["treasury"]), "regs": Game.mil.regiment_count(t),
 			"ships": Game.mil.ship_count(t), "tech": tech, "stability": int(n["stability"]),
-			"opinion": 999.0 if t == me else Game.dip.opinion(t, me)})
+			"opinion": 999.0 if t == me else Game.dip.opinion(t, me), "rank": -Game.standing.rank(t), "prestige": Game.standing.prestige(t)})
 	var key: String = sort_key
 	out.sort_custom(func(a, b):
 		if a[key] is String:
@@ -75,11 +75,16 @@ func _table() -> void:
 	for r in _rows():
 		var mine: bool = r["tag"] == Game.player_tag
 		var col: Color = UI.GOLD if mine else UI.TEXT
+		var gp: bool = Game.standing.is_great_power(r["tag"])
+		var rk = UI.label("#%d%s" % [-int(r["rank"]), " GP" if gp else ""], 12, UI.GOLD if gp else UI.TEXT_DIM)
+		rk.tooltip_text = "Great Power: the top %d nations by development, prestige and army." % Game.standing.GREAT_POWERS if gp else ""
+		rk.mouse_filter = Control.MOUSE_FILTER_PASS
+		grid.add_child(rk)
 		var nm = UI.row([UI.swatch(Game.owner_colour(r["tag"]), Vector2(10, 12)), UI.label(r["name"], 13, col)], 6)
 		nm.custom_minimum_size.x = 130
 		grid.add_child(nm)
 		for v in [str(r["provinces"]), str(r["dev"]), "%.1f" % r["income"], str(int(r["treasury"])), str(r["regs"]),
-				str(r["ships"]), str(r["tech"]), "%+d" % r["stability"], "—" if mine else "%+d" % int(r["opinion"])]:
+				str(r["ships"]), str(r["tech"]), "%+d" % r["stability"], "%+d" % int(r["prestige"]), "—" if mine else "%+d" % int(r["opinion"])]:
 			var l = UI.label(v, 13, col)
 			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			grid.add_child(l)

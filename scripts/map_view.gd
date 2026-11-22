@@ -14,6 +14,7 @@ signal layer_changed(layer: String)
 const Tokens = preload("res://ui/style/tokens.gd")
 const Icons = preload("res://ui/style/icons.gd")
 const LAYERS := ["ground", "sky"]
+const WRAP_LAYERS := ["ground"]   # the world loops east-west
 const PALETTE_WIDTH := 1024
 const MODES := ["political", "development", "goods", "trade", "region", "culture", "religion", "ethnicity", "autonomy",
 	"unrest", "diplomacy", "terrain"]
@@ -22,7 +23,8 @@ const TERRAIN_COLOURS := {
 	"hills": Color(0.62, 0.55, 0.40), "mountains": Color(0.50, 0.47, 0.46), "tundra": Color(0.88, 0.92, 0.95),
 	"drylands": Color(0.80, 0.62, 0.40), "jungle": Color(0.20, 0.45, 0.25), "coast": Color(0.75, 0.75, 0.55),
 	"volcanic": Color(0.40, 0.28, 0.26), "anomalous": Color(0.62, 0.45, 0.75), "fortress": Color(0.55, 0.55, 0.58),
-	"skyland": Color(0.92, 0.90, 0.80), "wasteland": Color(0.55, 0.50, 0.45),
+	"skyland": Color(0.92, 0.90, 0.80), "wasteland": Color(0.55, 0.50, 0.45), "glacier": Color(0.93, 0.95, 0.98),
+	"abyss": Color(0.10, 0.30, 0.45),
 }
 const NODE_COLOURS := [Color("#e0a050"), Color("#50a0e0"), Color("#a060d0"), Color("#60c080"), Color("#d06070"),
 	Color("#c0c050"), Color("#70d0d0"), Color("#e080c0")]
@@ -40,9 +42,11 @@ var _preview_pts: Array = []    # map-space points: the army's position, then ea
 var _preview_text := ""
 var _preview_ok := true
 var selected_fleet := -1
-var map_size := Vector2(2000, 1092)
+var map_size := Vector2(2000, 1092)   # the current layer's size (see layer_sizes)
+var layer_sizes := {}
 var camera_zoom := 1.0
 var show_all := false        # nation picker: no fog
+var ignore_mouse := false     # set for screenshot runs, so the cursor doesn't highlight provinces
 var selected_node := ""      # trade map mode: the node being inspected
 
 var _sprites := {}          # layer -> Sprite2D
@@ -53,6 +57,7 @@ var _overlay: CanvasLayer
 var _labels: Node2D
 var _units: Node2D
 var _xf := Transform2D()
+var _cam_x := 0.0          # the camera centre in map pixels (which copy of the looping world to draw at)
 var _screen := Rect2()
 var _region_colours := {}
 var _node_colours := {}
@@ -71,6 +76,7 @@ func _ready() -> void:
 		if _index_images[l].is_compressed():
 			_index_images[l].decompress()
 		map_size = Vector2(_index_images[l].get_width(), _index_images[l].get_height())
+		layer_sizes[l] = map_size   # the world (ground) is far bigger than the sky layer
 		var s := Sprite2D.new()
 		s.centered = false
 		s.texture = terrain_tex
@@ -84,7 +90,16 @@ func _ready() -> void:
 		s.material = mat
 		s.visible = (l == layer)
 		add_child(s)
+		if l in WRAP_LAYERS:   # one copy each side, so the world loops seamlessly
+			for side in [-1, 1]:
+				var c := Sprite2D.new()
+				c.centered = false
+				c.texture = terrain_tex
+				c.material = mat
+				c.position = Vector2(side * map_size.x, 0)
+				s.add_child(c)
 		_sprites[l] = s
+	map_size = layer_sizes.get(layer, map_size)
 	_overlay = CanvasLayer.new()
 	_overlay.layer = 1
 	add_child(_overlay)
@@ -161,6 +176,7 @@ func _process(_delta: float) -> void:
 	if xf != _xf or scr != _screen:
 		_xf = xf
 		_screen = scr
+		_cam_x = (xf.affine_inverse() * (scr.size / 2.0)).x
 		_labels.queue_redraw()
 		_units.queue_redraw()
 
@@ -222,6 +238,18 @@ func province_colour(id: int) -> Color:
 			return _diplo_colour(owner)
 		"terrain":
 			return TERRAIN_COLOURS.get(p["terrain"], Color.GRAY)
+		"supply":
+			# EU4's supply-limit map mode: how many regiments the land feeds before attrition, red to green;
+			# with an army selected, provinces it would starve in turn red
+			var sl: float = Game.mil.supply_limit(id)
+			if selected_army >= 0 and Game.armies.has(selected_army):
+				var regs := 0
+				for aid in group if group.size() > 0 else [selected_army]:
+					if Game.armies.has(aid):
+						regs += Game.armies[aid]["regiments"].size()
+				return Color(0.3, 0.75, 0.35) if float(regs) <= sl else Color(0.85, 0.25, 0.2).lerp(Color(0.5, 0.05, 0.05), clampf((regs - sl) / 10.0, 0.0, 1.0))
+			return Color(0.85, 0.25, 0.2).lerp(Color(0.95, 0.85, 0.3), clampf((sl - 2.0) / 6.0, 0.0, 1.0)).lerp(
+				Color(0.25, 0.75, 0.35), clampf((sl - 8.0) / 8.0, 0.0, 1.0))
 	if owner == "":
 		return Game.unowned_colour
 	return Game.nations[owner]["colour"]
@@ -295,6 +323,7 @@ func set_layer(l: String) -> void:
 	if l == layer:
 		return
 	layer = l
+	map_size = layer_sizes.get(l, map_size)
 	for k in _sprites:
 		_sprites[k].visible = (k == l)
 	_set_clear_colour()
@@ -319,6 +348,8 @@ func select_army(id: int) -> void:
 	if id < 0:
 		_preview_text = ""
 	_units.queue_redraw()
+	if mode == "supply":
+		_queue_refresh()
 
 
 func set_group(ids: Array) -> void:
@@ -326,6 +357,8 @@ func set_group(ids: Array) -> void:
 	selected_army = int(ids[0]) if ids.size() > 0 else -1
 	selected_fleet = -1
 	_units.queue_redraw()
+	if mode == "supply":
+		_queue_refresh()
 
 
 func select_fleet(id: int) -> void:
@@ -333,6 +366,44 @@ func select_fleet(id: int) -> void:
 	selected_army = -1
 	group = []
 	_units.queue_redraw()
+
+
+func wrap_width() -> float:
+	## The ground (the whole world) loops east-west; the sky layer doesn't.
+	return map_size.x if layer in WRAP_LAYERS else 0.0
+
+
+func _near(p: Vector2) -> Vector2:
+	## The copy of a map point nearest the camera (the world repeats every wrap_width() pixels).
+	var w := wrap_width()
+	if w <= 0.0:
+		return p
+	return Vector2(_cam_x + wrapf(p.x - _cam_x, -w / 2.0, w / 2.0), p.y)
+
+
+func _unwrap(prev: Vector2, p: Vector2) -> Vector2:
+	## `p` moved to the copy nearest `prev`, so a line between them takes the short way across the seam.
+	var w := wrap_width()
+	if w <= 0.0:
+		return p
+	return Vector2(prev.x + wrapf(p.x - prev.x, -w / 2.0, w / 2.0), p.y)
+
+
+func _sp_chain(points: Array) -> PackedVector2Array:
+	## Screen points for a path: the first at the copy nearest the camera, each next one next to the last.
+	var out := PackedVector2Array()
+	var prev := Vector2.INF
+	for p in points:
+		var q: Vector2 = _near(p) if prev == Vector2.INF else _unwrap(prev, p)
+		out.append((_xf * q).round())
+		prev = q
+	return out
+
+
+func set_corruption(amount: float) -> void:
+	## How corrupted the map looks as the Eschaton nears (0 = normal, 1 = the end).
+	for k in _sprites:
+		_sprites[k].material.set_shader_parameter("corruption", clampf(amount, 0.0, 1.0))
 
 
 func _on_doomsday(active: bool) -> void:
@@ -345,6 +416,8 @@ func _on_doomsday(active: bool) -> void:
 
 func province_at(global_pos: Vector2) -> int:
 	var local := to_local(global_pos)
+	if wrap_width() > 0.0:
+		local.x = fposmod(local.x, wrap_width())
 	var img: Image = _index_images[layer]
 	var x := int(local.x)
 	var y := int(local.y)
@@ -401,6 +474,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if _box_input(event):
 		return
+	if event is InputEventMouseMotion and ignore_mouse:
+		return   # screenshot runs: the real cursor must not hover anything
 	if event is InputEventMouseMotion:
 		if _ui_has_mouse():
 			if hovered != 0:
@@ -445,7 +520,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # glyphs and then magnified them, which is why names and army boxes looked soft when zoomed in.
 
 func _sp(p: Vector2) -> Vector2:
-	return (_xf * p).round()
+	return (_xf * _near(p)).round()
 
 
 func _on_screen(p: Vector2, margin: float = 80.0) -> bool:
@@ -634,15 +709,15 @@ func _draw_trade(z: float) -> void:
 				if layer == "sky":
 					var top := _province_with_flag("waterfall_top")
 					if top >= 0:
-						_arrow(_sp(from), _sp(Game.provinces[top]["centre"]), w, col)
+						_arrow(_sp(from), (_xf * _unwrap(_near(from), Game.provinces[top]["centre"])).round(), w, col)
 						_text(_labels, Tokens.font("medium"), _sp(Game.provinces[top]["centre"]) + Vector2(0, 26), "down to %s" % dn, 12, Tokens.GOLD_HI)
 				else:
 					var base := _province_with_flag("waterfall_base")
 					if base >= 0:
-						_arrow(_sp(Game.provinces[base]["centre"]), _sp(to), w, col)
+						_arrow(_sp(Game.provinces[base]["centre"]), (_xf * _unwrap(_near(Game.provinces[base]["centre"]), to)).round(), w, col)
 				continue
 			if layer == "ground":
-				_arrow(_sp(from), _sp(to), w, col)
+				_arrow(_sp(from), (_xf * _unwrap(_near(from), to)).round(), w, col)
 	# seats
 	for k in Game.trade.nodes:
 		var c0 := _seat(k)
@@ -710,6 +785,7 @@ func _unit_pos(loc: int, path: Array, progress: float, hop: float) -> Vector2:
 	if path.is_empty() or hop <= 0.0:
 		return a
 	var b: Vector2 = Game.provinces[int(path[0])]["centre"]
+	b = _unwrap(a, b)   # across the seam, walk the short way
 	if Game.provinces[int(path[0])]["layer"] != Game.provinces[loc]["layer"]:
 		return a
 	return a.lerp(b, clampf(progress / hop, 0.0, 1.0))
@@ -809,10 +885,11 @@ func _draw_units() -> void:
 		var icon_name := "flame" if owner == "REB" else ("portal" if owner == "ENT" else ("horseshoe" if cav * 2 > a["regiments"].size() else "helmet"))
 		var sel: bool = int(id) == selected_army or group.has(int(id))
 		if sel and not a["path"].is_empty():
-			var pts := PackedVector2Array([sbase])
+			var chain: Array = [base]
 			for step in a["path"]:
 				if Game.provinces[int(step)]["layer"] == layer:
-					pts.append(_sp(Game.provinces[int(step)]["centre"]))
+					chain.append(Game.provinces[int(step)]["centre"])
+			var pts := _sp_chain(chain)
 			_path_line(_units, pts, Color(1, 0.97, 0.88))
 		var hostile := owner in ["REB", "ENT"] or (Game.player_tag != "" and Game.dip.at_war(Game.player_tag, owner))
 		var rect := _counter(_units, pos, icon_name, "%.1fk" % (men / 1000.0), col, _army_morale(a), sel, hostile)
@@ -842,9 +919,8 @@ func _draw_units() -> void:
 			continue
 		var sel: bool = int(id) == selected_fleet
 		if sel and route_pts.size() > 1:
-			var pts := PackedVector2Array()
+			var fchain: Array = [base]
 			var frac := float(f["progress"]) / maxf(float(f["hop_days"]), 1.0)
-			pts.append(sbase)
 			# the rest of the route from where the fleet is now
 			var total := 0.0
 			for i in range(1, route_pts.size()):
@@ -853,8 +929,8 @@ func _draw_units() -> void:
 			for i in range(1, route_pts.size()):
 				run += route_pts[i - 1].distance_to(route_pts[i])
 				if run / maxf(total, 1.0) > frac:
-					pts.append(_sp(route_pts[i]))
-			_path_line(_units, pts, Color(0.65, 0.88, 1.0))
+					fchain.append(route_pts[i])
+			_path_line(_units, _sp_chain(fchain), Color(0.65, 0.88, 1.0))
 		var hostile := Game.player_tag != "" and Game.dip.at_war(Game.player_tag, f["owner"])
 		var rect := _counter(_units, pos, "ship", str(f["ships"].size()), Game.nations[f["owner"]]["colour"], -1.0, sel, hostile)
 		_hits.append({"rect": rect.grow(3), "kind": "fleet", "id": int(id)})
@@ -863,9 +939,7 @@ func _draw_units() -> void:
 		var col := Color(1, 0.97, 0.88, 0.8) if _preview_ok else Color(1, 0.4, 0.35, 0.8)
 		var end := Vector2.ZERO
 		if _preview_pts.size() >= 2:
-			var pts := PackedVector2Array()
-			for p in _preview_pts:
-				pts.append(_sp(p))
+			var pts := _sp_chain(_preview_pts)
 			_units.draw_polyline(pts, Color(0, 0, 0, 0.35), 4.0, true)
 			_units.draw_polyline(pts, col, 2.0, true)
 			end = pts[pts.size() - 1]

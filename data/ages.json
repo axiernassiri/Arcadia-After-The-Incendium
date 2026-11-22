@@ -1,0 +1,94 @@
+{
+ "_note": "Ages, like EU4: the 500 years from the Incendium to the Eschaton in five ages of a century. Every month a nation gains 2 splendor (3 as a Great Power); each objective of the current age it fulfils is worth 200 more, once. Abilities cost 600 splendor and last until the age ends. Objectives use the same conditions as events and missions.",
+ "monthly_splendor": 2,
+ "great_power_bonus": 1,
+ "objective_splendor": 200,
+ "ability_cost": 600,
+ "ages": [
+  {
+   "id": "ashes", "name": "Age of Ashes", "start": 4289, "end": 4389,
+   "text": "The Incendium is over. The empire is broken, the land scarred. Whoever rebuilds first will rule what comes next.",
+   "objectives": [
+    {"id": "rebuild", "name": "Rebuild", "conditions": [{"type": "buildings_at_least", "at_least": 6}]},
+    {"id": "first_reform", "name": "A New Order", "conditions": [{"type": "reforms_at_least", "at_least": 1}]},
+    {"id": "victories", "name": "Victories in the Ruins", "conditions": [{"type": "battles_won_at_least", "at_least": 5}]},
+    {"id": "growth", "name": "Grow Again", "conditions": [{"type": "provinces_owned_at_least", "at_least": 12}]},
+    {"id": "solvent", "name": "Out of Debt", "conditions": [{"type": "no_loans"}, {"type": "treasury_at_least", "at_least": 300}]}
+   ],
+   "abilities": [
+    {"id": "rebuilders", "name": "Rebuilders", "modifiers": {"build_cost_mod": -0.15, "build_time_mod": -0.15}},
+    {"id": "scavenger_armies", "name": "Scavenger Armies", "modifiers": {"land_maintenance_mod": -0.15}},
+    {"id": "ash_cores", "name": "Claim the Ashes", "modifiers": {"core_cost_mod": -0.20}},
+    {"id": "survivors", "name": "Survivors' Grit", "modifiers": {"manpower_mod": 0.15, "unrest": -1}}
+   ]
+  },
+  {
+   "id": "machines", "name": "Age of Machines", "start": 4389, "end": 4489,
+   "text": "Steam, steel and the first great engines. Factories rise where the fires burned.",
+   "objectives": [
+    {"id": "industry", "name": "Industry", "conditions": [{"type": "buildings_at_least", "at_least": 20}]},
+    {"id": "engineers", "name": "Engineers", "conditions": [{"type": "tech_at_least", "track": "adm", "at_least": 7}]},
+    {"id": "trade_empire", "name": "Merchant Fleets", "conditions": [{"type": "trade_income_at_least", "at_least": 8}]},
+    {"id": "great_army", "name": "Iron Columns", "conditions": [{"type": "regiments_at_least", "at_least": 30}]},
+    {"id": "ideas", "name": "New Ideas", "conditions": [{"type": "ideas_at_least", "at_least": 10}]}
+   ],
+   "abilities": [
+    {"id": "assembly_lines", "name": "Assembly Lines", "modifiers": {"production_mod": 0.15}},
+    {"id": "rail_roads", "name": "Railroads", "modifiers": {"reinforce_speed": 0.25, "land_maintenance_mod": -0.10}},
+    {"id": "steam_navies", "name": "Steam Navies", "modifiers": {"naval_morale": 0.15, "naval_force_limit": 4}},
+    {"id": "patent_office", "name": "Patent Office", "modifiers": {"tech_cost_mod": -0.10}}
+   ]
+  },
+  {
+   "id": "grid", "name": "Age of the Grid", "start": 4489, "end": 4589,
+   "text": "Green power, thinking engines and a world wired together. The road to a Type One civilization.",
+   "objectives": [
+    {"id": "type_one", "name": "Type One Ambition", "conditions": [{"type": "total_dev_at_least", "at_least": 400}]},
+    {"id": "research", "name": "The Thinking Engines", "conditions": [{"type": "tech_at_least", "track": "dip", "at_least": 12}]},
+    {"id": "world_market", "name": "World Market", "conditions": [{"type": "trade_income_at_least", "at_least": 20}]},
+    {"id": "stable_realm", "name": "A Stable Realm", "conditions": [{"type": "stability_at_least", "at_least": 2}]},
+    {"id": "commonwealth", "name": "Commonwealth", "conditions": [{"type": "subjects_at_least", "at_least": 2}]}
+   ],
+   "abilities": [
+    {"id": "green_power", "name": "Green Power", "modifiers": {"dev_cost_mod": -0.20}},
+    {"id": "global_net", "name": "Global Net", "modifiers": {"trade_efficiency": 0.15, "diplomatic_reputation": 1}},
+    {"id": "clean_cities", "name": "Clean Cities", "modifiers": {"tax_mod": 0.15, "unrest": -1}},
+    {"id": "drone_wars", "name": "Drone Wars", "modifiers": {"discipline": 0.05}}
+   ]
+  },
+  {
+   "id": "stars", "name": "Age of Stars", "start": 4589, "end": 4689,
+   "text": "The Arcadian space age: orbital stations, the first starships, and a Type Two dream.",
+   "objectives": [
+    {"id": "space_program", "name": "The Space Program", "conditions": [{"type": "tech_at_least", "track": "adm", "at_least": 20}]},
+    {"id": "orbit", "name": "Orbital Strikes", "conditions": [{"type": "tech_at_least", "track": "mil", "at_least": 20}]},
+    {"id": "type_two", "name": "Type Two Dream", "conditions": [{"type": "total_dev_at_least", "at_least": 700}]},
+    {"id": "starport", "name": "Starports", "conditions": [{"type": "buildings_at_least", "at_least": 60}]},
+    {"id": "hegemon", "name": "Hegemon", "conditions": [{"type": "provinces_owned_at_least", "at_least": 60}]}
+   ],
+   "abilities": [
+    {"id": "orbital_yards", "name": "Orbital Yards", "modifiers": {"production_mod": 0.20}},
+    {"id": "star_charts", "name": "Star Charts", "modifiers": {"idea_cost_mod": -0.15}},
+    {"id": "void_marines", "name": "Void Marines", "modifiers": {"land_morale": 0.15}},
+    {"id": "wormhole_research", "name": "Wormhole Research", "modifiers": {"tech_cost_mod": -0.15}}
+   ]
+  },
+  {
+   "id": "last_light", "name": "Age of the Last Light", "start": 4689, "end": 4790,
+   "text": "The stars are going out. Something watches from J82wC4. The universe nears its end.",
+   "objectives": [
+    {"id": "endure", "name": "Endure", "conditions": [{"type": "stability_at_least", "at_least": 1}, {"type": "no_loans"}]},
+    {"id": "last_legion", "name": "The Last Legion", "conditions": [{"type": "regiments_at_least", "at_least": 60}]},
+    {"id": "all_knowledge", "name": "All Knowledge", "conditions": [{"type": "tech_at_least", "track": "dip", "at_least": 24}]},
+    {"id": "legacy", "name": "A Legacy", "conditions": [{"type": "total_dev_at_least", "at_least": 1000}]},
+    {"id": "escape", "name": "Plan the Escape", "conditions": [{"type": "ideas_at_least", "at_least": 30}]}
+   ],
+   "abilities": [
+    {"id": "last_stand", "name": "Last Stand", "modifiers": {"fort_defense": 0.30, "land_morale": 0.10}},
+    {"id": "final_harvest", "name": "Final Harvest", "modifiers": {"tax_mod": 0.20, "production_mod": 0.10}},
+    {"id": "gateway_studies", "name": "Gateway Studies", "modifiers": {"tech_cost_mod": -0.20}},
+    {"id": "defiance", "name": "Defiance of the Void", "modifiers": {"unrest": -2, "stability_cost_mod": -0.25}}
+   ]
+  }
+ ]
+}
