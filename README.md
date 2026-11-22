@@ -17,16 +17,16 @@ To run the automated test on Windows, put the console build of Godot in your Dow
 
 Like EU4, one player hosts and the others join with a code. From the main menu choose **Multiplayer**:
 
-- **Host a game** opens a lobby and shows a join code such as `C1A0-148E-BF8TY`. Share it.
-- **Join a game**: type the host's code and press Join.
+- **Host a game** opens a lobby and shows a join code such as `Dv3D8p6Qs1-1CZb8NRdda.0SVG`. Press Copy and send it to your friends.
+- **Join a game**: paste the host's code and press Join.
 
-In the lobby everyone picks a nation and can chat; the host presses **Start the game**. The host's computer runs the world (and controls nothing else: any player can pause or change the speed), and each player's actions are sent to it and checked. Someone can also join a game that is already running and take over a nation from the AI; if a player leaves, the AI takes their nation back. In a multiplayer game events don't pause the world: they wait in your popup and take their first option after two months. Offers between two players (alliances, marriages, military access, vassalage, peace terms) arrive as events for the other player to accept or refuse. Press **Enter** in game to chat.
+No one has to change anything on their router. The game uses a free public matchmaker (a [noray](https://github.com/foxssake/noray) server) that introduces the two computers: it first tries to connect them directly through both routers, and if a router won't allow that, it relays the game's traffic itself. The lobby also shows a shorter home-network code, which skips the matchmaker for computers on the same network. If the matchmaker can't be reached, hosting still works for the home network. To use your own noray server instead, set `match_server` (for example `myserver.example.com:8890`) in `user://settings.cfg` under `[game]`.
 
-**Trying it on one computer in Godot:** open **Debug > Customize Run Instances...**, tick *Enable Multiple Instances*, set it to 2 and press F5. Host in one window and join with its code in the other. (A second host on the same computer uses the next port automatically.)
+In the lobby everyone picks a nation and can chat; the host presses **Start the game**. The host's computer runs the world, any player can pause or change the speed, and each player's actions are sent to the host and checked. Someone can also join a game that is already running and take over a nation from the AI; if a player leaves, the AI takes their nation back. In a multiplayer game events don't pause the world: they wait in your popup and take their first option after two months. Offers between two players (alliances, marriages, military access, vassalage, peace terms) arrive as events for the other player to accept or refuse. Press **Enter** in game to chat.
 
-**Over a network:** the code holds the host's home-network address, so computers on the same network join directly. For friends over the internet, the host types their public address (search "what is my IP") into the lobby to get an **internet code**, and forwards **UDP port 7351** on their router to their computer. (A VPN-style network such as Tailscale or ZeroTier also works, with no port forwarding: type its address into the same box instead.)
+**Trying it on one computer in Godot:** open **Debug > Customize Run Instances...**, tick *Enable Multiple Instances*, set it to 2 and press F5. Host in one window and join with its code in the other.
 
-Test runs from the command line: `-- --host --mp-nation=MEN --mp-start=2` in one copy and `-- --join=auto --mp-nation=SYL --mp-test` in another (see `_mp_automation` in `scripts/main.gd`).
+Test runs from the command line: `-- --host --mp-nation=MEN --mp-start=2` in one copy and `-- --join=auto --mp-nation=SYL --mp-test` in another (`--join=auto-lan` for the home-network code, `--mp-debug` on the host prints each update's size) (see `_mp_automation` in `scripts/main.gd`).
 
 ## What's in it
 

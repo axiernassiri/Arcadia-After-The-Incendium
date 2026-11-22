@@ -969,8 +969,9 @@ func _mp_automation() -> void:
 	## army, and print what it sees.
 	var nm: String = String(args.get("mp-name", "Host" if args.has("host") else "Guest"))
 	_open_lobby()
+	Net.debug = args.has("mp-debug")
 	if args.has("host"):
-		var err := Net.host(nm)
+		var err: String = await Net.host(nm)
 		if err != "":
 			print("[mp-test] host failed: ", err)
 			return
@@ -994,16 +995,22 @@ func _mp_automation() -> void:
 					print("[mp-test] host sent an event to ", t)
 		return
 	var code := String(args["join"])
-	if code == "auto":
+	if code == "auto" or code == "auto-lan":   # the internet or home-network code this computer last hosted
 		var f := FileAccess.open(Net.CODE_FILE, FileAccess.READ)
-		code = f.get_as_text().strip_edges() if f != null else ""
+		var codes: PackedStringArray = f.get_as_text().strip_edges().split("\n") if f != null else PackedStringArray()
+		code = codes[0] if code == "auto" or codes.size() < 2 else codes[1]
 	if args.has("mp-badcode"):
-		var c := Net.read_code(code)
-		code = Net.make_code(c["ip"], c["port"], (int(c["key"]) + 1) % 65536)
+		var ic := Net.read_internet_code(code)
+		if not ic.is_empty():
+			code = Net.make_internet_code(ic["oid"], (int(ic["key"]) + 1) % 65536)
+		else:
+			var c := Net.read_code(code)
+			code = Net.make_code(c["ip"], c["port"], (int(c["key"]) + 1) % 65536)
 	var err2 := Net.join(code, nm)
 	if err2 != "":
 		print("[mp-test] join failed: ", err2)
 		return
+	Net.status_changed.connect(func(t): if t != "": print("[mp-test] status: ", t))
 	while Net.players.is_empty() and Net.is_client():
 		await get_tree().create_timer(0.1).timeout
 	if not Net.is_client():

@@ -18,7 +18,7 @@ var _chat_lines: Array = []
 var _status := ""
 var _connecting := false
 var _list_h := 360.0
-var _internet_code := ""
+var _net_status := ""
 
 
 func _ready() -> void:
@@ -33,11 +33,11 @@ func _ready() -> void:
 	Net.join_failed.connect(func(why): _connecting = false; _status = why; if visible: refresh())
 	Net.chat_received.connect(_on_chat)
 	Net.ended.connect(_on_ended)
+	Net.status_changed.connect(func(t): _net_status = t; if visible: refresh())
 
 
 func _on_ended(reason: String) -> void:
 	_chat_lines.clear()
-	_internet_code = ""
 	if reason != "":
 		_status = reason
 	if visible:
@@ -92,15 +92,15 @@ func _build_start() -> void:
 	_box.add_child(host_b)
 	_box.add_child(UI.heading("Join a game"))
 	_code_edit = LineEdit.new()
-	_code_edit.placeholder_text = "ABCD-EFGH-JKMNP"
-	_code_edit.max_length = 20
-	_code_edit.custom_minimum_size.x = 260
+	_code_edit.placeholder_text = "paste the host's code"
+	_code_edit.max_length = 80
+	_code_edit.custom_minimum_size.x = 300
 	_code_edit.text_submitted.connect(func(_t): _join())
 	var join_b = UI.button("Join" if not _connecting else "Connecting...", _join)
 	join_b.disabled = _connecting
 	join_b.custom_minimum_size = Vector2(120, 34)
 	_box.add_child(UI.row([_fixed(UI.label("Join code", 14), 120), _code_edit, join_b]))
-	_box.add_child(UI.label("Testing on one computer? In the Godot editor, Debug > Customize Run Instances lets you run two copies: host in one, join with the code in the other.", 12, UI.TEXT_DIM, WIDTH))
+	_box.add_child(UI.label("No router setup needed. Testing on one computer? In the Godot editor, Debug > Customize Run Instances runs two copies: host in one, join with the code in the other.", 12, UI.TEXT_DIM, WIDTH))
 	if _status != "":
 		_box.add_child(UI.label(_status, 13, UI.BAD, WIDTH))
 	var buttons = HBoxContainer.new()
@@ -120,7 +120,8 @@ func _save_name() -> void:
 
 func _host() -> void:
 	_save_name()
-	var err := Net.host(_player_name())
+	_status = ""
+	var err: String = await Net.host(_player_name())
 	_status = err
 	refresh()
 
@@ -139,35 +140,21 @@ func _build_lobby() -> void:
 	var host := Net.is_host()
 	var mine: String = Net.me().get("tag", "")
 	_box.add_child(UI.heading("Multiplayer Lobby" + ("  -  game in progress" if Net.in_game else ""), 24))
-	if Net.is_client() and Net.players.is_empty():
-		_box.add_child(UI.label("Connecting to the host...", 14, UI.TEXT_DIM))
+	if Net.players.is_empty():
+		_box.add_child(UI.label(_net_status if _net_status != "" else "Connecting to the host...", 14, UI.TEXT_DIM, WIDTH))
 		_box.add_child(UI.row([UI.button("Cancel", func(): Net.leave(); refresh())]))
 		return
-	# the join code
-	var code_l = UI.heading(Net.code, 26)
-	code_l.add_theme_color_override("font_color", UI.GOLD)
-	var copy = UI.button("Copy", func(): DisplayServer.clipboard_set(Net.code); _status = "Code copied."; refresh())
+	# the join codes
+	var code_l = UI.label(Net.code, 20, UI.GOLD)
+	var copy = UI.button("Copy", func(): DisplayServer.clipboard_set(Net.code); _status = "Code copied: paste it to your friends."; refresh())
 	_box.add_child(UI.row([UI.label("Join code:", 14), code_l, copy], 12))
 	if host:
-		_box.add_child(UI.label("Share this code. Copies of the game on this computer or your home network join directly.", 12, UI.TEXT_DIM, WIDTH))
-		if _internet_code == "":
-			var ip_edit = LineEdit.new()
-			ip_edit.placeholder_text = "your public address, e.g. 203.0.113.7"
-			ip_edit.custom_minimum_size.x = 250
-			var make = UI.button("Make internet code", func():
-				var ip: String = ip_edit.text.strip_edges()
-				if ip.is_valid_ip_address() and ip.count(".") == 3:
-					_internet_code = Net.code_for(ip)
-					_status = ""
-				else:
-					_status = "That isn't an address like 203.0.113.7."
-				refresh())
-			_box.add_child(UI.row([UI.label("Over the internet:", 12, UI.TEXT_DIM), ip_edit, make]))
+		if Net.internet_error == "":
+			_box.add_child(UI.label("Share this code: it works from anywhere, with no router setup. (The game's matchmaker introduces the computers, and passes the game along itself if a router won't let them talk directly.)", 12, UI.TEXT_DIM, WIDTH))
+			var lan = UI.button("Copy", func(): DisplayServer.clipboard_set(Net.lan_code); _status = "Home-network code copied."; refresh())
+			_box.add_child(UI.row([UI.label("Same computer or home network (faster):  " + Net.lan_code, 12, UI.TEXT_DIM), lan]))
 		else:
-			var ic = UI.label(_internet_code, 16, UI.GOLD)
-			_box.add_child(UI.row([UI.label("Internet code:", 12, UI.TEXT_DIM), ic,
-				UI.button("Copy", func(): DisplayServer.clipboard_set(_internet_code); _status = "Internet code copied."; refresh())]))
-		_box.add_child(UI.label("Internet players also need UDP port %d forwarded to this computer (%s) on your router." % [Net.port, Net.address], 12, UI.TEXT_DIM, WIDTH))
+			_box.add_child(UI.label("Only this computer and your home network can join: " + Net.internet_error, 12, UI.WARN, WIDTH))
 	_box.add_child(UI.divider())
 	var cols = HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 14)
