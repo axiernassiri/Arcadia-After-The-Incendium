@@ -4,10 +4,11 @@ extends Node
 ## answer an event...) to the host, which checks it is really theirs to do, runs it, and sends the
 ## world back a few times a second.
 ##
-## The code holds the host's address, port and a random key, so nobody joins without it. It works
-## between copies of the game on one computer (in the Godot editor: Debug > Customize Run Instances,
-## run 2 or more), across a home network, and over the internet when the host's router forwards the
-## port to their computer.
+## Connections are WebSockets (TCP). The host's game also gets a public port on an internet relay
+## (scripts/tunnel.gd), so the join code works from anywhere with no router setup: everyone only
+## makes outgoing connections. The code holds that port and a random key, so nobody joins without it;
+## a second, longer code connects computers on the same network directly. Works between copies of the
+## game on one computer too (in the Godot editor: Debug > Customize Run Instances, run 2 or more).
 
 signal lobby_changed
 signal chat_received(who: String, text: String)
@@ -23,9 +24,9 @@ const PROTOCOL := 1
 const SNAPSHOT_EVERY := 0.25    # seconds between world updates to the clients (when something changed)
 const ALPHABET := "0123456789ABCDEFGHJKMNPQRSTVWXYZ"   # Crockford's base 32: no I, L, O or U
 const CODE_FILE := "user://last_join_code.txt"          # for test runs (--join=auto)
-const DEFAULT_MATCH_SERVER := "tomfol.io:8890"          # a public noray server (see scripts/noray.gd); Settings "match_server" overrides it
-const SNAPSHOT_EVERY_RELAYED := 1.0                       # gentler on the free relay
-const Noray = preload("res://scripts/noray.gd")
+const DEFAULT_TUNNEL_SERVER := "bore.pub"               # a free public bore server (see scripts/tunnel.gd); Settings "tunnel_server" overrides it
+const BUFFER_BYTES := 1 << 20
+const Tunnel = preload("res://scripts/tunnel.gd")
 const Settings = preload("res://scripts/settings.gd")
 
 enum { OFFLINE, HOST, CLIENT }
@@ -70,8 +71,7 @@ var _join_key := 0
 var _auth_names := {}
 var lan_code := ""          # host: the code for this computer and its home network
 var internet_error := ""    # host: why players over the internet can't join ("" when they can)
-var noray: Node
-var _relay_ports := {}
+var tunnel: Node
 var _attempt := -1          # client: 0 trying, 1 connected, 3 failed, -1 idle
 var _last_sent := {}
 var _peer_dirty := {}
@@ -81,9 +81,8 @@ var _seq := 0
 var _inbox := {}            # client: the chunks of the message coming in
 var _world := {}            # client: the host's world as last received (deltas are laid over it)
 var _sent_hashes := {}      # host: peer id -> {piece: hash} of what they have
-const CHUNK_BYTES := 1000
-const RELAY_CHUNKS_PER_SECOND := 50.0   # the public relay passes ~90 packets a second but drops bursts of ~20
-const DIRECT_CHUNKS_PER_SECOND := 600.0
+const CHUNK_BYTES := 4000
+const CHUNKS_PER_SECOND := 200.0   # ~800 KB/s at most, so one big update never hogs the connection
 
 
 func _ready() -> void:
@@ -91,13 +90,11 @@ func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(func(): print("[net] connected to the host"); _attempt = 1)
-	noray = Noray.new()
-	add_child(noray)
-	noray.connect_nat.connect(func(a, p): if mode == HOST: _host_punch(a, p))
-	noray.connect_relay.connect(func(p): if mode == HOST: _host_punch(noray.server_ip, p))
-	noray.lost.connect(func():
+	tunnel = Tunnel.new()
+	add_child(tunnel)
+	tunnel.lost.connect(func():
 		if mode == HOST:
-			internet_error = "Lost the matchmaking server: new players can only join from this network."
+			internet_error = "Lost the internet relay: new players can only join from this network. Players already in keep playing."
 			lobby_changed.emit())
 	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
@@ -192,77 +189,82 @@ static func lan_address() -> String:
 
 # ---------------------------------------------------------------- hosting and joining
 
-func match_server() -> String:
-	var s := String(Settings.get_value("match_server"))
-	return s if s != "" else DEFAULT_MATCH_SERVER
+func tunnel_server() -> String:
+	var s := String(Settings.get_value("tunnel_server"))
+	return s if s != "" else DEFAULT_TUNNEL_SERVER
 
 
-static func make_internet_code(oid: String, key: int) -> String:
-	## The noray id of the host's game, then 4 characters of key: "ay_63ExoJWu5NgZOW3jVq.K7QX".
-	var k := ""
-	for i in range(3, -1, -1):
-		k += ALPHABET[(key >> (i * 5)) & 31]
-	return "%s.%s" % [oid, k]
+static func make_internet_code(p: int, key: int) -> String:
+	## The host's public port on the relay and the key, as 8 characters: "K7QX-M2PA".
+	## 3 bits of version, 16 of port, 16 of key and a 5-bit check.
+	var v := (1 << 37) | ((p & 0xFFFF) << 21) | ((key & 0xFFFF) << 5)
+	var check := 0
+	for i in range(1, 8):
+		check += (v >> (i * 5)) & 31
+	v |= check & 31
+	var out := ""
+	for i in range(7, -1, -1):
+		out += ALPHABET[(v >> (i * 5)) & 31]
+	return "%s-%s" % [out.substr(0, 4), out.substr(4)]
 
 
 static func read_internet_code(text: String) -> Dictionary:
-	## {oid, key}, or {} if it isn't an internet code.
-	var s := text.strip_edges().replace(" ", "")
-	var dot := s.rfind(".")
-	if dot < 4 or s.length() - dot - 1 != 4:
+	## {port, key}, or {} if it isn't an internet code.
+	var s := text.strip_edges().to_upper().replace("-", "").replace(" ", "")
+	s = s.replace("O", "0").replace("I", "1").replace("L", "1")
+	if s.length() != 8:
 		return {}
-	var oid := s.substr(0, dot)
-	for ch in oid:
-		if not (ch.is_valid_identifier() or ch == "-" or ch.is_valid_int()):
+	var v := 0
+	for ch in s:
+		var d := ALPHABET.find(ch)
+		if d < 0:
 			return {}
-	var key := 0
-	for ch in s.substr(dot + 1).to_upper().replace("O", "0").replace("I", "1").replace("L", "1"):
-		var v := ALPHABET.find(ch)
-		if v < 0:
-			return {}
-		key = (key << 5) | v
-	return {"oid": oid, "key": key}
+		v = (v << 5) | d
+	var check := 0
+	for i in range(1, 8):
+		check += (v >> (i * 5)) & 31
+	if (v >> 37) != 1 or (v & 31) != (check & 31):
+		return {}
+	var p := (v >> 21) & 0xFFFF
+	return {} if p == 0 else {"port": p, "key": (v >> 5) & 0xFFFF}
 
 
 func host(player_name: String) -> String:
-	## Opens a game for others to join. Returns "" or what went wrong. Registers with the matchmaking
-	## server first, so players anywhere can join with the code and nobody touches their router; if
-	## that server can't be reached, the game is still open to this computer and its home network.
+	## Opens a game for others to join. Returns "" or what went wrong. The game listens on this
+	## computer (for its home network) and gets a public port on the internet relay, so players
+	## anywhere join with the code and nobody touches their router. If the relay can't be reached,
+	## the game is still open to this computer and its home network.
 	leave()
-	mode = HOST   # so the lobby shows "opening..." while we wait
-	status_changed.emit("Contacting the matchmaking server...")
-	internet_error = await noray.open(match_server())
-	if mode != HOST:
-		return "Cancelled."
-	var peer := ENetMultiplayerPeer.new()
+	var peer := WebSocketMultiplayerPeer.new()
+	peer.inbound_buffer_size = BUFFER_BYTES
+	peer.outbound_buffer_size = BUFFER_BYTES
 	var err := ERR_CANT_CREATE
-	if internet_error == "":
-		err = peer.create_server(noray.local_port, MAX_PLAYERS)
-		port = noray.local_port
-		if err != OK:
-			internet_error = "Could not open the port the matchmaking server saw."
-			noray.close()
+	for i in PORTS_TO_TRY:   # a second copy of the game on this computer hosts on the next port
+		err = peer.create_server(PORT + i)
+		if err == OK:
+			port = PORT + i
+			break
 	if err != OK:
-		for i in PORTS_TO_TRY:   # a second copy of the game on this computer hosts on the next port
-			err = peer.create_server(PORT + i, MAX_PLAYERS)
-			if err == OK:
-				port = PORT + i
-				break
-	if err != OK:
-		mode = OFFLINE
-		last_error = "Could not open a network port: %s." % error_string(err)
+		last_error = "Could not open a network port (%d-%d): %s." % [PORT, PORT + PORTS_TO_TRY - 1, error_string(err)]
 		return last_error
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	_key = rng.randi_range(1, 65535)
 	_set_auth()
 	multiplayer.multiplayer_peer = peer
+	mode = HOST
 	my_name = _clean_name(player_name)
 	players = {1: {"name": my_name, "tag": ""}}
 	in_game = false
 	address = lan_address()
 	lan_code = make_code(address, port, _key)
-	code = make_internet_code(noray.oid, _key) if internet_error == "" else lan_code
+	code = lan_code
+	status_changed.emit("Opening the game to the internet...")
+	internet_error = await tunnel.open(tunnel_server(), port)
+	if mode != HOST:
+		return "Cancelled."
+	if internet_error == "":
+		code = make_internet_code(tunnel.public_port, _key)
 	var f := FileAccess.open(CODE_FILE, FileAccess.WRITE)
 	if f != null:
 		f.store_string(code + "\n" + lan_code)
@@ -273,125 +275,63 @@ func host(player_name: String) -> String:
 	return ""
 
 
-func _host_punch(addr: String, p: int) -> void:
-	## Someone is joining through the matchmaker: send packets from our game port to their address
-	## (or their relay port), which opens our router for their connection. noray does the rest.
-	if mode != HOST:
-		return
-	if addr == noray.server_ip:
-		_relay_ports[p] = true
-	print("[net] opening the way for a player at %s:%d" % [addr, p])
-	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
-	for i in 60:
-		if mode != HOST or enet == null or enet.host == null:
-			return
-		enet.host.socket_send(addr, p, "$rwx".to_utf8_buffer())
-		await get_tree().create_timer(0.1).timeout
-
-
 func join(join_code: String, player_name: String) -> String:
 	## Connects to a host from their join code. Returns "" if the attempt started; the result
 	## arrives as lobby_changed (in), or join_failed.
 	var ic := read_internet_code(join_code)
 	var c := read_code(join_code) if ic.is_empty() else {}
 	if ic.is_empty() and c.is_empty():
-		last_error = "That isn't a join code. Paste the whole code the host's lobby shows."
+		last_error = "That isn't a join code. It looks like K7QX-M2PA: copy it from the host's lobby."
 		return last_error
 	leave()
 	my_name = _clean_name(player_name)
 	mode = CLIENT
 	players = {}
 	in_game = false
-	code = join_code.strip_edges()
+	code = join_code.strip_edges().to_upper()
 	if not ic.is_empty():
 		_join_key = ic["key"]
-		_join_internet(ic["oid"])
-		return ""
-	_join_key = c["key"]
-	_join_lan(c["ip"], c["port"])
+		_join_internet(ic["port"])
+	else:
+		_join_key = c["key"]
+		_join_lan(c["ip"], c["port"])
 	return ""
 
 
 func _join_lan(ip: String, p: int) -> void:
 	status_changed.emit("Connecting to %s..." % ip)
-	var r: int = await _try_enet(ip, p, 0, 8.0)
+	var r: int = await _try_connect(ip, p, 8.0)
 	if r == 1:
-		_fail("Could not reach the host at %s:%d. That code only works on the host's own network: ask for their main join code." % [ip, p])
+		_fail("Could not reach the host at %s:%d. That code only works on the host's own network: ask for their main join code (8 characters)." % [ip, p])
 
 
-func _join_internet(oid: String) -> void:
-	status_changed.emit("Contacting the matchmaking server...")
-	var err: String = await noray.open(match_server())
-	if mode != CLIENT:
+func _join_internet(p: int) -> void:
+	status_changed.emit("Connecting to the host through the internet relay...")
+	var server := tunnel_server()
+	var ip: String = server if server.is_valid_ip_address() else Tunnel.find_address(server)
+	if ip == "":
+		_fail("Could not find the game's internet relay (no internet?).")
 		return
-	if err != "":
-		_fail(err)
-		return
-	# 1. straight to the host, punching through both routers
-	status_changed.emit("Connecting to the host...")
-	var nat: Array = await _wait_signal(noray.connect_nat, func(): noray.request_nat(oid), 6.0)
-	if mode != CLIENT:
-		return
-	if nat.size() == 2:
-		var heard: bool = await noray.punch_from(noray.local_port, nat[0], nat[1], 3.0, get_tree())
-		if mode != CLIENT:
-			return
-		if heard:
-			var r: int = await _try_enet(nat[0], nat[1], noray.local_port, 6.0)
-			if r != 1:
-				if r == 0:
-					print("[net] connected directly")
-				return
-	else:
-		_fail("The matchmaking server doesn't know that game. Check the code, and that the host is still in the lobby.")
-		return
-	# 2. through the matchmaker's relay
-	status_changed.emit("A router blocks the direct way. Connecting through the relay...")
-	var rel: Array = await _wait_signal(noray.connect_relay, func(): noray.request_relay(oid), 6.0)
-	if mode != CLIENT:
-		return
-	if rel.size() != 1:
-		_fail("The relay did not answer. Try again in a moment.")
-		return
-	await noray.punch_from(noray.local_port, noray.server_ip, rel[0], 2.0, get_tree())
-	if mode != CLIENT:
-		return
-	var r2: int = await _try_enet(noray.server_ip, rel[0], noray.local_port, 10.0)
-	if r2 == 0:
+	var r: int = await _try_connect(ip, p, 12.0)
+	if r == 0:
 		print("[net] connected through the relay")
-	elif r2 == 1:
-		_fail("Could not connect to the host, even through the relay. Is a firewall blocking Godot or the game?")
+	elif r == 1:
+		_fail("Could not reach the host. Check the code, and that the host is still in the lobby (a new lobby has a new code).")
 
 
-func _wait_signal(sig: Signal, start: Callable, seconds: float) -> Array:
-	## Waits up to `seconds` for `sig` after calling `start`; its arguments, or [] on timeout.
-	var got: Array = []
-	var cb := func(a = null, b = null):
-		if got.is_empty():
-			got.append(a)
-			if b != null:
-				got.append(b)
-	sig.connect(cb)
-	start.call()
-	var t := 0.0
-	while got.is_empty() and t < seconds and online():
-		await get_tree().create_timer(0.05).timeout
-		t += 0.05
-	sig.disconnect(cb)
-	return got
-
-
-func _try_enet(addr: String, p: int, local_port: int, seconds: float) -> int:
-	## One connection attempt. 0: connected, 1: no answer (try another way), 2: stop (refused or cancelled).
-	var peer := ENetMultiplayerPeer.new()
-	if peer.create_client(addr, p, 0, 0, 0, local_port) != OK:
+func _try_connect(ip: String, p: int, seconds: float) -> int:
+	## One connection attempt. 0: connected, 1: no answer, 2: stop (refused or cancelled).
+	var peer := WebSocketMultiplayerPeer.new()
+	peer.inbound_buffer_size = BUFFER_BYTES
+	peer.outbound_buffer_size = BUFFER_BYTES
+	if peer.create_client("ws://%s:%d" % [ip, p]) != OK:
 		return 1
-	address = addr
+	address = ip
 	port = p
 	_set_auth()
 	_attempt = 0
 	multiplayer.multiplayer_peer = peer
-	print("[net] trying %s:%d" % [addr, p])
+	print("[net] trying %s:%d" % [ip, p])
 	var t := 0.0
 	while _attempt == 0 and t < seconds and mode == CLIENT:
 		await get_tree().create_timer(0.05).timeout
@@ -399,8 +339,8 @@ func _try_enet(addr: String, p: int, local_port: int, seconds: float) -> int:
 	if mode != CLIENT:
 		return 2
 	if _attempt == 1:
+		status_changed.emit("Connected. Waiting for the lobby...")
 		return 0
-	# no answer: drop this attempt quietly and let the caller try the next way
 	_attempt = -1
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	peer.close()
@@ -419,7 +359,7 @@ func leave(reason: String = "") -> void:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	(multiplayer as SceneMultiplayer).auth_callback = Callable()
-	noray.close()
+	tunnel.close()
 	mode = OFFLINE
 	players = {}
 	in_game = false
@@ -431,7 +371,6 @@ func leave(reason: String = "") -> void:
 	_sent_hashes.clear()
 	_peer_dirty.clear()
 	_last_sent.clear()
-	_relay_ports.clear()
 	_attempt = -1
 	status_changed.emit("")
 	if Game.humans.size() > 0:
@@ -671,10 +610,9 @@ func send_battle_report(tags: Array, report: Dictionary) -> void:
 func _process(delta: float) -> void:
 	if mode != HOST:
 		return
-	## The world goes out in small chunks at a steady pace: the relay drops sudden bursts (and a
-	## world update is ~35 KB), so a relayed player gets about 50 chunks a second.
+	## The world goes out in chunks at a steady pace, and only what changed since each player's last
+	## update (a few bytes most days, ~32 KB when a month turns).
 	var now := Time.get_ticks_msec() / 1000.0
-	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	if _dirty:
 		_dirty = false
 		for id in players:
@@ -684,8 +622,7 @@ func _process(delta: float) -> void:
 	for id in players.keys():
 		if id == 1:
 			continue
-		var relayed: bool = enet != null and enet.get_peer(id) != null and enet.get_peer(id).get_remote_address() == noray.server_ip
-		if in_game and players[id]["tag"] != "" and _peer_dirty.get(id, false) and not _outbox.has(id) 				and now - float(_last_sent.get(id, 0.0)) >= (SNAPSHOT_EVERY_RELAYED if relayed else SNAPSHOT_EVERY):
+		if in_game and players[id]["tag"] != "" and _peer_dirty.get(id, false) and not _outbox.has(id) 				and now - float(_last_sent.get(id, 0.0)) >= SNAPSHOT_EVERY:
 			if parts.is_empty():
 				parts = _world_parts()
 				hashes = _hash_parts(parts)
@@ -703,8 +640,7 @@ func _process(delta: float) -> void:
 			_queue_bulk(id, "delta", "", packed)
 		if not _outbox.has(id):
 			continue
-		var rate := RELAY_CHUNKS_PER_SECOND if relayed else DIRECT_CHUNKS_PER_SECOND
-		_tokens[id] = minf(float(_tokens.get(id, 0.0)) + rate * delta, 4.0 if relayed else 40.0)
+		_tokens[id] = minf(float(_tokens.get(id, 0.0)) + CHUNKS_PER_SECOND * delta, 20.0)
 		var box: Dictionary = _outbox[id]
 		while float(_tokens[id]) >= 1.0 and int(box["next"]) < box["chunks"].size():
 			var i: int = box["next"]

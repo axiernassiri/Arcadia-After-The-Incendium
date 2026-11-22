@@ -92,7 +92,7 @@ func _build_start() -> void:
 	_box.add_child(host_b)
 	_box.add_child(UI.heading("Join a game"))
 	_code_edit = LineEdit.new()
-	_code_edit.placeholder_text = "paste the host's code"
+	_code_edit.placeholder_text = "K7QX-M2PA"
 	_code_edit.max_length = 80
 	_code_edit.custom_minimum_size.x = 300
 	_code_edit.text_submitted.connect(func(_t): _join())
@@ -150,7 +150,7 @@ func _build_lobby() -> void:
 	_box.add_child(UI.row([UI.label("Join code:", 14), code_l, copy], 12))
 	if host:
 		if Net.internet_error == "":
-			_box.add_child(UI.label("Share this code: it works from anywhere, with no router setup. (The game's matchmaker introduces the computers, and passes the game along itself if a router won't let them talk directly.)", 12, UI.TEXT_DIM, WIDTH))
+			_box.add_child(UI.label("Share this code: it works from anywhere, with no router setup. (The game connects through a free internet relay, using only outgoing connections, so no router or firewall setting needs changing.)", 12, UI.TEXT_DIM, WIDTH))
 			var lan = UI.button("Copy", func(): DisplayServer.clipboard_set(Net.lan_code); _status = "Home-network code copied."; refresh())
 			_box.add_child(UI.row([UI.label("Same computer or home network (faster):  " + Net.lan_code, 12, UI.TEXT_DIM), lan]))
 		else:

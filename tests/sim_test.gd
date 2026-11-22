@@ -797,15 +797,16 @@ func _initialize() -> void:
 	check(back.get("ip", "") == "192.168.1.34" and int(back.get("port", 0)) == 7351 and int(back.get("key", 0)) == 40000,
 		"a join code reads back (%s -> %s)" % [code, str(back)])
 	check(net.read_code("hello").is_empty() and net.read_code("ABCD-EFGH-JKMN").is_empty(), "nonsense is not a join code")
-	var icode: String = net.make_internet_code("4-4jBBxw0bQl7fL5F97K2", 51234)
-	var iback: Dictionary = net.read_internet_code(" " + icode + " ")
-	check(iback.get("oid", "") == "4-4jBBxw0bQl7fL5F97K2" and int(iback.get("key", 0)) == 51234, "an internet join code reads back (%s)" % icode)
-	check(net.read_internet_code(code).is_empty() and net.read_internet_code("hello.").is_empty(), "a home-network code is not an internet code")
-	var noray_script = load("res://scripts/noray.gd")
-	noray_script.fake_dns = "0.0.0.0"   # what a Pi-hole answers for a blocked name
-	var found: String = noray_script.find_address("tomfol.io")
-	noray_script.fake_dns = ""
-	check(found != "" and found != "0.0.0.0" and not found.begins_with("127."), "a DNS blocker can't hide the matchmaker (falls back to %s)" % found)
+	var icode: String = net.make_internet_code(31406, 51234)
+	var iback: Dictionary = net.read_internet_code(" " + icode.to_lower() + " ")
+	check(icode.length() == 9 and int(iback.get("port", 0)) == 31406 and int(iback.get("key", 0)) == 51234, "an internet join code reads back (%s)" % icode)
+	var typo: String = icode.substr(0, 8) + ("0" if icode[8] != "0" else "1")
+	check(net.read_internet_code(code).is_empty() and net.read_internet_code(typo).is_empty(), "a typo or a home-network code is not an internet code")
+	var tunnel_script = load("res://scripts/tunnel.gd")
+	tunnel_script.fake_dns = "0.0.0.0"   # what a Pi-hole answers for a blocked name
+	var found: String = tunnel_script.find_address("bore.pub")
+	tunnel_script.fake_dns = ""
+	check(found != "" and found != "0.0.0.0" and not found.begins_with("127."), "a DNS blocker can't hide the internet relay (falls back to %s)" % found)
 	game.new_game("MEN", 4289, ["SYL"])
 	check(game.is_human("SYL") and not game.nations["SYL"]["ai"] and game.nations["SKY"]["ai"], "a second player's nation is not run by the AI")
 	var syl_army: int = int(game.mil.armies_of("SYL")[0]["id"])

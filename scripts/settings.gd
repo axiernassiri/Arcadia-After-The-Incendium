@@ -12,7 +12,7 @@ const DEFAULTS := {
 	"master_volume": 0.8,       # 0..1, applied by the Sound autoload
 	"music_volume": 0.5,
 	"sfx_volume": 0.8,
-	"match_server": "",         # multiplayer matchmaker (a noray server, "host:port"); empty: the built-in public one
+	"tunnel_server": "",        # multiplayer internet relay (a bore server); empty: the free public bore.pub
 	"player_name": "",          # your name in multiplayer games (empty: the computer's user name)
 }
 const AUTOSAVE_SLOTS := 3

@@ -970,8 +970,8 @@ func _mp_automation() -> void:
 	var nm: String = String(args.get("mp-name", "Host" if args.has("host") else "Guest"))
 	_open_lobby()
 	Net.debug = args.has("mp-debug")
-	if args.has("mp-fake-dns"):   # pretend a DNS blocker (Pi-hole) answered this for the matchmaker
-		load("res://scripts/noray.gd").fake_dns = String(args["mp-fake-dns"]) if String(args["mp-fake-dns"]) != "true" else "0.0.0.0"
+	if args.has("mp-fake-dns"):   # pretend a DNS blocker (Pi-hole) answered this for the internet relay
+		load("res://scripts/tunnel.gd").fake_dns = String(args["mp-fake-dns"]) if String(args["mp-fake-dns"]) != "true" else "0.0.0.0"
 	if args.has("host"):
 		var err: String = await Net.host(nm)
 		if err != "":
@@ -1004,7 +1004,7 @@ func _mp_automation() -> void:
 	if args.has("mp-badcode"):
 		var ic := Net.read_internet_code(code)
 		if not ic.is_empty():
-			code = Net.make_internet_code(ic["oid"], (int(ic["key"]) + 1) % 65536)
+			code = Net.make_internet_code(ic["port"], (int(ic["key"]) + 1) % 65536)
 		else:
 			var c := Net.read_code(code)
 			code = Net.make_code(c["ip"], c["port"], (int(c["key"]) + 1) % 65536)
