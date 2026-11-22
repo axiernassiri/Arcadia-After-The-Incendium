@@ -970,6 +970,8 @@ func _mp_automation() -> void:
 	var nm: String = String(args.get("mp-name", "Host" if args.has("host") else "Guest"))
 	_open_lobby()
 	Net.debug = args.has("mp-debug")
+	if args.has("mp-fake-dns"):   # pretend a DNS blocker (Pi-hole) answered this for the matchmaker
+		load("res://scripts/noray.gd").fake_dns = String(args["mp-fake-dns"]) if String(args["mp-fake-dns"]) != "true" else "0.0.0.0"
 	if args.has("host"):
 		var err: String = await Net.host(nm)
 		if err != "":

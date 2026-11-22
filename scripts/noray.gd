@@ -37,7 +37,7 @@ func open(address: String) -> String:
 	if ":" in address:
 		host = address.get_slice(":", 0)
 		tcp_port = int(address.get_slice(":", 1))
-	server_ip = host if host.is_valid_ip_address() else IP.resolve_hostname(host, IP.TYPE_IPV4)
+	server_ip = host if host.is_valid_ip_address() else find_address(host)
 	if server_ip == "":
 		return "Could not find the matchmaking server %s (no internet?)." % host
 	_tcp = StreamPeerTCP.new()
@@ -79,6 +79,38 @@ func open(address: String) -> String:
 		close()
 		return "The matchmaking server could not see this computer's network traffic (a firewall may block the game)."
 	return ""
+
+
+## Where the built-in matchmaker lives, for networks whose DNS blocks its name (a Pi-hole or other
+## ad/tracker blocker on the router answers 0.0.0.0, or nothing, for names on its lists).
+const KNOWN_ADDRESSES := {"tomfol.io": "172.105.69.73"}
+const CACHE_PATH := "user://matchmaker_address.cfg"
+static var fake_dns := ""   # test runs: pretend the name lookup answered this (--mp-fake-dns=0.0.0.0)
+
+
+static func find_address(host: String) -> String:
+	## The server's IPv4 address. A blocked or failed lookup falls back to the address that worked
+	## last time on this computer, then to the one built into the game, so a DNS blocker can't stop it.
+	var ip := fake_dns if fake_dns != "" else IP.resolve_hostname(host, IP.TYPE_IPV4)
+	var cache := ConfigFile.new()
+	cache.load(CACHE_PATH)
+	if _usable(ip):
+		if cache.get_value("addresses", host, "") != ip:
+			cache.set_value("addresses", host, ip)
+			cache.save(CACHE_PATH)
+		return ip
+	var why := "blocked by this network's DNS (Pi-hole?)" if ip != "" else "not found"
+	for fallback in [String(cache.get_value("addresses", host, "")), String(KNOWN_ADDRESSES.get(host, ""))]:
+		if _usable(fallback):
+			print("[net] the matchmaker's name was %s (got \"%s\"); using its address %s" % [why, ip, fallback])
+			return fallback
+	return ""
+
+
+static func _usable(ip: String) -> bool:
+	## Not empty, a real IPv4 address, and not one of the "blocked" answers DNS blockers give.
+	return ip != "" and ip.is_valid_ip_address() and ip.count(".") == 3 and not ip.begins_with("0.") \
+		and not ip.begins_with("127.") and ip != "255.255.255.255"
 
 
 func request_nat(host_oid: String) -> void:
