@@ -155,6 +155,22 @@ func _build_lobby() -> void:
 			_box.add_child(UI.row([UI.label("Same computer or home network (faster):  " + Net.lan_code, 12, UI.TEXT_DIM), lan]))
 		else:
 			_box.add_child(UI.label("Only this computer and your home network can join: " + Net.internet_error, 12, UI.WARN, WIDTH))
+	# what game: a new one, or a save carried on together
+	if host and not Net.in_game:
+		var pick_save = OptionButton.new()
+		pick_save.add_item("A new game, 1 January 4289")
+		var slots: Array = [""]
+		for sv in Game.list_saves().slice(0, 12):
+			pick_save.add_item("Continue: %s (%s, %s)" % [sv.get("name", sv["file"]), sv.get("nation", ""), sv.get("date", "")])
+			slots.append(sv["file"])
+		pick_save.select(maxi(0, slots.find(Net.start_save)))
+		pick_save.custom_minimum_size.x = 420
+		pick_save.item_selected.connect(func(i):
+			_status = Net.use_save(slots[i])
+			refresh())
+		_box.add_child(UI.row([UI.label("Start from:", 14), pick_save]))
+	else:
+		_box.add_child(UI.label("Playing: " + Net.start_label, 13, UI.TEXT_DIM, WIDTH))
 	_box.add_child(UI.divider())
 	var cols = HBoxContainer.new()
 	cols.add_theme_constant_override("separation", 14)
@@ -172,12 +188,9 @@ func _build_lobby() -> void:
 	list.add_theme_constant_override("separation", 3)
 	scroll.add_child(list)
 	var taken := Net.taken()
-	var tags: Array = Game.nations.keys()
-	tags.sort_custom(func(a, b): return Game.nation_dev(a) > Game.nation_dev(b))
-	for t in tags:
-		var n: Dictionary = Game.nations[t]
-		if not n["playable"] or not n["alive"]:
-			continue
+	for row_data in Net.lobby_nations():
+		var t: String = row_data[0]
+		var n := {"short": row_data[1], "colour": Color(row_data[2]), "difficulty": row_data[3]}
 		var who: String = taken.get(t, "")
 		var b = UI.button("", func(): _pick(t))
 		b.toggle_mode = true

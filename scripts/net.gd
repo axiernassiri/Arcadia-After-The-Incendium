@@ -50,10 +50,10 @@ const ACTIONS := {
 	"mil.move_army": ["army", 0], "mil.split_army": ["army", 0], "mil.disband_army": ["army", 0], "mil.stop_army": ["army", 0],
 	"mil.assign_leader": ["army", 0], "mil.merge_armies": ["armies", 0],
 	"mil.move_fleet": ["fleet", 0], "mil.disband_fleet": ["fleet", 0],
-	"dip.act": ["tag", 1], "dip.call_ally": ["tag", 1], "dip.propose_peace": ["tag", 1],
+	"dip.act": ["tag", 1], "dip.call_ally": ["tag", 1], "dip.propose_peace": ["tag", 1], "dip.sell_province": ["tag", 0],
 }
 ## What a client's call returns at once (the host's real answer arrives as a message).
-const CLIENT_RESULT := {"dip.act": "", "dip.call_ally": "", "dip.propose_peace": "", "mil.split_army": {}}
+const CLIENT_RESULT := {"dip.act": "", "dip.call_ally": "", "dip.propose_peace": "", "dip.sell_province": "", "mil.split_army": {}}
 
 var mode := OFFLINE
 var code := ""
@@ -69,6 +69,9 @@ var _dirty := false
 var _since := 0.0
 var _join_key := 0
 var _auth_names := {}
+var start_save := ""        # host: the save the game will continue ("" = a new game)
+var start_label := "A new game, 1 January 4289"
+var _lobby_nations: Array = []   # client: the nations the host's world offers ([tag, short, colour, difficulty])
 var lan_code := ""          # host: the code for this computer and its home network
 var internet_error := ""    # host: why players over the internet can't join ("" when they can)
 var tunnel: Node
@@ -365,6 +368,9 @@ func leave(reason: String = "") -> void:
 	in_game = false
 	code = ""
 	lan_code = ""
+	start_save = ""
+	start_label = "A new game, 1 January 4289"
+	_lobby_nations = []
 	_outbox.clear()
 	_inbox = {}
 	_world = {}
@@ -513,6 +519,51 @@ func _assign(id: int, tag: String) -> String:
 	return ""
 
 
+func use_save(slot: String) -> String:
+	## Host, in the lobby: continue a saved game ("" for a new one). Everyone picks from its nations.
+	if mode != HOST or in_game:
+		return "Only the host can choose, before the game starts."
+	if slot == "":
+		Game.setup_world()
+		Game.started = false
+		start_save = ""
+		start_label = "A new game, 1 January 4289"
+	else:
+		var err := Game.load_game(slot)
+		if err != "":
+			return err
+		Game.started = false   # the world waits in the lobby until the host starts it
+		Game.set_speed(0)
+		start_save = slot
+		start_label = "%s, %s" % [slot, Game.date_string()]
+		var saved_as := Game.player_tag
+		for id in players:   # picks of nations that are gone in this world are undone
+			var t: String = players[id]["tag"]
+			if t != "" and (not Game.nations.has(t) or not Game.nations[t]["alive"]):
+				players[id]["tag"] = ""
+		if players[1]["tag"] == "" and saved_as != "" and tag_owner(saved_as) == 0:
+			players[1]["tag"] = saved_as   # the host carries on as the nation they saved with
+	_send_lobby()
+	_say("The host chose: %s." % start_label)
+	return ""
+
+
+func lobby_nations() -> Array:
+	## [[tag, short name, colour, difficulty]] of the nations players can pick, biggest first.
+	if mode == CLIENT:
+		return _lobby_nations
+	var tags: Array = []
+	for t in Game.nations:
+		if Game.nations[t]["playable"] and Game.nations[t]["alive"]:
+			tags.append(t)
+	tags.sort_custom(func(a, b): return Game.nation_dev(a) > Game.nation_dev(b))
+	var out: Array = []
+	for t in tags:
+		var n: Dictionary = Game.nations[t]
+		out.append([t, n["short"], Color(n["colour"]).to_html(false), n["difficulty"]])
+	return out
+
+
 func start() -> String:
 	## Host: start the game with everyone's picks.
 	if mode != HOST:
@@ -524,7 +575,20 @@ func start() -> String:
 	for id in players:
 		if id != 1 and players[id]["tag"] != "":
 			others.append(players[id]["tag"])
-	Game.new_game(mine, 4289, others)
+	if start_save == "":
+		Game.new_game(mine, 4289, others)
+	else:
+		# carry on from the save: each player takes their nation, everyone else stays with the AI
+		Game.player_tag = mine
+		Game.humans = {}
+		for t in others:
+			Game.humans[t] = true
+		for t in Game.nations:
+			Game.nations[t]["ai"] = not Game.is_human(t)
+		Game.started = true
+		Game.post("%s. The game continues with %d players." % [Game.date_string(), others.size() + 1])
+		Game.game_started.emit()
+		Game.date_changed.emit()
 	in_game = true
 	for id in players:
 		if id != 1 and players[id]["tag"] != "":
@@ -556,7 +620,7 @@ func send_chat(text: String) -> void:
 func _send_lobby() -> void:
 	if mode != HOST:
 		return
-	_r_lobby.rpc(players, in_game)
+	_r_lobby.rpc(players, in_game, lobby_nations(), start_label)
 	lobby_changed.emit()
 
 
@@ -827,9 +891,11 @@ func _r_chat(who: String, text: String) -> void:
 
 
 @rpc("authority", "call_remote", "reliable")
-func _r_lobby(p: Dictionary, started: bool) -> void:
+func _r_lobby(p: Dictionary, started: bool, nations: Array, label: String) -> void:
 	players = p
 	in_game = started
+	_lobby_nations = nations
+	start_label = label
 	lobby_changed.emit()
 
 

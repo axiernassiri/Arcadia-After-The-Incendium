@@ -102,6 +102,7 @@ func build() -> void:
 		"If they declare war on any of your neighbours, you join the war against them. They won't like it (-20 opinion).")
 	_act("support_rebels", "Support rebels (%d sanctum)" % int(Game.dip.SUPPORT_REBELS_COST), "",
 		"Arm the malcontents in their three most restless provinces: +3 unrest and more rebel support for two years. -40 opinion. Once a year.")
+	_sell_options(me)
 	var gs: Array = Game.dip.guarantors_of(tag)
 	if gs.size() > 0:
 		var gn: PackedStringArray = []
@@ -133,6 +134,32 @@ func build() -> void:
 			text("Their allies will be called in: " + ", ".join(an), 12, UI.BAD)
 		_act("war", "Declare war", "", "Starts a war. Your allies are called in.")
 	_their_relations(o)
+
+
+func _sell_options(me: String) -> void:
+	## Sell them one of our provinces next to their land (EU4's "sell province").
+	var pids: Array = Game.dip.sellable(me, tag)
+	if pids.is_empty():
+		return
+	section("Sell land")
+	var human: bool = Game.is_human(tag)
+	for pid in pids.slice(0, 3):
+		var price: int = Game.dip.sale_price(pid)
+		var acc: Array = Game.dip.sale_acceptance(me, tag, pid)
+		var parts: PackedStringArray = []
+		for r in acc[1]:
+			parts.append("%s: %+d" % [r[0], int(r[1])])
+		var tip: String
+		if human:
+			tip = "%s is played by a person: they decide." % Game.nation_name(tag)
+		else:
+			tip = "They buy when the total is above 0.\n" + "\n".join(parts) + "\nTotal: %+d" % int(acc[0])
+		var extra := "  (their choice)" if human else ("  (likely yes)" if float(acc[0]) > 0.0 else "  (likely no)")
+		var b = UI.action("Sell %s (%d dev) for %d sanctum%s" % [Game.provinces[pid]["name"], Game.total_dev(pid), price, extra], "",
+			func(): _msg = String(Game.act("dip.sell_province", [me, tag, pid])); mark_dirty(), tip)
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.custom_minimum_size.x = panel_width - 40
+		add(b)
 
 
 func _act(action: String, label: String, accept_key: String, tip: String = "") -> void:

@@ -977,6 +977,9 @@ func _mp_automation() -> void:
 		if err != "":
 			print("[mp-test] host failed: ", err)
 			return
+		if args.has("mp-save"):   # continue a save together
+			var serr := Net.use_save(String(args["mp-save"]))
+			print("[mp-test] host continues %s%s" % [Net.start_label, (": " + serr) if serr != "" else ""])
 		if args.has("mp-nation"):
 			Net.pick(String(args["mp-nation"]))
 		var need := int(args.get("mp-start", 1))
@@ -1018,7 +1021,7 @@ func _mp_automation() -> void:
 	if not Net.is_client():
 		print("[mp-test] join failed: ", Net.last_error)
 		return
-	print("[mp-test] in the lobby: ", Net.players)
+	print("[mp-test] in the lobby: ", Net.players, " playing: ", Net.start_label, ", %d nations offered" % Net.lobby_nations().size())
 	Net.pick(String(args.get("mp-nation", "SKY")))
 	while not Game.started:
 		await get_tree().create_timer(0.1).timeout
