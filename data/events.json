@@ -1,5 +1,5 @@
 {
- "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'player', 'tribes' (tribes and hordes), 'republics', 'monarchies', 'pig_states' (pig nations other than Menslosia) or 'others' (everyone but Menslosia and Skyfall). Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types. once: true fires at most once per nation. Trigger years: [from, to] (0 = open) limits an event to those years. Trigger mtth_months gives an EU4 mean time to happen; mtth_modifiers [{factor, conditions}] multiply it when their conditions hold (0.5 = twice as likely). fire_event effects (with delay_days) chain events.",
+ "_note": "Events. trigger: {date} fires once on that date; {monthly_chance, conditions} rolls each month; {special: doomsday} fires on 29 February for nations with land or armies in Skyfall; {special: fired_by_effect} only through another event. for: a nation tag, 'all', 'player', 'tribes' (tribes and hordes), 'republics', 'monarchies', 'pig_states' (pig nations other than Menslosia) or 'others' (everyone but Menslosia and Skyfall), 'farworld' (the nations of the far world: Combustion Ayam, Terra Incognito, Oceania, the Satian Islands). Effects target THIS (the nation receiving the event) or a tag. See README for the full list of condition and effect types. once: true fires at most once per nation. Trigger years: [from, to] (0 = open) limits an event to those years. Trigger mtth_months gives an EU4 mean time to happen; mtth_modifiers [{factor, conditions}] multiply it when their conditions hold (0.5 = twice as likely). fire_event effects (with delay_days) chain events.",
  "events": [
   {
    "id": "arcadian_era_begins",
@@ -4922,6 +4922,1757 @@
     }
    ],
    "once": true
+  },
+  {
+   "id": "aym_everburning_engine",
+   "for": "AYM",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4291
+     },
+     {
+      "type": "tech_at_least",
+      "track": "adm",
+      "at_least": 3
+     }
+    ]
+   },
+   "title": "The Everburning Engine",
+   "text": "In the workshops of Ayam Prime a young hen has built an engine that runs for a week on a single scoop of fuel. The other inventors are already arguing about who thought of it first.",
+   "options": [
+    {
+     "text": "Keep it secret. Ayam's lead is Ayam's.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "aym_engine_secret",
+       "name": "The Everburning Engine",
+       "modifiers": {
+        "tech_cost_mod": -0.1,
+        "production_mod": 0.05
+       },
+       "months": 240
+      }
+     ],
+     "ai_weight": 1.5
+    },
+    {
+     "text": "Share the drawings with the Satian Union.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 60
+      },
+      {
+       "type": "add_opinion",
+       "target": "SAT",
+       "amount": 30
+      },
+      {
+       "type": "fire_event",
+       "id": "sat_ayam_teachers",
+       "target": "SAT",
+       "delay_days": 30
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "aym_kiln_fire",
+   "for": "AYM",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "Fire in the Kilns of Pyrespire",
+   "text": "A kiln in Pyrespire has burst, and the fire has jumped from roof to roof along the workshop streets. The chickens are fast, but the flames are faster.",
+   "options": [
+    {
+     "text": "Pay whatever it takes to rebuild.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Rebuild slowly, from what's left.",
+     "effects": [
+      {
+       "type": "add_dev",
+       "province": "Pyrespire",
+       "index": 1,
+       "amount": -1
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "aym_mainland_horizon",
+   "for": "AYM",
+   "trigger": {
+    "monthly_chance": 0.04,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4292
+     }
+    ]
+   },
+   "title": "The Mainland on the Horizon",
+   "text": "Our longest-range airship has come home with sketches of a great land to the north, full of pigs and their walled cities. Menslosia, they call the biggest of their realms.",
+   "options": [
+    {
+     "text": "Send envoys and trade engines for grain.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "MEN",
+       "amount": 25
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 40
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Build a fleet worthy of the open sea.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "aym_blue_water",
+       "name": "Blue-Water Fleet",
+       "modifiers": {
+        "naval_morale": 0.1,
+        "naval_force_limit": 4
+       },
+       "months": 300
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Let them come to us, if they ever can.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 0.6
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "aym_flame_festival",
+   "for": "AYM",
+   "trigger": {
+    "monthly_chance": 0.015,
+    "conditions": [
+     {
+      "type": "stability_at_least",
+      "at_least": 0
+     }
+    ]
+   },
+   "title": "The Festival of the Eternal Flame",
+   "text": "Once in a generation the high kiln of the Combustion Creed is opened and every household lights a lamp from it. The ring-isle glows all night.",
+   "options": [
+    {
+     "text": "Light the lamps.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Light the lamps, and the forges too.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      },
+      {
+       "type": "add_modifier",
+       "id": "aym_festival_forges",
+       "name": "Festival Forges",
+       "modifiers": {
+        "build_cost_mod": -0.15
+       },
+       "months": 60
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "aym_satian_rivalry",
+   "for": "AYM",
+   "trigger": {
+    "monthly_chance": 0.02,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4300
+     },
+     {
+      "type": "nation_dead",
+      "tag": "SAT",
+      "negate": true
+     }
+    ]
+   },
+   "title": "Satian Ambitions",
+   "text": "Our envoys report that the Satian assembly now talks openly of 'catching up with the chickens'. Some of our council find this charming. Some do not.",
+   "options": [
+    {
+     "text": "Charming. Offer them a trade pact.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SAT",
+       "amount": 20
+      },
+      {
+       "type": "add_treasury",
+       "amount": 30
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Remind them who built their ships.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SAT",
+       "amount": -25
+      },
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": 30
+      }
+     ],
+     "ai_weight": 0.5
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "sat_ayam_teachers",
+   "for": "SAT",
+   "trigger": {
+    "special": "fired_by_effect"
+   },
+   "title": "Teachers from Ayam",
+   "text": "A ship from Combustion Ayam has docked at Satia carrying a crate of drawings and three very confident engineers. They offer to teach our workshops how their engines work.",
+   "options": [
+    {
+     "text": "Welcome them. We have a lot to learn.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "sat_ayam_lessons",
+       "name": "Lessons from Ayam",
+       "modifiers": {
+        "tech_cost_mod": -0.1,
+        "production_mod": 0.05
+       },
+       "months": 240
+      },
+      {
+       "type": "add_opinion",
+       "target": "AYM",
+       "amount": 20
+      }
+     ],
+     "ai_weight": 1.5
+    },
+    {
+     "text": "Thank them, and learn it our own way.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ],
+     "ai_weight": 0.6
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "sat_tidewheel_turns",
+   "for": "SAT",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "The Tidewheel Turns",
+   "text": "The priests of the Tidewheel say the great tide of the century has come in. Fishing boats come home so full they sit low in the water.",
+   "options": [
+    {
+     "text": "Sell the catch abroad.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 50
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Feed the islands first.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_manpower",
+       "amount": 1000
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "sat_assembly_quarrel",
+   "for": "SAT",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "A Quarrel in the Island Assembly",
+   "text": "The delegates of Storm Rock and Tide Cay have come to blows over who pays for the new harbour. The assembly hall has been closed until tempers cool.",
+   "options": [
+    {
+     "text": "Storm Rock pays: it gets the harbour.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -30
+      },
+      {
+       "type": "add_dev",
+       "province": "Storm Rock",
+       "index": 1,
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Everyone pays a little, and nobody is happy.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      }
+     ],
+     "ai_weight": 0.8
+    },
+    {
+     "text": "Shelve the harbour.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "sat_pelari_settlers",
+   "for": "SAT",
+   "trigger": {
+    "monthly_chance": 0.05,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "Settlers for Pelari",
+   "text": "Fishing families from the crowded towns ask the assembly to help them settle the empty shores of Pelari, across the strait.",
+   "options": [
+    {
+     "text": "Give them boats and seed.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      },
+      {
+       "type": "add_modifier",
+       "id": "sat_pelari_drive",
+       "name": "The Pelari Drive",
+       "modifiers": {
+        "colonist_growth": 0.5,
+        "colonists": 1
+       },
+       "months": 120
+      }
+     ],
+     "ai_weight": 1.5
+    },
+    {
+     "text": "Our islands come first.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 0.5
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "sat_storm_season",
+   "for": "SAT",
+   "trigger": {
+    "monthly_chance": 0.015
+   },
+   "title": "Storm Season",
+   "text": "The storms have come early this year and two villages on Mist Key have been washed into the sea.",
+   "options": [
+    {
+     "text": "Rebuild them.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Move the families inland.",
+     "effects": [
+      {
+       "type": "add_dev",
+       "province": "Mist Key",
+       "index": 0,
+       "amount": -1
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "oce_surface_dwellers",
+   "for": "OCE",
+   "trigger": {
+    "monthly_chance": 0.05,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     }
+    ]
+   },
+   "title": "The Surface Dwellers",
+   "text": "Our scouts have climbed into the bright dry world above the waves and come back gasping. Up there, they say, live creatures who drown in air too thin to hold them and breathe nothing at all.",
+   "options": [
+    {
+     "text": "Study them from below.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "They are dangerous. Ready the guard.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "oce_wary",
+       "name": "Wary of the Surface",
+       "modifiers": {
+        "fort_defense": 0.2,
+        "land_morale": 0.05
+       },
+       "months": 240
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "oce_mask_workshops",
+   "for": "OCE",
+   "trigger": {
+    "monthly_chance": 0.04,
+    "conditions": [
+     {
+      "type": "tech_at_least",
+      "track": "mil",
+      "at_least": 3
+     }
+    ]
+   },
+   "title": "The Mask Workshops",
+   "text": "The artisans of the Fathom Vault have made a mask that holds water against the face, so an Oceanian can walk on land for days. The first volunteers are terrified.",
+   "options": [
+    {
+     "text": "Arm the legions with them.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "oce_masked_legions",
+       "name": "Masked Legions",
+       "modifiers": {
+        "land_morale": 0.1
+       },
+       "months": -1
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Sell them to merchants first.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 80
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "oce_pearl_glut",
+   "for": "OCE",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "A Glut of Pearls",
+   "text": "The oyster beds of the Abyss Garden have never been richer. Pearls are piling up in the vaults faster than we can sell them.",
+   "options": [
+    {
+     "text": "Flood the market.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 100
+      },
+      {
+       "type": "price_shock",
+       "goods": "pearls",
+       "factor": 0.7
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Hoard them: their worth is in being rare.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "oce_pearl_hoard",
+       "name": "Pearl Hoard",
+       "modifiers": {
+        "interest_mod": -0.25
+       },
+       "months": 120
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "oce_leviathan_stirs",
+   "for": "OCE",
+   "trigger": {
+    "monthly_chance": 0.012
+   },
+   "title": "The Leviathan Stirs",
+   "text": "Something vast has turned over in the trench beneath the Leviathan Throne. The water has gone cold, and the shoals have fled.",
+   "options": [
+    {
+     "text": "Make the old offerings.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -50
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Hunt it.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -2000
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 15
+      },
+      {
+       "type": "add_power",
+       "index": 2,
+       "amount": 40
+      }
+     ],
+     "ai_weight": 0.7
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "oce_sunken_ruins",
+   "for": "OCE",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     }
+    ]
+   },
+   "title": "Ruins Older Than the Sea",
+   "text": "Divers in the Sunken Garden have found streets and towers under the silt, older than Oceania. The carvings show creatures with lungs, staring up at the stars.",
+   "options": [
+    {
+     "text": "Bring the carvings to our scholars.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 60
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 30
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Seal the ruins. Some things are better left drowned.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "fua_council_of_winter",
+   "for": "FUA",
+   "trigger": {
+    "monthly_chance": 0.04,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4290
+     },
+     {
+      "type": "nation_dead",
+      "tag": "LLA",
+      "negate": true
+     },
+     {
+      "type": "not_at_war"
+     }
+    ]
+   },
+   "title": "The Council of Winter",
+   "text": "The High Throne has called the lords of Fuarland to Fuar Hold. The talk is of the Llama highlands to the south-west: rich pasture, held by herders who have never seen a real army.",
+   "options": [
+    {
+     "text": "Fabricate our claims on the highlands.",
+     "effects": [
+      {
+       "type": "add_claim",
+       "tag": "LLA"
+      },
+      {
+       "type": "add_opinion",
+       "target": "LLA",
+       "amount": -40
+      },
+      {
+       "type": "set_flag",
+       "name": "fua_highland_claims"
+      }
+     ],
+     "ai_weight": 1.5
+    },
+    {
+     "text": "Not yet. Build first.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 50
+      }
+     ],
+     "ai_weight": 0.5
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "fua_long_winter",
+   "for": "FUA",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "The Long Winter",
+   "text": "The snow has not melted in Lumvale since autumn. The granaries are emptying and the herds are thin.",
+   "options": [
+    {
+     "text": "Open the royal granaries.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -50
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "The army eats first.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ],
+     "ai_weight": 0.7
+    },
+    {
+     "text": "Send the young men south to forage.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": -1500
+      },
+      {
+       "type": "add_army_tradition",
+       "amount": 5
+      }
+     ],
+     "ai_weight": 0.7
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "fua_stellarin_spies",
+   "for": "FUA",
+   "trigger": {
+    "monthly_chance": 0.015,
+    "conditions": [
+     {
+      "type": "nation_dead",
+      "tag": "STE",
+      "negate": true
+     }
+    ]
+   },
+   "title": "Spies from Stellaris",
+   "text": "Guards at Fuar Hold have caught two Stellarins with a telescope and a very detailed map of our fortresses.",
+   "options": [
+    {
+     "text": "Hang them from the walls.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "STE",
+       "amount": -30
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Trade them back for their star charts.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 60
+      },
+      {
+       "type": "add_opinion",
+       "target": "STE",
+       "amount": 10
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "fua_hearthfire_rite",
+   "for": "FUA",
+   "trigger": {
+    "monthly_chance": 0.015
+   },
+   "title": "The Rite of the Hearthfires",
+   "text": "On the longest night every hall in Fuarland keeps its hearthfire burning for the warriors who have died. This year there are more fires than anyone can remember.",
+   "options": [
+    {
+     "text": "Honour the dead.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Honour the dead, and recruit the living.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 2000
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "fua_highlands_won",
+   "for": "FUA",
+   "trigger": {
+    "monthly_chance": 0.2,
+    "conditions": [
+     {
+      "type": "subdued",
+      "tag": "LLA"
+     }
+    ]
+   },
+   "title": "The Highlands Are Ours",
+   "text": "The banners of the High Throne fly over Highpasture. What the old songs promised has come to pass: the Llama Nation bows to Fuarland.",
+   "options": [
+    {
+     "text": "Let the songs be sung again.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "fua_highland_lords",
+       "name": "Lords of the Highlands",
+       "modifiers": {
+        "cavalry_power": 0.15,
+        "manpower_mod": 0.1
+       },
+       "months": -1
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ]
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "ste_comet",
+   "for": "STE",
+   "trigger": {
+    "monthly_chance": 0.008
+   },
+   "title": "A Comet over Stellara",
+   "text": "A comet with a tail like a torn banner hangs over the observatory. The First Astronomer must say what it means, and the whole city is waiting.",
+   "options": [
+    {
+     "text": "It is a road: the stars are opening.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_legitimacy",
+       "amount": 5
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "It is a warning: look to our defences.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "ste_comet_warning",
+       "name": "The Comet's Warning",
+       "modifiers": {
+        "fort_defense": 0.15,
+        "land_morale": 0.05
+       },
+       "months": 120
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "It is a comet. Measure it.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 60
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "ste_conclave_debate",
+   "for": "STE",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "The Conclave Divided",
+   "text": "Half the conclave wants to build the greatest telescope ever made. The other half wants to fix the roads.",
+   "options": [
+    {
+     "text": "The telescope.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 40
+      },
+      {
+       "type": "add_treasury",
+       "amount": -40
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "The roads.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "ste_new_roads",
+       "name": "Roads of Stellaris",
+       "modifiers": {
+        "trade_efficiency": 0.05
+       },
+       "months": 120
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "ste_northern_shadow",
+   "for": "STE",
+   "trigger": {
+    "monthly_chance": 0.04,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4291
+     },
+     {
+      "type": "nation_dead",
+      "tag": "FUA",
+      "negate": true
+     }
+    ]
+   },
+   "title": "The Northern Shadow",
+   "text": "Fuarland's levies are drilling in the snow, and its lords have been heard toasting the 'end of the star-gazers'.",
+   "options": [
+    {
+     "text": "Seek the friendship of SILK.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SLK",
+       "amount": 30
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 30
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Raise walls and watchtowers.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -50
+      },
+      {
+       "type": "add_modifier",
+       "id": "ste_watchtowers",
+       "name": "Watchtowers of Stellaris",
+       "modifiers": {
+        "fort_defense": 0.25
+       },
+       "months": 240
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Let them toast. The stars are on our side.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 0.4
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "ste_great_star_map",
+   "for": "STE",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "ideas_at_least",
+      "at_least": 2
+     }
+    ]
+   },
+   "title": "The Great Star Map",
+   "text": "After forty years of nights, the observatory has finished its map of the heavens. Sailors, scholars and soothsayers are queueing at the door.",
+   "options": [
+    {
+     "text": "Print it for every captain.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "ste_star_map",
+       "name": "The Great Star Map",
+       "modifiers": {
+        "explore_cost_mod": -0.33,
+        "naval_morale": 0.05
+       },
+       "months": -1
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Keep it in the conclave's library.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 80
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "ste_eclipse",
+   "for": "STE",
+   "trigger": {
+    "monthly_chance": 0.01
+   },
+   "title": "Eclipse",
+   "text": "The sun has gone dark at noon. The astronomers predicted it to the minute, but the farmers are terrified all the same.",
+   "options": [
+    {
+     "text": "Explain it to them, slowly.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 30
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Let them believe we did it.",
+     "effects": [
+      {
+       "type": "add_legitimacy",
+       "amount": 10
+      },
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "lla_border_drums",
+   "for": "LLA",
+   "trigger": {
+    "monthly_chance": 0.04,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4291
+     },
+     {
+      "type": "nation_dead",
+      "tag": "FUA",
+      "negate": true
+     }
+    ]
+   },
+   "title": "Drums on the Northern Passes",
+   "text": "Herders coming down from the passes say the drums of Fuarland can be heard at night. The High Throne has never forgotten the old songs about our highlands.",
+   "options": [
+    {
+     "text": "Ask SILK for help.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "SLK",
+       "amount": 30
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 25
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Fortify the passes.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      },
+      {
+       "type": "add_modifier",
+       "id": "lla_fortified_passes",
+       "name": "Fortified Passes",
+       "modifiers": {
+        "fort_defense": 0.25,
+        "land_morale": 0.05
+       },
+       "months": 240
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Call up every herd.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 3000
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "lla_spit_incident",
+   "for": "LLA",
+   "trigger": {
+    "monthly_chance": 0.015
+   },
+   "title": "The Lead Llama Spits",
+   "text": "During a state visit, the Lead Llama spat squarely in the face of a foreign envoy. Witnesses agree he had it coming. Diplomats do not.",
+   "options": [
+    {
+     "text": "Apologise, through gritted teeth.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": -25
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Refuse. Llamas do not apologise.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      },
+      {
+       "type": "add_opinion",
+       "target": "FUA",
+       "amount": -15
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "lla_caravan_season",
+   "for": "LLA",
+   "trigger": {
+    "monthly_chance": 0.025
+   },
+   "title": "The Caravan Season",
+   "text": "The great caravans of the Yellow Road are gathering at Highpasture, and SILK's merchant houses want every llama we can spare.",
+   "options": [
+    {
+     "text": "Hire out the herds.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 60
+      },
+      {
+       "type": "add_opinion",
+       "target": "SLK",
+       "amount": 10
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Keep the herds home this year.",
+     "effects": [
+      {
+       "type": "add_manpower",
+       "amount": 1500
+      }
+     ],
+     "ai_weight": 0.6
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "lla_stampede",
+   "for": "LLA",
+   "trigger": {
+    "monthly_chance": 0.015
+   },
+   "title": "Stampede!",
+   "text": "Something spooked the herds of Halkeld, and ten thousand llamas went over the fields at once. Nobody has found out what.",
+   "options": [
+    {
+     "text": "Replant the fields.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -30
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Turn it into cavalry drills.",
+     "effects": [
+      {
+       "type": "add_army_tradition",
+       "amount": 10
+      },
+      {
+       "type": "add_dev",
+       "province": "Halkeld",
+       "index": 0,
+       "amount": -1
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "lla_prophecy_broken",
+   "for": "LLA",
+   "trigger": {
+    "monthly_chance": 0.2,
+    "conditions": [
+     {
+      "type": "subdued",
+      "tag": "FUA"
+     }
+    ]
+   },
+   "title": "The Prophecy Broken",
+   "text": "Fuarland is no more a threat to the highlands. The old songs said it would swallow us. The old songs were wrong.",
+   "options": [
+    {
+     "text": "Write new songs.",
+     "effects": [
+      {
+       "type": "add_modifier",
+       "id": "lla_prophecy_broken",
+       "name": "The Prophecy Broken",
+       "modifiers": {
+        "land_morale": 0.1,
+        "unrest": -1
+       },
+       "months": -1
+      },
+      {
+       "type": "add_stability",
+       "amount": 2
+      }
+     ]
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "slk_caravan_raided",
+   "for": "SLK",
+   "trigger": {
+    "monthly_chance": 0.025
+   },
+   "title": "A Caravan Raided",
+   "text": "Bandits fell on a silk caravan in the hills east of Fenvale. The drivers escaped; the silk did not.",
+   "options": [
+    {
+     "text": "Hire guards for every caravan.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -30
+      },
+      {
+       "type": "add_modifier",
+       "id": "slk_caravan_guards",
+       "name": "Caravan Guards",
+       "modifiers": {
+        "trade_efficiency": 0.05
+       },
+       "months": 60
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Write it off.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -15
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "slk_yellow_road",
+   "for": "SLK",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4295
+     },
+     {
+      "type": "treasury_at_least",
+      "at_least": 150
+     }
+    ]
+   },
+   "title": "Extending the Yellow Road",
+   "text": "The merchant houses propose paving the Yellow Road from Silkgate to the far coasts: the greatest road the continent has ever seen.",
+   "options": [
+    {
+     "text": "Pave it.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -120
+      },
+      {
+       "type": "add_modifier",
+       "id": "slk_paved_road",
+       "name": "The Paved Yellow Road",
+       "modifiers": {
+        "trade_efficiency": 0.1,
+        "trade_power_mod": 0.1
+       },
+       "months": -1
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Too costly. Patch the potholes.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -20
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "slk_merchant_houses",
+   "for": "SLK",
+   "trigger": {
+    "monthly_chance": 0.02
+   },
+   "title": "The Merchant Houses Quarrel",
+   "text": "The House of Ithmar and the House of Sarholm both claim the right to ship this year's dye harvest. Each has bribed half the council.",
+   "options": [
+    {
+     "text": "Ithmar: the old house.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 30
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Sarholm: the new money.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 50
+      },
+      {
+       "type": "add_stability",
+       "amount": -1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Split the harvest between them.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
+  },
+  {
+   "id": "slk_fuar_tariff",
+   "for": "SLK",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4292
+     },
+     {
+      "type": "nation_dead",
+      "tag": "FUA",
+      "negate": true
+     }
+    ]
+   },
+   "title": "Fuarland's Tariff",
+   "text": "Envoys from the High Throne demand a tariff on every caravan that crosses the northern passes. Their soldiers wait at the border while we decide.",
+   "options": [
+    {
+     "text": "Pay. Trade must flow.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -60
+      },
+      {
+       "type": "add_opinion",
+       "target": "FUA",
+       "amount": 25
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Refuse, and reroute the caravans.",
+     "effects": [
+      {
+       "type": "add_opinion",
+       "target": "FUA",
+       "amount": -30
+      },
+      {
+       "type": "add_modifier",
+       "id": "slk_rerouted",
+       "name": "Rerouted Caravans",
+       "modifiers": {
+        "trade_efficiency": -0.05
+       },
+       "months": 36
+      }
+     ],
+     "ai_weight": 0.8
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "slk_mainland_traders",
+   "for": "SLK",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4296
+     }
+    ]
+   },
+   "title": "Traders from Across the Sea",
+   "text": "A battered ship has limped into port carrying pigs from a land called Menslosia, with truffles and wine to trade. They have never heard of silk.",
+   "options": [
+    {
+     "text": "Show them what silk is.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 60
+      },
+      {
+       "type": "add_opinion",
+       "target": "MEN",
+       "amount": 20
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Learn their language and their markets.",
+     "effects": [
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "far_ships_from_beyond",
+   "for": "farworld",
+   "trigger": {
+    "monthly_chance": 0.03,
+    "conditions": [
+     {
+      "type": "year_at_least",
+      "value": 4294
+     }
+    ]
+   },
+   "title": "Ships from the Other Side of the World",
+   "text": "Sailors are telling stories in every port: of a great land beyond the edge of our maps, full of pigs, walled cities and sky islands hanging over a waterfall.",
+   "options": [
+    {
+     "text": "Fit out an expedition.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": -40
+      },
+      {
+       "type": "add_power",
+       "index": 1,
+       "amount": 50
+      }
+     ],
+     "ai_weight": 1.2
+    },
+    {
+     "text": "Sailors' stories.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 0.6
+    }
+   ],
+   "_set": "farworld_v1",
+   "once": true
+  },
+  {
+   "id": "far_starfall",
+   "for": "farworld",
+   "trigger": {
+    "monthly_chance": 0.006
+   },
+   "title": "Starfall",
+   "text": "A shower of falling stars lit the whole southern sky for three nights. Every faith of the far world has its own explanation, and each is sure of it.",
+   "options": [
+    {
+     "text": "A blessing.",
+     "effects": [
+      {
+       "type": "add_stability",
+       "amount": 1
+      }
+     ],
+     "ai_weight": 1.0
+    },
+    {
+     "text": "Gather the stones that fell.",
+     "effects": [
+      {
+       "type": "add_treasury",
+       "amount": 40
+      },
+      {
+       "type": "add_power",
+       "index": 0,
+       "amount": 20
+      }
+     ],
+     "ai_weight": 1.0
+    }
+   ],
+   "_set": "farworld_v1"
   }
  ]
 }

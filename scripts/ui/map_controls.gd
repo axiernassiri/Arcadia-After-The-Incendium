@@ -3,6 +3,7 @@ extends PanelContainer
 
 signal mode_selected(mode: String)
 signal layer_selected(layer: String)
+signal projection_selected(enabled: bool)
 
 const UI = preload("res://scripts/ui/ui_util.gd")
 const MODE_LABELS := {"political": "Political", "diplomacy": "Diplomatic", "development": "Development",
@@ -16,6 +17,8 @@ const MODE_ICONS := {"political": "flag", "diplomacy": "envelope", "development"
 var _mode_buttons = {}
 var _mode_label: Label
 var _layer_buttons = {}
+var _projection: Button
+var _globe_enabled := false
 
 
 func _ready() -> void:
@@ -32,6 +35,10 @@ func _ready() -> void:
 		_layer_buttons[l[0]] = b
 		layers.add_child(b)
 	v.add_child(layers)
+	_projection = UI.button("◎  3D View: OFF", func(): projection_selected.emit(not _globe_enabled),
+		"Toggle 2D map / 3D globe or floating Skyfall islands (V)")
+	_projection.custom_minimum_size.y = 30
+	v.add_child(_projection)
 	_mode_label = UI.heading("", 13)
 	v.add_child(_mode_label)
 	var grid = GridContainer.new()
@@ -60,3 +67,12 @@ func set_state(mode: String, layer: String) -> void:
 		_mode_label.text = "%s map" % MODE_LABELS.get(mode, mode)
 	for l in _layer_buttons:
 		_layer_buttons[l].set_pressed_no_signal(l == layer)
+	set_projection(_globe_enabled)
+
+
+func set_projection(enabled: bool) -> void:
+	_globe_enabled = enabled
+	if _projection != null:
+		_projection.text = "◉  3D View: ON" if enabled else "◎  3D View: OFF"
+		_projection.tooltip_text = ("Skyfall: floating islands among golden-white clouds" if enabled and _layer_buttons["sky"].button_pressed else
+			"3D globe of the mainland" if enabled else "Show the 3D view (V)")

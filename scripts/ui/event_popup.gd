@@ -19,7 +19,7 @@ func _ready() -> void:
 
 
 func _show_next() -> void:
-	var mine: Array = Game.my_events()
+	var mine: Array = Game.my_events() if Game.started else []   # not over menus or the lobby
 	if mine.is_empty():
 		visible = false
 		_current = {}
@@ -74,6 +74,10 @@ func _show_next() -> void:
 
 
 func _process(_delta: float) -> void:
+	if not Game.started:
+		if visible:
+			_show_next()
+		return
 	if visible and not Game.my_events().has(_current):
 		_show_next()
 	elif not visible and not Game.my_events().is_empty():

@@ -7,7 +7,7 @@ extends Node
 ##   --select-screen [--pick=TAG]  open on the nation select screen    --menu   stay on the main menu    --intro  the cutscene
 ##   --days=N              advance N days after starting (events answered with option 1)
 ##   --until-doomsday      advance until the Black Moon rises
-##   --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"  --at=x,y (a map point)
+##   --globe  --layer=sky  --mode=goods|trade|culture|...   --zoom=2.5  --focus="Province"  --at=x,y (a map point)
 ##   --select="Province"   select a province     --panel=economy|trade|tech|ideas|government|court|military|diplomacy|peoples|missions
 ##   --country=TAG         open a nation's diplomacy view      --war=TAG  declare war on TAG first
 ##   --army                select the player's first army   --group  select all of them    --entities  spawn entities at the portal and select them
@@ -39,6 +39,8 @@ const SHORTCUTS := {KEY_C: "court", KEY_G: "government", KEY_E: "economy", KEY_B
 const MODE_KEYS := [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9, KEY_0, KEY_MINUS, KEY_EQUAL]
 
 var map: MapView
+var globe
+var globe_enabled := false
 var camera: MapCamera
 var hud: CanvasLayer
 var root_ui: Control
@@ -99,6 +101,13 @@ func _ready() -> void:
 	root_ui.theme = UI.build_theme()
 	root_ui.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS   # icons are rasterised at 2x
 	hud.add_child(root_ui)
+	globe = _add("res://scripts/globe_view.gd")
+	map.palette_changed.connect(globe.set_palette)
+	map.selection_changed.connect(globe.select)
+	globe.set_palette(map._palette_tex, map.mode)
+	globe.province_clicked.connect(func(id): map.select(id if id > 0 else -1); _on_province_clicked(id))
+	globe.province_right_clicked.connect(_on_right_click)
+	globe.province_hovered.connect(_on_province_hovered)
 	top_bar = _add("res://scripts/ui/top_bar.gd")
 	tab_bar = _add("res://scripts/ui/tab_bar.gd")
 	map_controls = _add("res://scripts/ui/map_controls.gd")
@@ -161,6 +170,7 @@ func _ready() -> void:
 	army_panel.group_changed.connect(_select_group)
 	map.fleet_clicked.connect(_select_fleet)
 	map.layer_changed.connect(func(l):
+		globe.set_layer(l)
 		map_controls.set_state(map.mode, l)
 		camera.bounds = Rect2(Vector2.ZERO, map.map_size)   # each layer has its own size
 		camera.wrap_width = map.wrap_width()                # the world loops, the sky doesn't
@@ -185,6 +195,7 @@ func _ready() -> void:
 		if m != "trade":
 			trade_node_panel.visible = false)
 	map_controls.layer_selected.connect(map.set_layer)
+	map_controls.projection_selected.connect(_set_globe)
 	top_bar.open_panel.connect(open_panel)
 	top_bar.menu_pressed.connect(func(): game_menu.open())
 	tab_bar.open_panel.connect(open_panel)
@@ -274,7 +285,30 @@ func _set_state(s: String) -> void:
 	if s != "intro":
 		intro.visible = false
 	map.show_all = s != "game"
+	if s != "game":
+		_set_globe(false)
 	map.refresh()
+
+
+func _set_globe(enabled: bool) -> void:
+	if globe == null:
+		return
+	globe_enabled = enabled
+	globe.visible = enabled
+	map.set_globe_active(enabled)
+	camera.set_process_unhandled_input(not enabled)
+	camera.set_process(not enabled)
+	map_controls.set_projection(enabled)
+	if enabled:
+		globe.set_layer(map.layer)
+		globe.set_palette(map._palette_tex, map.mode)
+		globe.select(map.selected)
+		var centre_pid: int = map.selected if map.selected > 0 else map.province_at(camera.position)
+		if centre_pid > 0:
+			globe.focus_province(centre_pid)
+		globe._sync_moon()
+	else:
+		map.refresh()
 
 
 func _open_select() -> void:
@@ -472,6 +506,8 @@ func focus_province(id: int) -> void:
 	map.set_layer(Game.provinces[id]["layer"])
 	map.select(id)
 	camera.position = Game.provinces[id]["centre"]
+	if globe_enabled:
+		globe.focus_province(id)
 	province_panel.show_province(id)
 
 
@@ -482,6 +518,8 @@ func _focus_unit(id: int, is_army: bool) -> void:
 	var pid: int = int(u["location"])
 	map.set_layer(Game.provinces[pid]["layer"])
 	camera.position = Game.provinces[pid]["centre"]
+	if globe_enabled:
+		globe.focus_province(pid)
 
 
 # ---------------------------------------------------------------- map input
@@ -791,6 +829,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			map_controls.set_state(modes[mi], map.layer)
 		get_viewport().set_input_as_handled()
 		return
+	if event.keycode == KEY_V and not event.ctrl_pressed and not event.alt_pressed:
+		_set_globe(not globe_enabled)
+		get_viewport().set_input_as_handled()
+		return
 	if event.ctrl_pressed and event.keycode == KEY_F:
 		search_box.open()
 		get_viewport().set_input_as_handled()
@@ -826,7 +868,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			else:
 				game_menu.open()
 		KEY_HOME:
-			camera.fit_bounds()
+			if globe_enabled:
+				globe.set_layer(map.layer)
+			else:
+				camera.fit_bounds()
 		KEY_F1:
 			help_overlay.visible = not help_overlay.visible
 		_:
@@ -880,6 +925,8 @@ func _run_automation() -> void:
 	if args.has("mode"):
 		map.set_mode(args["mode"])
 		map_controls.set_state(args["mode"], map.layer)
+	if args.has("globe"):
+		_set_globe(true)
 	if args.has("zoom"):
 		var z := float(args["zoom"])
 		camera.zoom = Vector2(z, z)
@@ -977,6 +1024,9 @@ func _mp_automation() -> void:
 		if err != "":
 			print("[mp-test] host failed: ", err)
 			return
+		if args.has("mp-save"):   # continue a save together
+			var serr := Net.use_save(String(args["mp-save"]))
+			print("[mp-test] host continues %s%s" % [Net.start_label, (": " + serr) if serr != "" else ""])
 		if args.has("mp-nation"):
 			Net.pick(String(args["mp-nation"]))
 		var need := int(args.get("mp-start", 1))
@@ -1018,7 +1068,7 @@ func _mp_automation() -> void:
 	if not Net.is_client():
 		print("[mp-test] join failed: ", Net.last_error)
 		return
-	print("[mp-test] in the lobby: ", Net.players)
+	print("[mp-test] in the lobby: ", Net.players, " playing: ", Net.start_label, ", %d nations offered" % Net.lobby_nations().size())
 	Net.pick(String(args.get("mp-nation", "SKY")))
 	while not Game.started:
 		await get_tree().create_timer(0.1).timeout

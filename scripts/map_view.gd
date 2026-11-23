@@ -10,6 +10,8 @@ signal army_shift_clicked(id: int)   # shift-click: add to or remove from the se
 signal box_selected(ids: Array)       # shift-drag: armies inside the box
 signal fleet_clicked(id: int)
 signal layer_changed(layer: String)
+signal palette_changed(texture: Texture2D, mode: String)
+signal selection_changed(id: int)
 
 const Tokens = preload("res://ui/style/tokens.gd")
 const Icons = preload("res://ui/style/icons.gd")
@@ -31,6 +33,7 @@ const NODE_COLOURS := [Color("#e0a050"), Color("#50a0e0"), Color("#a060d0"), Col
 
 var layer := "ground"
 var mode := "political"
+var globe_active := false
 var selected := -1
 var hovered := -1
 var selected_army := -1
@@ -88,7 +91,7 @@ func _ready() -> void:
 		mat.set_shader_parameter("map_size", map_size)
 		mat.set_shader_parameter("paper_tex", load("res://assets/ui/map_paper.png"))
 		s.material = mat
-		s.visible = (l == layer)
+		s.visible = (l == layer and not globe_active)
 		add_child(s)
 		if l in WRAP_LAYERS:   # one copy each side, so the world loops seamlessly
 			for side in [-1, 1]:
@@ -297,6 +300,7 @@ func refresh() -> void:
 				stripe.a = clampf(float(p["colony"]["settlers"]) / 1000.0, 0.3, 0.9)
 		_palette_img.set_pixel(id, 2, stripe)
 	_palette_tex.update(_palette_img)
+	palette_changed.emit(_palette_tex, mode)
 	_labels.queue_redraw()
 	_units.queue_redraw()
 
@@ -319,13 +323,20 @@ func _set_clear_colour() -> void:
 	RenderingServer.set_default_clear_color(Color(0.118, 0.285, 0.505) if layer == "ground" else Color(0.56, 0.68, 0.88))
 
 
+func set_globe_active(active: bool) -> void:
+	globe_active = active
+	for k in _sprites:
+		_sprites[k].visible = (k == layer and not active)
+	_overlay.visible = not active
+
+
 func set_layer(l: String) -> void:
 	if l == layer:
 		return
 	layer = l
 	map_size = layer_sizes.get(l, map_size)
 	for k in _sprites:
-		_sprites[k].visible = (k == l)
+		_sprites[k].visible = (k == l and not globe_active)
 	_set_clear_colour()
 	if selected >= 0 and Game.provinces.has(selected) and Game.provinces[selected]["layer"] != l:
 		select(-1)
@@ -336,6 +347,7 @@ func set_layer(l: String) -> void:
 
 func select(id: int) -> void:
 	selected = id
+	selection_changed.emit(id)
 	for k in _sprites:
 		_sprites[k].material.set_shader_parameter("selected_id", id)
 	_labels.queue_redraw()
@@ -470,6 +482,8 @@ func _box_input(event: InputEvent) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if globe_active:
+		return
 	if not Game.started and not show_all:
 		return
 	if _box_input(event):

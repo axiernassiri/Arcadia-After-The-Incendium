@@ -29,6 +29,7 @@ const POWER_CAP := 999
 const EVENT_FREQ_NATION := 0.6      # share of a nation-specific event's written monthly odds
 const EVENT_FREQ_SHARED := 0.4      # ... and of an event shared by many nations ("all", "tribes"...)
 const EVENT_COOLDOWN_DAYS := 365 * 5
+const FARWORLD_GROUPS := ["Galline", "Incognitan", "Abyssal", "Satian"]   # culture groups of the far world (events "for": "farworld")
 const SAVE_DIR := "user://saves"
 const SAVE_VERSION := 3   # 3: the whole world (331 provinces, 16 nations)
 const OLDEST_SAVE := 2     # older versions are migrated on load (see _merge_world)
@@ -1194,6 +1195,8 @@ func _event_applies(e: Dictionary, tag: String) -> bool:
 		return tag != "MEN" and pop.culture_group(nations[tag]["culture"]) == "Porcine"
 	if f == "others":
 		return tag != "MEN" and tag != "SKY"
+	if f == "farworld":   # the nations of the far side of the world
+		return pop.culture_group(nations[tag]["culture"]) in FARWORLD_GROUPS
 	if f == "player":
 		return is_human(tag)
 	return f == tag
@@ -1381,7 +1384,7 @@ func describe_effects(effects: Array, tag: String) -> String:
 				parts.append("claims on all of %s" % nation_name(e["tag"]) if e.has("tag") else "claim on %s" % e.get("province", ""))
 			"spawn_leader":
 				parts.append("a new general")
-			"set_flag", "clear_flag", "fire_event", "message", "join_war", "refuse_call", "accept_peace", "accept_proposal", "decline_proposal":
+			"set_flag", "clear_flag", "fire_event", "message", "join_war", "refuse_call", "accept_peace", "accept_proposal", "decline_proposal", "accept_sale":
 				pass
 			"add_core":
 				parts.append("core on %s" % e.get("province", ""))
@@ -1488,6 +1491,10 @@ func apply_effects(effects: Array, tag: String) -> void:
 				if nations.has(caller):
 					dip.set_both(tag, caller, "alliance", false)
 					dip.add_opinion(caller, tag, -50.0, "Refused our call to arms", 1.0)
+			"accept_sale":
+				var res: String = dip.complete_sale(e.get("from", ""), tag, int(e.get("pid", -1)), int(e.get("price", 0)))
+				tell(e.get("from", ""), res)
+				tell(tag, res)
 			"accept_proposal":
 				dip.accept_proposal(e.get("action", ""), e.get("from", ""), tag)
 			"decline_proposal":

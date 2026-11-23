@@ -838,9 +838,91 @@ func _initialize() -> void:
 	game.new_game("SKY")
 	check(game.humans.is_empty(), "a single-player game has no other humans")
 
+	# ---- selling provinces
+	game.new_game("MEN")
+	var for_sale: Array = game.dip.sellable("MEN", "SYL")
+	check(for_sale.size() > 0 and not for_sale.has(game.capital_of("MEN")), "Menslosia has %d provinces it could sell Sylvania, not its capital" % for_sale.size())
+	check(game.dip.can_sell("MEN", "SYL", game.capital_of("MEN")) != "", "a capital can't be sold")
+	if for_sale.size() >= 2:
+		var sp: int = for_sale[0]
+		var price: int = game.dip.sale_price(sp)
+		game.nations["SYL"]["treasury"] = 0.0
+		game.dip.sell_province("MEN", "SYL", sp)
+		check(game.provinces[sp]["owner"] == "MEN", "a buyer with no money says no")
+		game.nations["SYL"]["treasury"] = 5000.0
+		var men_gold := float(game.nations["MEN"]["treasury"])
+		var said: String = game.dip.sell_province("MEN", "SYL", sp)
+		check(game.provinces[sp]["owner"] == "SYL" and is_equal_approx(float(game.nations["MEN"]["treasury"]), men_gold + price),
+			"a rich buyer pays %d sanctum and takes the province (%s)" % [price, said])
+	game.new_game("MEN", 4289, ["SYL"])
+	var hp: Array = game.dip.sellable("MEN", "SYL")
+	if hp.size() > 0:
+		game.nations["SYL"]["treasury"] = 5000.0
+		game.dip.sell_province("MEN", "SYL", hp[0])
+		var offers: Array = game.pending_events.filter(func(i): return i["tag"] == "SYL" and i["event"].get("id", "") == "province_sale")
+		check(offers.size() == 1 and game.provinces[hp[0]]["owner"] == "MEN", "a player gets the offer to answer instead")
+		if offers.size() == 1:
+			game.resolve_event(offers[0], 0)
+			check(game.provinces[hp[0]]["owner"] == "SYL", "buying it moves the province")
+
+	# ---- every event's references exist (catches typos in data/events.json)
+	var Mods = load("res://scripts/sim/modifiers.gd")
+	var bad: PackedStringArray = []
+	for eid in game.events:
+		var e: Dictionary = game.events[eid]
+		var f: String = e.get("for", "all")
+		if not (f in ["all", "player", "tribes", "republics", "monarchies", "pig_states", "others", "farworld"] or game.nations.has(f)):
+			bad.append("%s: for %s" % [eid, f])
+		for o in e.get("options", []):
+			for fx in o.get("effects", []):
+				if fx.has("province") and not game.province_ids_by_name.has(fx["province"]):
+					bad.append("%s: province %s" % [eid, fx["province"]])
+				if fx.get("type", "") == "fire_event" and not game.events.has(fx.get("id", "")):
+					bad.append("%s: fires unknown event %s" % [eid, fx.get("id", "")])
+				if fx.has("target") and fx["target"] != "THIS" and not game.nations.has(fx["target"]):
+					bad.append("%s: target %s" % [eid, fx["target"]])
+				if fx.get("type", "") == "price_shock" and not game.goods.has(fx.get("goods", "")):
+					bad.append("%s: goods %s" % [eid, fx.get("goods", "")])
+				for k in fx.get("modifiers", {}):
+					if not Mods.LABELS.has(k):
+						bad.append("%s: modifier %s" % [eid, k])
+		for c in e.get("trigger", {}).get("conditions", []):
+			if c.has("province") and not game.province_ids_by_name.has(c["province"]):
+				bad.append("%s: condition province %s" % [eid, c["province"]])
+			if c.has("tag") and not game.nations.has(c["tag"]):
+				bad.append("%s: condition tag %s" % [eid, c["tag"]])
+	check(bad.is_empty(), "every event's provinces, nations, goods, modifiers and chained events exist %s" % str(bad))
+	game.new_game("SKY")
+	var far_tags: Array = ["AYM", "SLK", "OCE", "SAT", "FUA", "STE", "LLA"]
+	for t in far_tags:
+		var own := 0
+		for eid in game.events:
+			if game.events[eid].get("for", "") == t:
+				own += 1
+		check(own >= 4 and game._event_applies(game.events["far_starfall"], t), "%s has %d events of its own and gets the far world's" % [t, own])
+	check(not game._event_applies(game.events["far_starfall"], "MEN"), "the far world's events don't go to the mainland")
+	# the Ayam engine shared with the Satians reaches them as an event
+	game.nations["SAT"]["ai"] = true
+	var sat_before := float(game.nations["SAT"]["power"][0])
+	game.apply_effects(game.events["aym_everburning_engine"]["options"][1]["effects"], "AYM")
+	days(31)
+	var lessons := false
+	for m in game.nations["SAT"]["modifiers"]:
+		if m.get("id", "") == "sat_ayam_lessons":
+			lessons = true
+	check(lessons or float(game.nations["SAT"]["power"][0]) > sat_before, "Ayam sharing its engine sends the Satians their teachers")
+
 	game.new_game("SKY")
 	game.nations["SKY"]["ai"] = true
 	days(365 * 12)
+	var far_fired := {}
+	for key in game.fired_once:
+		var parts: PackedStringArray = String(key).split("|")
+		if parts.size() == 2 and parts[1] in far_tags and (game.events.get(parts[0], {}).get("for", "") in [parts[1], "farworld"]):
+			far_fired[parts[1]] = int(far_fired.get(parts[1], 0)) + 1
+	for t in far_tags:
+		if game.nations[t]["alive"]:
+			check(int(far_fired.get(t, 0)) >= 1, "%s saw %d of its own events in 12 years" % [t, int(far_fired.get(t, 0))])
 	var alive := 0
 	for t in game.nations:
 		if game.nations[t]["alive"]:

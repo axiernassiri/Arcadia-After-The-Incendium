@@ -534,6 +534,107 @@ func give_acceptance(w: Dictionary, target: String, cost: float) -> Array:
 	return [total >= 0.0, total, reasons]
 
 
+# ---------------------------------------------------------------- selling provinces
+
+const SALE_PRICE_PER_DEV := 15.0
+
+
+func sale_price(pid: int) -> int:
+	return int(g.total_dev(pid) * SALE_PRICE_PER_DEV)
+
+
+func sellable(seller: String, buyer: String) -> Array:
+	## The seller's provinces next to the buyer's land that could be sold to them, smallest first.
+	var out: Array = []
+	for pid in g.owned(seller):
+		if can_sell(seller, buyer, pid) == "":
+			out.append(pid)
+	out.sort_custom(func(a, b): return g.total_dev(a) < g.total_dev(b))
+	return out
+
+
+func can_sell(seller: String, buyer: String, pid: int) -> String:
+	if seller == buyer or not g.nations.has(buyer) or not g.nations[buyer]["alive"] or not g.provinces.has(pid):
+		return "Not possible."
+	var p: Dictionary = g.provinces[pid]
+	if p["owner"] != seller:
+		return "Not your province."
+	if pid == g.capital_of(seller):
+		return "You can't sell your capital."
+	if p["controller"] != seller or not p["siege"].is_empty():
+		return "It is occupied or under siege."
+	if at_war(seller, buyer):
+		return "You are at war."
+	if g.owned(seller).size() <= 1:
+		return "It is all you have."
+	for nb in p["connections"]:
+		if g.provinces[nb]["owner"] == buyer:
+			return ""
+	return "It must border their land."
+
+
+func sale_acceptance(seller: String, buyer: String, pid: int) -> Array:
+	## [score, [[reason, value]]]: an AI buyer says yes above 0.
+	var rs: Array = []
+	var p: Dictionary = g.provinces[pid]
+	var price := sale_price(pid)
+	rs.append(["Opinion of you", opinion(buyer, seller) / 5.0])
+	rs.append(["Base reluctance", -5.0])
+	if float(g.nations[buyer]["treasury"]) < price:
+		rs.append(["Can't afford %d sanctum" % price, -1000.0])
+	elif float(g.nations[buyer]["treasury"]) >= price * 3.0:
+		rs.append(["Has money to spare", 10.0])
+	if p["culture"] == g.nations[buyer]["culture"]:
+		rs.append(["Their own people live there", 20.0])
+	elif g.pop.culture_group(p["culture"]) == g.pop.culture_group(g.nations[buyer]["culture"]):
+		rs.append(["Kindred people live there", 8.0])
+	if p["religion"] == g.nations[buyer]["religion"]:
+		rs.append(["Their faith", 5.0])
+	if rel(buyer, seller)["rival"]:
+		rs.append(["Rivals", -1000.0])
+	var total := 0.0
+	for r in rs:
+		total += float(r[1])
+	return [total, rs]
+
+
+func sell_province(seller: String, buyer: String, pid: int) -> String:
+	## Offer a province for its price. An AI buyer answers at once; a player gets an offer.
+	var why := can_sell(seller, buyer, pid)
+	if why != "":
+		return why
+	var price := sale_price(pid)
+	var nm: String = g.provinces[pid]["name"]
+	if g.is_human(buyer):
+		g.fire_dynamic_event({"id": "province_sale", "title": "A Province for Sale",
+			"text": "%s offers to sell us %s (%d development) for %d sanctum." % [g.nation_name(seller), nm, g.total_dev(pid), price],
+			"options": [{"text": "Buy it.", "effects": [{"type": "accept_sale", "from": seller, "pid": pid, "price": price}]},
+				{"text": "No, thank you.", "effects": [{"type": "decline_proposal", "action": "sale", "from": seller}]}]}, buyer)
+		return "Your offer is on its way to %s." % g.nation_name(buyer)
+	if float(sale_acceptance(seller, buyer, pid)[0]) <= 0.0:
+		return "%s doesn't want %s at that price." % [g.nation_name(buyer), nm]
+	return complete_sale(seller, buyer, pid, price)
+
+
+func complete_sale(seller: String, buyer: String, pid: int, price: int) -> String:
+	## The buyer pays and the province changes hands (checked again: things change while an offer waits).
+	if can_sell(seller, buyer, pid) != "":
+		return "The sale of %s fell through." % g.provinces[pid]["name"]
+	if float(g.nations[buyer]["treasury"]) < price:
+		return "%s can't pay %d sanctum." % [g.nation_name(buyer), price]
+	var nm: String = g.provinces[pid]["name"]
+	g.nations[buyer]["treasury"] = float(g.nations[buyer]["treasury"]) - price
+	g.nations[seller]["treasury"] = float(g.nations[seller]["treasury"]) + price
+	g.set_province_owner(pid, buyer)
+	g.provinces[pid]["cores"].erase(seller)
+	add_opinion(buyer, seller, 15.0, "Sold us land", 0.5)
+	g.post("%s sells %s to %s for %d sanctum." % [g.nation_name(seller), nm, g.nation_name(buyer), price], [seller, buyer])
+	rebuild_pairs()
+	g.touch(seller)
+	g.touch(buyer)
+	return "%s bought %s for %d sanctum." % [g.nation_name(buyer), nm, price]
+
+
 func make_vassal(overlord: String, vassal: String) -> void:
 	g.nations[vassal]["overlord"] = overlord
 	if not g.nations[overlord]["subjects"].has(vassal):
